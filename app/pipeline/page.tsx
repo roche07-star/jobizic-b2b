@@ -1,0 +1,338 @@
+'use client'
+
+import { useState, useEffect } from 'react'
+
+interface JD {
+  id: string
+  company: string | null
+  position: string
+  priority: string
+  required_skills: string[]
+  preferred_skills: string[]
+}
+
+interface Candidate {
+  id: string
+  name: string
+  email: string | null
+  current_company: string | null
+  current_position: string | null
+  status: string
+  skills: string[]
+  tech_stack: string[]
+}
+
+interface PipelineItem {
+  id: string
+  jd_id: string
+  candidate_id: string
+  stage: string
+  match_score: number | null
+  match_reason: string | null
+  skill_match_rate: number | null
+  strength_for_jd: string[]
+  concerns: string[]
+  next_action: string | null
+  next_action_date: string | null
+  priority: string
+  is_active: boolean
+  job_descriptions: JD
+  candidates: Candidate
+  created_at: string
+}
+
+const STAGES = ['신규', '서류검토', '1차면접', '2차면접', '최종면접', '처우협의', '합격', '불합격']
+
+export default function PipelinePage() {
+  const [pipeline, setPipeline] = useState<PipelineItem[]>([])
+  const [jds, setJds] = useState<JD[]>([])
+  const [candidates, setCandidates] = useState<Candidate[]>([])
+  const [loading, setLoading] = useState(true)
+  const [selected, setSelected] = useState<PipelineItem | null>(null)
+  const [showAddModal, setShowAddModal] = useState(false)
+  const [selectedJd, setSelectedJd] = useState('')
+  const [selectedCandidate, setSelectedCandidate] = useState('')
+  const [matching, setMatching] = useState(false)
+
+  useEffect(() => {
+    Promise.all([
+      fetch('/api/pipeline').then(r => r.json()).then(d => setPipeline(d.pipeline ?? [])),
+      fetch('/api/jd').then(r => r.json()).then(d => setJds(d.jds ?? [])),
+      fetch('/api/candidates').then(r => r.json()).then(d => setCandidates(d.candidates ?? []))
+    ]).finally(() => setLoading(false))
+  }, [])
+
+  async function addToPipeline() {
+    if (!selectedJd || !selectedCandidate) return
+    setMatching(true)
+
+    try {
+      // AI 매칭 분석
+      const jd = jds.find(j => j.id === selectedJd)
+      const candidate = candidates.find(c => c.id === selectedCandidate)
+
+      const matchRes = await fetch('/api/pipeline/match', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ jd, candidate }),
+      })
+      const matchData = await matchRes.json()
+
+      // 파이프라인에 추가
+      const res = await fetch('/api/pipeline', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          jd_id: selectedJd,
+          candidate_id: selectedCandidate,
+          stage: '신규',
+          match_score: matchData.match_score,
+          match_reason: matchData.match_reason,
+          skill_match_rate: matchData.skill_match_rate,
+          experience_match: matchData.experience_match,
+          strength_for_jd: matchData.strength_for_jd,
+          concerns: matchData.concerns,
+          is_active: true,
+        }),
+      })
+
+      if (res.ok) {
+        // 새로고침
+        const updated = await fetch('/api/pipeline').then(r => r.json())
+        setPipeline(updated.pipeline ?? [])
+        setShowAddModal(false)
+        setSelectedJd('')
+        setSelectedCandidate('')
+      } else {
+        const err = await res.json()
+        alert(err.error)
+      }
+    } catch (e) {
+      alert('추가 중 오류가 발생했습니다.')
+    } finally {
+      setMatching(false)
+    }
+  }
+
+  async function updateStage(id: string, stage: string) {
+    await fetch(`/api/pipeline/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ stage }),
+    })
+    setPipeline(prev => prev.map(p => p.id === id ? { ...p, stage } : p))
+    if (selected?.id === id) setSelected(prev => prev ? { ...prev, stage } : prev)
+  }
+
+  async function deletePipeline(id: string) {
+    if (!confirm('파이프라인에서 제거할까요?')) return
+    await fetch(`/api/pipeline/${id}`, { method: 'DELETE' })
+    setPipeline(prev => prev.filter(p => p.id !== id))
+    if (selected?.id === id) setSelected(null)
+  }
+
+  const groupedByStage = STAGES.map(stage => ({
+    stage,
+    items: pipeline.filter(p => p.stage === stage)
+  }))
+
+  return (
+    <main className="page">
+      <div className="page-header">
+        <div>
+          <div className="page-title">채용 파이프라인</div>
+          <div className="page-sub">총 {pipeline.length}건 진행 중</div>
+        </div>
+        <button className="btn btn-primary" onClick={() => setShowAddModal(true)}>+ JD-후보자 추가</button>
+      </div>
+
+      {loading ? (
+        <div className="empty"><div className="spinner" style={{ margin: '0 auto 12px' }} /></div>
+      ) : pipeline.length === 0 ? (
+        <div className="empty">
+          <div className="empty-icon">🔄</div>
+          <div className="empty-text">진행 중인 파이프라인이 없습니다</div>
+          <div className="empty-sub">JD와 후보자를 매칭하여 채용을 시작하세요</div>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 16 }}>
+          {groupedByStage.map(({ stage, items }) => (
+            <div key={stage} style={{ minWidth: 280, flex: '0 0 auto' }}>
+              <div style={{
+                fontSize: 11,
+                fontWeight: 600,
+                color: 'var(--muted2)',
+                marginBottom: 12,
+                padding: '6px 12px',
+                background: 'var(--bg2)',
+                borderRadius: 8,
+                display: 'flex',
+                justifyContent: 'space-between'
+              }}>
+                <span>{stage}</span>
+                <span style={{ opacity: 0.6 }}>{items.length}</span>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {items.map(item => (
+                  <div
+                    key={item.id}
+                    className="card"
+                    style={{ padding: 14, cursor: 'pointer' }}
+                    onClick={() => setSelected(item)}
+                  >
+                    <div style={{ fontSize: 10, color: 'var(--muted2)', marginBottom: 4 }}>
+                      {item.job_descriptions.company ?? '회사명 미상'}
+                    </div>
+                    <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 6 }}>
+                      {item.job_descriptions.position}
+                    </div>
+                    <div style={{ fontSize: 12, color: 'var(--text)', marginBottom: 8 }}>
+                      👤 {item.candidates.name}
+                    </div>
+                    {item.match_score !== null && (
+                      <div style={{
+                        fontSize: 11,
+                        color: item.match_score >= 80 ? 'var(--success)' : item.match_score >= 60 ? 'var(--warn)' : 'var(--muted2)',
+                        marginBottom: 8
+                      }}>
+                        매칭: {item.match_score}점
+                      </div>
+                    )}
+                    {item.next_action && (
+                      <div style={{ fontSize: 10, color: 'var(--muted2)', marginTop: 8, paddingTop: 8, borderTop: '1px solid var(--border)' }}>
+                        📌 {item.next_action}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* 상세 모달 */}
+      {selected && (
+        <div className="overlay" onClick={() => setSelected(null)}>
+          <div className="modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <div>
+                <div style={{ fontSize: 12, color: 'var(--muted2)', marginBottom: 4 }}>
+                  {selected.job_descriptions.company ?? '회사명 미상'} / {selected.job_descriptions.position}
+                </div>
+                <div className="modal-title">{selected.candidates.name}</div>
+              </div>
+              <button className="modal-close" onClick={() => setSelected(null)}>✕</button>
+            </div>
+
+            <div style={{ display: 'flex', gap: 6, marginBottom: 20 }}>
+              <span className={`badge badge-${selected.stage}`}>{selected.stage}</span>
+              {selected.match_score !== null && (
+                <span className="badge badge-일반">매칭 {selected.match_score}점</span>
+              )}
+            </div>
+
+            <div className="form-group" style={{ marginBottom: 16 }}>
+              <label className="form-label">진행 단계</label>
+              <select
+                className="form-select"
+                value={selected.stage}
+                onChange={e => updateStage(selected.id, e.target.value)}
+              >
+                {STAGES.map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+            </div>
+
+            {selected.match_reason && (
+              <div style={{ marginBottom: 16 }}>
+                <div className="form-label">AI 매칭 분석</div>
+                <div style={{ fontSize: 13, lineHeight: 1.6 }}>{selected.match_reason}</div>
+              </div>
+            )}
+
+            {selected.strength_for_jd?.length > 0 && (
+              <div style={{ marginBottom: 16 }}>
+                <div className="form-label">강점</div>
+                <ul style={{ paddingLeft: 16, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  {selected.strength_for_jd.map((s, i) => (
+                    <li key={i} style={{ fontSize: 13, color: 'var(--success)' }}>{s}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {selected.concerns?.length > 0 && (
+              <div style={{ marginBottom: 16 }}>
+                <div className="form-label">우려사항</div>
+                <ul style={{ paddingLeft: 16, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  {selected.concerns.map((c, i) => (
+                    <li key={i} style={{ fontSize: 13, color: 'var(--warn)' }}>{c}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button className="btn btn-danger" onClick={() => { deletePipeline(selected.id); setSelected(null) }}>
+                파이프라인에서 제거
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 추가 모달 */}
+      {showAddModal && (
+        <div className="overlay" onClick={() => setShowAddModal(false)}>
+          <div className="modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <div className="modal-title">파이프라인에 추가</div>
+              <button className="modal-close" onClick={() => setShowAddModal(false)}>✕</button>
+            </div>
+
+            <div className="form-group" style={{ marginBottom: 16 }}>
+              <label className="form-label">JD 선택</label>
+              <select
+                className="form-select"
+                value={selectedJd}
+                onChange={e => setSelectedJd(e.target.value)}
+              >
+                <option value="">JD를 선택하세요</option>
+                {jds.filter(j => j.company).map(jd => (
+                  <option key={jd.id} value={jd.id}>
+                    {jd.company} - {jd.position}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="form-group" style={{ marginBottom: 20 }}>
+              <label className="form-label">후보자 선택</label>
+              <select
+                className="form-select"
+                value={selectedCandidate}
+                onChange={e => setSelectedCandidate(e.target.value)}
+              >
+                <option value="">후보자를 선택하세요</option>
+                {candidates.map(c => (
+                  <option key={c.id} value={c.id}>
+                    {c.name} ({c.current_company ?? '프리랜서'} / {c.current_position ?? '미상'})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <button
+              className="btn btn-primary"
+              style={{ width: '100%', justifyContent: 'center' }}
+              onClick={addToPipeline}
+              disabled={!selectedJd || !selectedCandidate || matching}
+            >
+              {matching ? <><div className="spinner" /> AI 매칭 분석 중...</> : '✅ 파이프라인에 추가'}
+            </button>
+          </div>
+        </div>
+      )}
+    </main>
+  )
+}
