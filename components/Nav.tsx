@@ -1,7 +1,9 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
+import { getProfile, signOut, type Profile } from '@/lib/auth'
 
 const links = [
   { href: '/', label: '대시보드' },
@@ -12,6 +14,19 @@ const links = [
 
 export default function Nav() {
   const path = usePathname()
+  const router = useRouter()
+  const [profile, setProfile] = useState<Profile | null>(null)
+
+  useEffect(() => {
+    getProfile().then(setProfile)
+  }, [])
+
+  async function handleSignOut() {
+    await signOut()
+    router.push('/login')
+    router.refresh()
+  }
+
   return (
     <nav className="nav">
       <Link href="/" className="nav-logo">
@@ -28,6 +43,22 @@ export default function Nav() {
           </Link>
         ))}
       </div>
+      {profile && (
+        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{ fontSize: 12, color: 'var(--muted2)' }}>
+            {profile.full_name || profile.email}
+            {profile.role === 'admin' && <span style={{ color: 'var(--accent)', marginLeft: 6 }}>관리자</span>}
+            {profile.role === 'client' && <span style={{ color: 'var(--muted2)', marginLeft: 6 }}>고객사</span>}
+          </div>
+          <button
+            className="btn btn-ghost btn-sm"
+            onClick={handleSignOut}
+            style={{ fontSize: 12 }}
+          >
+            로그아웃
+          </button>
+        </div>
+      )}
     </nav>
   )
 }
