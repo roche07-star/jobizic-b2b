@@ -12,6 +12,10 @@ const links = [
   { href: '/pipeline', label: '파이프라인' },
 ]
 
+const adminLinks = [
+  { href: '/admin', label: '관리자' },
+]
+
 export default function Nav() {
   const path = usePathname()
   const router = useRouter()
@@ -34,6 +38,15 @@ export default function Nav() {
       </Link>
       <div className="nav-links">
         {links.map(l => (
+          <Link
+            key={l.href}
+            href={l.href}
+            className={`nav-link${path === l.href || (l.href !== '/' && path.startsWith(l.href)) ? ' active' : ''}`}
+          >
+            {l.label}
+          </Link>
+        ))}
+        {profile?.role === 'admin' && adminLinks.map(l => (
           <Link
             key={l.href}
             href={l.href}
