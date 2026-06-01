@@ -44,6 +44,8 @@ export async function POST(req: NextRequest) {
     let invitedUser = null
     if (admin_email) {
       try {
+        console.log('[ORG CREATE] Inviting admin:', admin_email)
+
         const { data: authData, error: authError } = await supabaseAdmin.auth.admin.inviteUserByEmail(admin_email, {
           data: {
             full_name: admin_name,
@@ -53,9 +55,16 @@ export async function POST(req: NextRequest) {
           redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://jobizic-biz.vercel.app'}/auth/callback`,
         })
 
-        if (!authError && authData.user) {
+        console.log('[ORG CREATE] Invite response:', { authData, authError })
+
+        if (authError) {
+          console.error('[ORG CREATE] Invite error:', authError)
+          throw new Error(`초대 실패: ${authError.message}`)
+        }
+
+        if (authData?.user) {
           // Profile 업데이트
-          await supabaseAdmin
+          const { error: profileError } = await supabaseAdmin
             .from('profiles')
             .update({
               organization_id: organization.id,
@@ -64,10 +73,15 @@ export async function POST(req: NextRequest) {
             })
             .eq('id', authData.user.id)
 
+          if (profileError) {
+            console.error('[ORG CREATE] Profile update error:', profileError)
+          }
+
           invitedUser = { email: admin_email, name: admin_name }
+          console.log('[ORG CREATE] Admin invited successfully:', invitedUser)
         }
-      } catch (inviteError) {
-        console.error('Admin invite error:', inviteError)
+      } catch (inviteError: any) {
+        console.error('[ORG CREATE] Admin invite error:', inviteError)
         // 초대 실패해도 조직은 생성됨
       }
     }

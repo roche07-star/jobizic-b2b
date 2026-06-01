@@ -99,6 +99,8 @@ export default function AdminPage() {
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
 
+      console.log('Organization created:', data)
+
       setOrganizations([data.organization || data, ...organizations])
       setShowOrgForm(false)
       setOrgName('')
@@ -108,7 +110,11 @@ export default function AdminPage() {
       setOrgAdminName('')
 
       if (orgAdminEmail) {
-        alert(`✅ 조직이 생성되고 ${orgAdminEmail}로 초대 이메일이 발송되었습니다!`)
+        if (data.invited_user) {
+          alert(`✅ 조직이 생성되고 ${orgAdminEmail}로 초대 이메일이 발송되었습니다!`)
+        } else {
+          alert(`✅ 조직은 생성되었으나 초대 이메일 발송에 실패했습니다.\n수동으로 사용자를 추가해주세요.`)
+        }
       } else {
         alert('✅ 조직이 생성되었습니다!')
       }
