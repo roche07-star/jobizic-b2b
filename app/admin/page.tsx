@@ -107,6 +107,37 @@ export default function AdminPage() {
     }
   }
 
+  async function toggleOrgStatus(id: string, currentStatus: string) {
+    const newStatus = currentStatus === 'active' ? 'inactive' : 'active'
+    try {
+      const res = await fetch(`/api/admin/organizations/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus }),
+      })
+      if (!res.ok) throw new Error('상태 변경 실패')
+
+      setOrganizations(orgs => orgs.map(o => o.id === id ? { ...o, status: newStatus } : o))
+    } catch (e: any) {
+      alert(e.message)
+    }
+  }
+
+  async function deleteOrganization(id: string, name: string) {
+    if (!confirm(`"${name}" 조직을 삭제하시겠습니까?\n\n조직에 사용자가 있으면 삭제할 수 없습니다.`)) return
+
+    try {
+      const res = await fetch(`/api/admin/organizations/${id}`, { method: 'DELETE' })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error)
+
+      setOrganizations(orgs => orgs.filter(o => o.id !== id))
+      alert('✅ 조직이 삭제되었습니다.')
+    } catch (e: any) {
+      alert('❌ ' + e.message)
+    }
+  }
+
   async function createUser() {
     if (!userEmail) return
     setCreatingUser(true)
@@ -205,13 +236,29 @@ export default function AdminPage() {
         <div style={{ display: 'grid', gap: 8 }}>
           {organizations.map(org => (
             <div key={org.id} style={{ padding: 12, background: 'var(--bg3)', borderRadius: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div>
+              <div style={{ flex: 1 }}>
                 <div style={{ fontWeight: 600 }}>{org.name}</div>
                 <div style={{ fontSize: 12, color: 'var(--muted2)', marginTop: 2 }}>
                   {org.type} · {org.contact_email || '이메일 없음'}
                 </div>
               </div>
-              <span className={`badge badge-${org.status}`}>{org.status}</span>
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                <span className={`badge badge-${org.status}`}>{org.status}</span>
+                <button
+                  className={`btn btn-sm ${org.status === 'active' ? 'btn-ghost' : 'btn-primary'}`}
+                  onClick={() => toggleOrgStatus(org.id, org.status)}
+                  style={{ fontSize: 11 }}
+                >
+                  {org.status === 'active' ? '비활성화' : '활성화'}
+                </button>
+                <button
+                  className="btn btn-danger btn-sm"
+                  onClick={() => deleteOrganization(org.id, org.name)}
+                  style={{ fontSize: 11 }}
+                >
+                  삭제
+                </button>
+              </div>
             </div>
           ))}
         </div>
@@ -221,11 +268,18 @@ export default function AdminPage() {
       <div className="card">
         <div className="card-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span>사용자 관리 ({users.length})</span>
-          <button className="btn btn-primary btn-sm" onClick={() => setShowUserForm(!showUserForm)}>
+          <button
+            className="btn btn-primary btn-sm"
+            onClick={() => {
+              console.log('Button clicked! Current state:', showUserForm)
+              setShowUserForm(!showUserForm)
+            }}
+          >
             + 사용자 생성
           </button>
         </div>
 
+        {console.log('showUserForm:', showUserForm)}
         {showUserForm && (
           <div style={{ padding: 16, background: 'var(--bg3)', borderRadius: 8, marginBottom: 16 }}>
             <div className="form-row" style={{ marginBottom: 12 }}>
