@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { getProfile } from '@/lib/auth'
 
 interface JD {
   id: string
@@ -67,6 +68,14 @@ export default function PipelinePage() {
     setMatching(true)
 
     try {
+      // organization_id 가져오기
+      const profile = await getProfile()
+      if (!profile?.organization_id) {
+        alert('조직 정보가 없습니다. 관리자에게 문의하세요.')
+        setMatching(false)
+        return
+      }
+
       // AI 매칭 분석
       const jd = jds.find(j => j.id === selectedJd)
       const candidate = candidates.find(c => c.id === selectedCandidate)
@@ -93,6 +102,7 @@ export default function PipelinePage() {
           strength_for_jd: matchData.strength_for_jd,
           concerns: matchData.concerns,
           is_active: true,
+          organization_id: profile.organization_id,
         }),
       })
 

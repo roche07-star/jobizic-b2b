@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { getProfile } from '@/lib/auth'
 
 interface ParsedJD {
   company: string | null
@@ -54,10 +55,24 @@ export default function JDNewPage() {
     if (!parsed) return
     setSaving(true)
     try {
+      // organization_id 가져오기
+      const profile = await getProfile()
+      if (!profile?.organization_id) {
+        setError('조직 정보가 없습니다. 관리자에게 문의하세요.')
+        setSaving(false)
+        return
+      }
+
       const res = await fetch('/api/jd', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...parsed, raw_text: rawText, status: '검토중', source: '수동' }),
+        body: JSON.stringify({
+          ...parsed,
+          raw_text: rawText,
+          status: '검토중',
+          source: '수동',
+          organization_id: profile.organization_id
+        }),
       })
       const data = await res.json()
       if (!res.ok) { setError(data.error); return }
