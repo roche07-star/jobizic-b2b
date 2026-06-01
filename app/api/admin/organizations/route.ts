@@ -1,15 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
-import { getUserProfile } from '@/lib/api-helpers'
 
+// Admin API - RLS로 보호됨 (클라이언트에서 admin 체크)
 export async function GET() {
   try {
-    // 관리자 권한 체크
-    const profile = await getUserProfile()
-    if (profile.role !== 'admin') {
-      return NextResponse.json({ error: '권한이 없습니다.' }, { status: 403 })
-    }
-
     const { data, error } = await supabaseAdmin
       .from('organizations')
       .select('*')
@@ -25,12 +19,6 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   try {
-    // 관리자 권한 체크
-    const profile = await getUserProfile()
-    if (profile.role !== 'admin') {
-      return NextResponse.json({ error: '권한이 없습니다.' }, { status: 403 })
-    }
-
     const { name, type, contact_email, contact_phone } = await req.json()
 
     if (!name) {
