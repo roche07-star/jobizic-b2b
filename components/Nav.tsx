@@ -56,22 +56,22 @@ export default function Nav() {
           </Link>
         ))}
       </div>
-      {profile && (
-        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 12 }}>
+      <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 12 }}>
+        {profile && (
           <div style={{ fontSize: 12, color: 'var(--muted2)' }}>
             {profile.full_name || profile.email}
             {profile.role === 'admin' && <span style={{ color: 'var(--accent)', marginLeft: 6 }}>관리자</span>}
             {profile.role === 'client' && <span style={{ color: 'var(--muted2)', marginLeft: 6 }}>고객사</span>}
           </div>
-          <button
-            className="btn btn-ghost btn-sm"
-            onClick={handleSignOut}
-            style={{ fontSize: 12 }}
-          >
-            로그아웃
-          </button>
-        </div>
-      )}
+        )}
+        <button
+          className="btn btn-ghost btn-sm"
+          onClick={handleSignOut}
+          style={{ fontSize: 12 }}
+        >
+          로그아웃
+        </button>
+      </div>
     </nav>
   )
 }
