@@ -31,6 +31,11 @@ export default function Nav() {
     window.location.href = '/login' // 강제 새로고침
   }
 
+  // 로그인 페이지에서는 Nav 숨기기
+  if (path === '/login') {
+    return null
+  }
+
   return (
     <nav className="nav">
       <Link href="/" className="nav-logo">
