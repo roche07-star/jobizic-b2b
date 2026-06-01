@@ -4,9 +4,10 @@ import { supabaseAdmin } from '@/lib/supabase-admin'
 // 조직 상태 변경 (활성화/비활성화)
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await context.params
     const { status } = await req.json()
 
     if (!status || !['active', 'inactive'].includes(status)) {
@@ -16,7 +17,7 @@ export async function PATCH(
     const { data, error } = await supabaseAdmin
       .from('organizations')
       .update({ status })
-      .eq('id', params.id)
+      .eq('id', id)
       .select()
       .single()
 
@@ -31,14 +32,16 @@ export async function PATCH(
 // 조직 삭제
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await context.params
+
     // 조직에 속한 사용자가 있는지 확인
     const { data: users } = await supabaseAdmin
       .from('profiles')
       .select('id')
-      .eq('organization_id', params.id)
+      .eq('organization_id', id)
       .limit(1)
 
     if (users && users.length > 0) {
@@ -51,7 +54,7 @@ export async function DELETE(
     const { error } = await supabaseAdmin
       .from('organizations')
       .delete()
-      .eq('id', params.id)
+      .eq('id', id)
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
     return NextResponse.json({ success: true })
