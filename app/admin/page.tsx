@@ -42,7 +42,6 @@ export default function AdminPage() {
   // 사용자 생성 폼
   const [showUserForm, setShowUserForm] = useState(false)
   const [userEmail, setUserEmail] = useState('')
-  const [userPassword, setUserPassword] = useState('')
   const [userFullName, setUserFullName] = useState('')
   const [userRole, setUserRole] = useState('headhunter')
   const [userOrgId, setUserOrgId] = useState('')
@@ -109,7 +108,7 @@ export default function AdminPage() {
   }
 
   async function createUser() {
-    if (!userEmail || !userPassword) return
+    if (!userEmail) return
     setCreatingUser(true)
     setError(null)
     try {
@@ -118,7 +117,6 @@ export default function AdminPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           email: userEmail,
-          password: userPassword,
           full_name: userFullName,
           role: userRole,
           organization_id: userOrgId || null,
@@ -130,9 +128,9 @@ export default function AdminPage() {
       await loadData() // 새로고침
       setShowUserForm(false)
       setUserEmail('')
-      setUserPassword('')
       setUserFullName('')
       setUserOrgId('')
+      alert('✅ 초대 이메일이 발송되었습니다!')
     } catch (e: any) {
       setError(e.message)
     } finally {
@@ -236,15 +234,11 @@ export default function AdminPage() {
                 <input className="form-input" type="email" value={userEmail} onChange={e => setUserEmail(e.target.value)} placeholder="user@example.com" />
               </div>
               <div className="form-group" style={{ marginBottom: 0 }}>
-                <label className="form-label">비밀번호</label>
-                <input className="form-input" type="password" value={userPassword} onChange={e => setUserPassword(e.target.value)} placeholder="••••••••" />
-              </div>
-            </div>
-            <div className="form-row" style={{ marginBottom: 12 }}>
-              <div className="form-group" style={{ marginBottom: 0 }}>
                 <label className="form-label">이름</label>
                 <input className="form-input" value={userFullName} onChange={e => setUserFullName(e.target.value)} placeholder="홍길동" />
               </div>
+            </div>
+            <div className="form-row" style={{ marginBottom: 12 }}>
               <div className="form-group" style={{ marginBottom: 0 }}>
                 <label className="form-label">역할</label>
                 <select className="form-select" value={userRole} onChange={e => setUserRole(e.target.value)}>
@@ -253,19 +247,22 @@ export default function AdminPage() {
                   <option value="client">고객사</option>
                 </select>
               </div>
+              <div className="form-group" style={{ marginBottom: 0 }}>
+                <label className="form-label">조직</label>
+                <select className="form-select" value={userOrgId} onChange={e => setUserOrgId(e.target.value)}>
+                  <option value="">조직 선택 (선택사항)</option>
+                  {organizations.map(org => (
+                    <option key={org.id} value={org.id}>{org.name}</option>
+                  ))}
+                </select>
+              </div>
             </div>
-            <div className="form-group" style={{ marginBottom: 12 }}>
-              <label className="form-label">조직</label>
-              <select className="form-select" value={userOrgId} onChange={e => setUserOrgId(e.target.value)}>
-                <option value="">조직 선택 (선택사항)</option>
-                {organizations.map(org => (
-                  <option key={org.id} value={org.id}>{org.name}</option>
-                ))}
-              </select>
+            <div style={{ fontSize: 12, color: 'var(--muted2)', marginBottom: 12, padding: 10, background: 'var(--bg)', borderRadius: 6 }}>
+              📧 사용자에게 초대 이메일이 발송됩니다. 이메일 링크를 통해 비밀번호를 설정할 수 있습니다.
             </div>
             <div style={{ display: 'flex', gap: 8 }}>
-              <button className="btn btn-primary btn-sm" onClick={createUser} disabled={creatingUser || !userEmail || !userPassword}>
-                {creatingUser ? '생성 중...' : '생성'}
+              <button className="btn btn-primary btn-sm" onClick={createUser} disabled={creatingUser || !userEmail}>
+                {creatingUser ? '발송 중...' : '📧 초대 이메일 발송'}
               </button>
               <button className="btn btn-ghost btn-sm" onClick={() => setShowUserForm(false)}>취소</button>
             </div>

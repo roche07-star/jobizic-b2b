@@ -27,21 +27,20 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   try {
-    const { email, password, full_name, role, organization_id } = await req.json()
+    const { email, full_name, role, organization_id } = await req.json()
 
-    if (!email || !password) {
-      return NextResponse.json({ error: '이메일과 비밀번호는 필수입니다.' }, { status: 400 })
+    if (!email) {
+      return NextResponse.json({ error: '이메일은 필수입니다.' }, { status: 400 })
     }
 
-    // Supabase Auth로 사용자 생성
-    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
-      email,
-      password,
-      email_confirm: true, // 이메일 자동 confirm
-      user_metadata: {
+    // 이메일 초대 발송 (사용자가 직접 비밀번호 설정)
+    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
+      data: {
         full_name,
         role: role || 'headhunter',
+        organization_id,
       },
+      redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://jobizic-biz.vercel.app'}/auth/callback`,
     })
 
     if (authError) {
@@ -49,7 +48,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Profile 업데이트 (트리거로 생성되었으므로 업데이트만)
-    if (organization_id) {
+    if (authData.user) {
       const { error: profileError } = await supabaseAdmin
         .from('profiles')
         .update({
@@ -67,9 +66,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       id: authData.user.id,
       email: authData.user.email,
+      message: '초대 이메일이 발송되었습니다.',
     })
   } catch (e: any) {
     console.error('[admin/users POST]', e)
-    return NextResponse.json({ error: e.message || '생성 중 오류가 발생했습니다.' }, { status: 500 })
+    return NextResponse.json({ error: e.message || '초대 중 오류가 발생했습니다.' }, { status: 500 })
   }
 }
