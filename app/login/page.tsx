@@ -18,11 +18,10 @@ export default function LoginPage() {
 
     try {
       await signIn(email, password)
-      router.push('/')
-      router.refresh()
+      // 완전한 새로고침으로 모든 캐시 클리어
+      window.location.href = '/'
     } catch (err: any) {
       setError(err.message || '로그인에 실패했습니다.')
-    } finally {
       setLoading(false)
     }
   }

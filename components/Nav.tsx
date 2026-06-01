@@ -26,9 +26,9 @@ export default function Nav() {
   }, [])
 
   async function handleSignOut() {
+    setProfile(null) // 즉시 UI 클리어
     await signOut()
-    router.push('/login')
-    router.refresh()
+    window.location.href = '/login' // 강제 새로고침
   }
 
   return (

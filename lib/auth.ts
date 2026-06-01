@@ -21,6 +21,10 @@ export async function signIn(email: string, password: string) {
 }
 
 export async function signOut() {
+  // 캐시 완전 삭제
+  localStorage.clear()
+  sessionStorage.clear()
+
   const { error } = await supabase.auth.signOut()
   if (error) throw error
 }
