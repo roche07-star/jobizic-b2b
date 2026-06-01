@@ -38,7 +38,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('job_descriptions')
       .insert(body)
       .select('id')
