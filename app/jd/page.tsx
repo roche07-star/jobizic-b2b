@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { getProfile } from '@/lib/auth'
 
 interface JD {
   id: string
@@ -30,10 +31,21 @@ export default function JDPage() {
   const [selected, setSelected] = useState<JD | null>(null)
 
   useEffect(() => {
-    fetch('/api/jd')
-      .then(r => r.json())
-      .then(d => setJds(d.jds ?? []))
-      .finally(() => setLoading(false))
+    async function loadJDs() {
+      const profile = await getProfile()
+      if (!profile) return
+
+      const params = new URLSearchParams({
+        role: profile.role,
+        ...(profile.organization_id && { organization_id: profile.organization_id })
+      })
+
+      fetch(`/api/jd?${params}`)
+        .then(r => r.json())
+        .then(d => setJds(d.jds ?? []))
+        .finally(() => setLoading(false))
+    }
+    loadJDs()
   }, [])
 
   async function updateStatus(id: string, status: string) {
