@@ -355,7 +355,7 @@ export default function AdminPage() {
               <button className="btn btn-ghost btn-sm" onClick={() => setShowUserForm(false)}>취소</button>
             </div>
           </div>
-        ) : null}
+        )}
 
         <div style={{ display: 'grid', gap: 8 }}>
           {users.map(user => (
