@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import { supabaseAdmin } from '@/lib/supabase-admin'
 
-export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(_req: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = await params
-    const { data, error } = await supabase
+    const { id } = await context.params
+    const { data, error } = await supabaseAdmin
       .from('candidates')
       .select('*')
       .eq('id', id)
@@ -17,11 +17,11 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   }
 }
 
-export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function PATCH(req: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = await params
+    const { id } = await context.params
     const body = await req.json()
-    const { error } = await supabase
+    const { error } = await supabaseAdmin
       .from('candidates')
       .update(body)
       .eq('id', id)
@@ -33,10 +33,10 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   }
 }
 
-export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function DELETE(_req: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = await params
-    const { error } = await supabase
+    const { id } = await context.params
+    const { error } = await supabaseAdmin
       .from('candidates')
       .delete()
       .eq('id', id)
