@@ -194,6 +194,21 @@ export default function AdminPage() {
     }
   }
 
+  async function deleteUser(id: string, email: string) {
+    if (!confirm(`"${email}" 사용자를 삭제하시겠습니까?\n\n이 작업은 되돌릴 수 없습니다.`)) return
+
+    try {
+      const res = await fetch(`/api/admin/users/${id}`, { method: 'DELETE' })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error)
+
+      setUsers(users => users.filter(u => u.id !== id))
+      alert('✅ 사용자가 삭제되었습니다.')
+    } catch (e: any) {
+      alert('❌ ' + e.message)
+    }
+  }
+
   if (loading) {
     return (
       <main className="page">
@@ -371,16 +386,25 @@ export default function AdminPage() {
         <div style={{ display: 'grid', gap: 8 }}>
           {users.map(user => (
             <div key={user.id} style={{ padding: 12, background: 'var(--bg3)', borderRadius: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div>
+              <div style={{ flex: 1 }}>
                 <div style={{ fontWeight: 600 }}>{user.email}</div>
                 <div style={{ fontSize: 12, color: 'var(--muted2)', marginTop: 2 }}>
                   {user.full_name || '이름 없음'} · {user.role}
                   {user.organizations && ` · ${user.organizations.name}`}
                 </div>
               </div>
-              <span className={`badge ${user.is_active ? 'badge-활성' : 'badge-보류'}`}>
-                {user.is_active ? '활성' : '비활성'}
-              </span>
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                <span className={`badge ${user.is_active ? 'badge-활성' : 'badge-보류'}`}>
+                  {user.is_active ? '활성' : '비활성'}
+                </span>
+                <button
+                  className="btn btn-danger btn-sm"
+                  onClick={() => deleteUser(user.id, user.email)}
+                  style={{ fontSize: 11 }}
+                >
+                  삭제
+                </button>
+              </div>
             </div>
           ))}
         </div>
