@@ -44,22 +44,45 @@ export async function POST(req: NextRequest) {
     let invitedUser = null
     if (admin_email) {
       try {
-        console.log('[ORG CREATE] Inviting admin:', admin_email)
+        const isDev = process.env.DEV_MODE === 'true'
+        console.log('[ORG CREATE] Creating admin:', admin_email, 'DEV MODE:', isDev)
 
-        const { data: authData, error: authError } = await supabaseAdmin.auth.admin.inviteUserByEmail(admin_email, {
-          data: {
-            full_name: admin_name,
-            role: 'headhunter',
-            organization_id: organization.id,
-          },
-          redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://jobizic-biz.vercel.app'}/auth/callback`,
-        })
+        let authData, authError
 
-        console.log('[ORG CREATE] Invite response:', { authData, authError })
+        if (isDev) {
+          // 개발 모드: 임시 비밀번호로 바로 생성
+          const devPassword = process.env.DEV_DEFAULT_PASSWORD || 'test1234'
+          const result = await supabaseAdmin.auth.admin.createUser({
+            email: admin_email,
+            password: devPassword,
+            email_confirm: true,
+            user_metadata: {
+              full_name: admin_name,
+              role: 'headhunter',
+            },
+          })
+          authData = result.data
+          authError = result.error
+          console.log(`[ORG CREATE DEV] User created with password: ${devPassword}`)
+        } else {
+          // 프로덕션 모드: 이메일 초대
+          const result = await supabaseAdmin.auth.admin.inviteUserByEmail(admin_email, {
+            data: {
+              full_name: admin_name,
+              role: 'headhunter',
+              organization_id: organization.id,
+            },
+            redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://jobizic-biz.vercel.app'}/auth/callback`,
+          })
+          authData = result.data
+          authError = result.error
+        }
+
+        console.log('[ORG CREATE] Auth response:', { authData, authError })
 
         if (authError) {
-          console.error('[ORG CREATE] Invite error:', authError)
-          throw new Error(`초대 실패: ${authError.message}`)
+          console.error('[ORG CREATE] Auth error:', authError)
+          throw new Error(`사용자 생성 실패: ${authError.message}`)
         }
 
         if (authData?.user) {
@@ -77,12 +100,16 @@ export async function POST(req: NextRequest) {
             console.error('[ORG CREATE] Profile update error:', profileError)
           }
 
-          invitedUser = { email: admin_email, name: admin_name }
-          console.log('[ORG CREATE] Admin invited successfully:', invitedUser)
+          invitedUser = {
+            email: admin_email,
+            name: admin_name,
+            dev_password: isDev ? (process.env.DEV_DEFAULT_PASSWORD || 'test1234') : null
+          }
+          console.log('[ORG CREATE] Admin created successfully:', invitedUser)
         }
       } catch (inviteError: any) {
-        console.error('[ORG CREATE] Admin invite error:', inviteError)
-        // 초대 실패해도 조직은 생성됨
+        console.error('[ORG CREATE] Admin creation error:', inviteError)
+        // 사용자 생성 실패해도 조직은 생성됨
       }
     }
 

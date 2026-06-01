@@ -33,22 +33,44 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: '이메일은 필수입니다.' }, { status: 400 })
     }
 
-    // 이메일 초대 발송 (사용자가 직접 비밀번호 설정)
-    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
-      data: {
-        full_name,
-        role: role || 'headhunter',
-        organization_id,
-      },
-      redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://jobizic-biz.vercel.app'}/auth/callback`,
-    })
+    const isDev = process.env.DEV_MODE === 'true'
+    let authData, authError
+
+    if (isDev) {
+      // 개발 모드: 임시 비밀번호로 바로 생성 (이메일 발송 없음)
+      const devPassword = process.env.DEV_DEFAULT_PASSWORD || 'test1234'
+      const result = await supabaseAdmin.auth.admin.createUser({
+        email,
+        password: devPassword,
+        email_confirm: true,
+        user_metadata: {
+          full_name,
+          role: role || 'headhunter',
+        },
+      })
+      authData = result.data
+      authError = result.error
+      console.log(`[DEV MODE] User created with password: ${devPassword}`)
+    } else {
+      // 프로덕션 모드: 이메일 초대 발송
+      const result = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
+        data: {
+          full_name,
+          role: role || 'headhunter',
+          organization_id,
+        },
+        redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://jobizic-biz.vercel.app'}/auth/callback`,
+      })
+      authData = result.data
+      authError = result.error
+    }
 
     if (authError) {
       return NextResponse.json({ error: authError.message }, { status: 500 })
     }
 
     // Profile 업데이트 (트리거로 생성되었으므로 업데이트만)
-    if (authData.user) {
+    if (authData?.user) {
       const { error: profileError } = await supabaseAdmin
         .from('profiles')
         .update({
@@ -66,7 +88,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       id: authData.user.id,
       email: authData.user.email,
-      message: '초대 이메일이 발송되었습니다.',
+      message: isDev ? `사용자 생성 완료 (비밀번호: ${process.env.DEV_DEFAULT_PASSWORD || 'test1234'})` : '초대 이메일이 발송되었습니다.',
+      dev_mode: isDev,
     })
   } catch (e: any) {
     console.error('[admin/users POST]', e)

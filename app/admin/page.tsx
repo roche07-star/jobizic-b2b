@@ -111,9 +111,14 @@ export default function AdminPage() {
 
       if (orgAdminEmail) {
         if (data.invited_user) {
-          alert(`✅ 조직이 생성되고 ${orgAdminEmail}로 초대 이메일이 발송되었습니다!`)
+          const devPw = data.invited_user.dev_password
+          if (devPw) {
+            alert(`✅ [개발 모드] 조직 & 사용자 생성 완료!\n\n로그인 정보:\n이메일: ${orgAdminEmail}\n비밀번호: ${devPw}`)
+          } else {
+            alert(`✅ 조직이 생성되고 ${orgAdminEmail}로 초대 이메일이 발송되었습니다!`)
+          }
         } else {
-          alert(`✅ 조직은 생성되었으나 초대 이메일 발송에 실패했습니다.\n수동으로 사용자를 추가해주세요.`)
+          alert(`✅ 조직은 생성되었으나 사용자 생성에 실패했습니다.\n수동으로 사용자를 추가해주세요.`)
         }
       } else {
         alert('✅ 조직이 생성되었습니다!')
