@@ -37,6 +37,8 @@ export default function AdminPage() {
   const [orgType, setOrgType] = useState('headhunter')
   const [orgEmail, setOrgEmail] = useState('')
   const [orgPhone, setOrgPhone] = useState('')
+  const [orgAdminEmail, setOrgAdminEmail] = useState('') // 관리자 이메일
+  const [orgAdminName, setOrgAdminName] = useState('') // 관리자 이름
   const [creatingOrg, setCreatingOrg] = useState(false)
 
   // 사용자 생성 폼
@@ -90,16 +92,28 @@ export default function AdminPage() {
           type: orgType,
           contact_email: orgEmail,
           contact_phone: orgPhone,
+          admin_email: orgAdminEmail || null,
+          admin_name: orgAdminName || null,
         }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
 
-      setOrganizations([data, ...organizations])
+      setOrganizations([data.organization || data, ...organizations])
       setShowOrgForm(false)
       setOrgName('')
       setOrgEmail('')
       setOrgPhone('')
+      setOrgAdminEmail('')
+      setOrgAdminName('')
+
+      if (orgAdminEmail) {
+        alert(`✅ 조직이 생성되고 ${orgAdminEmail}로 초대 이메일이 발송되었습니다!`)
+      } else {
+        alert('✅ 조직이 생성되었습니다!')
+      }
+
+      await loadData() // 새로고침
     } catch (e: any) {
       setError(e.message)
     } finally {
@@ -220,13 +234,37 @@ export default function AdminPage() {
                 </select>
               </div>
               <div className="form-group" style={{ marginBottom: 0 }}>
-                <label className="form-label">이메일</label>
+                <label className="form-label">담당자 이메일</label>
                 <input className="form-input" type="email" value={orgEmail} onChange={e => setOrgEmail(e.target.value)} placeholder="contact@abc.com" />
               </div>
             </div>
+
+            <div style={{ marginTop: 16, marginBottom: 12, paddingTop: 16, borderTop: '1px solid var(--border)' }}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--muted2)', marginBottom: 8 }}>
+                👤 관리자 초대 (선택사항)
+              </div>
+            </div>
+
+            <div className="form-row" style={{ marginBottom: 12 }}>
+              <div className="form-group" style={{ marginBottom: 0 }}>
+                <label className="form-label">관리자 이메일</label>
+                <input className="form-input" type="email" value={orgAdminEmail} onChange={e => setOrgAdminEmail(e.target.value)} placeholder="admin@abc.com" />
+              </div>
+              <div className="form-group" style={{ marginBottom: 0 }}>
+                <label className="form-label">관리자 이름</label>
+                <input className="form-input" value={orgAdminName} onChange={e => setOrgAdminName(e.target.value)} placeholder="홍길동" />
+              </div>
+            </div>
+
+            {orgAdminEmail && (
+              <div style={{ fontSize: 11, color: 'var(--muted2)', marginBottom: 12, padding: 8, background: 'var(--bg)', borderRadius: 6 }}>
+                📧 {orgAdminEmail}로 초대 이메일이 자동 발송됩니다.
+              </div>
+            )}
+
             <div style={{ display: 'flex', gap: 8 }}>
               <button className="btn btn-primary btn-sm" onClick={createOrganization} disabled={creatingOrg || !orgName}>
-                {creatingOrg ? '생성 중...' : '생성'}
+                {creatingOrg ? '생성 중...' : '🏢 조직 생성' + (orgAdminEmail ? ' & 초대 발송' : '')}
               </button>
               <button className="btn btn-ghost btn-sm" onClick={() => setShowOrgForm(false)}>취소</button>
             </div>
@@ -270,16 +308,12 @@ export default function AdminPage() {
           <span>사용자 관리 ({users.length})</span>
           <button
             className="btn btn-primary btn-sm"
-            onClick={() => {
-              console.log('Button clicked! Current state:', showUserForm)
-              setShowUserForm(!showUserForm)
-            }}
+            onClick={() => setShowUserForm(!showUserForm)}
           >
             + 사용자 생성
           </button>
         </div>
 
-        {console.log('showUserForm:', showUserForm)}
         {showUserForm && (
           <div style={{ padding: 16, background: 'var(--bg3)', borderRadius: 8, marginBottom: 16 }}>
             <div className="form-row" style={{ marginBottom: 12 }}>
@@ -321,7 +355,7 @@ export default function AdminPage() {
               <button className="btn btn-ghost btn-sm" onClick={() => setShowUserForm(false)}>취소</button>
             </div>
           </div>
-        )}
+        ) : null}
 
         <div style={{ display: 'grid', gap: 8 }}>
           {users.map(user => (
