@@ -1,12 +1,8 @@
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
-import { cookies } from 'next/headers'
+import { supabaseAdmin } from './supabase-admin'
+import { supabase } from './supabase'
 
 export async function getAuthenticatedUser() {
-  const supabase = createRouteHandlerClient({ cookies })
-
-  const {
-    data: { session },
-  } = await supabase.auth.getSession()
+  const { data: { session } } = await supabase.auth.getSession()
 
   if (!session) {
     throw new Error('Unauthorized')
@@ -17,9 +13,8 @@ export async function getAuthenticatedUser() {
 
 export async function getUserProfile() {
   const user = await getAuthenticatedUser()
-  const supabase = createRouteHandlerClient({ cookies })
 
-  const { data: profile, error } = await supabase
+  const { data: profile, error } = await supabaseAdmin
     .from('profiles')
     .select('*')
     .eq('id', user.id)
