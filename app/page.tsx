@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { getProfile } from '@/lib/auth'
 
 interface JD {
   id: string
@@ -30,31 +31,42 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    Promise.all([
-      fetch('/api/jd').then(r => r.json()),
-      fetch('/api/candidates').then(r => r.json()),
-      fetch('/api/pipeline').then(r => r.json()),
-    ]).then(([jdData, candidateData, pipelineData]) => {
-      const jds = jdData.jds ?? []
-      const candidates = candidateData.candidates ?? []
-      const pipeline = pipelineData.pipeline ?? []
+    async function loadData() {
+      const profile = await getProfile()
+      if (!profile) return
 
-      // 이번 달 매칭 계산
-      const now = new Date()
-      const thisMonth = pipeline.filter((p: any) => {
-        const created = new Date(p.created_at)
-        return created.getMonth() === now.getMonth() && created.getFullYear() === now.getFullYear()
-      }).length
-
-      setStats({
-        totalJDs: jds.length,
-        totalCandidates: candidates.length,
-        thisMonthMatches: thisMonth,
-        activePipelines: pipeline.filter((p: any) => p.is_active).length,
+      const params = new URLSearchParams({
+        role: profile.role,
+        ...(profile.organization_id && { organization_id: profile.organization_id })
       })
 
-      setRecentJDs(jds.slice(0, 5))
-    }).finally(() => setLoading(false))
+      Promise.all([
+        fetch(`/api/jd?${params}`).then(r => r.json()),
+        fetch(`/api/candidates?${params}`).then(r => r.json()),
+        fetch(`/api/pipeline?${params}`).then(r => r.json()),
+      ]).then(([jdData, candidateData, pipelineData]) => {
+        const jds = jdData.jds ?? []
+        const candidates = candidateData.candidates ?? []
+        const pipeline = pipelineData.pipeline ?? []
+
+        // 이번 달 매칭 계산
+        const now = new Date()
+        const thisMonth = pipeline.filter((p: any) => {
+          const created = new Date(p.created_at)
+          return created.getMonth() === now.getMonth() && created.getFullYear() === now.getFullYear()
+        }).length
+
+        setStats({
+          totalJDs: jds.length,
+          totalCandidates: candidates.length,
+          thisMonthMatches: thisMonth,
+          activePipelines: pipeline.filter((p: any) => p.is_active).length,
+        })
+
+        setRecentJDs(jds.slice(0, 5))
+      }).finally(() => setLoading(false))
+    }
+    loadData()
   }, [])
 
   const statsData = [
