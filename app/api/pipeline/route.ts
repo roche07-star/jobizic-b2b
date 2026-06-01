@@ -1,13 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import { supabaseAdmin } from '@/lib/supabase-admin'
 
 export async function GET(req: NextRequest) {
   try {
+    const organizationId = req.nextUrl.searchParams.get('organization_id')
+    const role = req.nextUrl.searchParams.get('role')
     const jdId = req.nextUrl.searchParams.get('jd_id')
     const candidateId = req.nextUrl.searchParams.get('candidate_id')
     const stage = req.nextUrl.searchParams.get('stage')
 
-    let q = supabase
+    let q = supabaseAdmin
       .from('pipeline')
       .select(`
         *,
@@ -15,6 +17,11 @@ export async function GET(req: NextRequest) {
         candidates (id, name, email, current_company, current_position, status)
       `)
       .order('created_at', { ascending: false })
+
+    // Admin이 아니면 organization_id로 필터링
+    if (role !== 'admin' && organizationId) {
+      q = q.eq('organization_id', organizationId)
+    }
 
     if (jdId) q = q.eq('jd_id', jdId)
     if (candidateId) q = q.eq('candidate_id', candidateId)

@@ -1,15 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import { supabaseAdmin } from '@/lib/supabase-admin'
 
 export async function GET(req: NextRequest) {
   try {
+    const organizationId = req.nextUrl.searchParams.get('organization_id')
+    const role = req.nextUrl.searchParams.get('role')
     const status = req.nextUrl.searchParams.get('status')
     const search = req.nextUrl.searchParams.get('search')
 
-    let q = supabase
+    let q = supabaseAdmin
       .from('candidates')
       .select('*')
       .order('created_at', { ascending: false })
+
+    // Admin이 아니면 organization_id로 필터링
+    if (role !== 'admin' && organizationId) {
+      q = q.eq('organization_id', organizationId)
+    }
 
     if (status) q = q.eq('status', status)
     if (search) {

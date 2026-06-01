@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { getProfile } from '@/lib/auth'
 
 interface Candidate {
   id: string
@@ -36,10 +37,21 @@ export default function CandidatesPage() {
   const [selected, setSelected] = useState<Candidate | null>(null)
 
   useEffect(() => {
-    fetch('/api/candidates')
-      .then(r => r.json())
-      .then(d => setCandidates(d.candidates ?? []))
-      .finally(() => setLoading(false))
+    async function loadCandidates() {
+      const profile = await getProfile()
+      if (!profile) return
+
+      const params = new URLSearchParams({
+        role: profile.role,
+        ...(profile.organization_id && { organization_id: profile.organization_id })
+      })
+
+      fetch(`/api/candidates?${params}`)
+        .then(r => r.json())
+        .then(d => setCandidates(d.candidates ?? []))
+        .finally(() => setLoading(false))
+    }
+    loadCandidates()
   }, [])
 
   async function updateStatus(id: string, status: string) {

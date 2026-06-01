@@ -56,11 +56,22 @@ export default function PipelinePage() {
   const [matching, setMatching] = useState(false)
 
   useEffect(() => {
-    Promise.all([
-      fetch('/api/pipeline').then(r => r.json()).then(d => setPipeline(d.pipeline ?? [])),
-      fetch('/api/jd').then(r => r.json()).then(d => setJds(d.jds ?? [])),
-      fetch('/api/candidates').then(r => r.json()).then(d => setCandidates(d.candidates ?? []))
-    ]).finally(() => setLoading(false))
+    async function loadData() {
+      const profile = await getProfile()
+      if (!profile) return
+
+      const params = new URLSearchParams({
+        role: profile.role,
+        ...(profile.organization_id && { organization_id: profile.organization_id })
+      })
+
+      Promise.all([
+        fetch(`/api/pipeline?${params}`).then(r => r.json()).then(d => setPipeline(d.pipeline ?? [])),
+        fetch(`/api/jd?${params}`).then(r => r.json()).then(d => setJds(d.jds ?? [])),
+        fetch(`/api/candidates?${params}`).then(r => r.json()).then(d => setCandidates(d.candidates ?? []))
+      ]).finally(() => setLoading(false))
+    }
+    loadData()
   }, [])
 
   async function addToPipeline() {
