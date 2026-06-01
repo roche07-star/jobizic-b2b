@@ -65,24 +65,22 @@ export async function POST(req: NextRequest) {
       authError = result.error
     }
 
-    if (authError) {
-      return NextResponse.json({ error: authError.message }, { status: 500 })
+    if (authError || !authData?.user) {
+      return NextResponse.json({ error: authError?.message || '사용자 생성 실패' }, { status: 500 })
     }
 
     // Profile 업데이트 (트리거로 생성되었으므로 업데이트만)
-    if (authData?.user) {
-      const { error: profileError } = await supabaseAdmin
-        .from('profiles')
-        .update({
-          organization_id,
-          full_name,
-          role: role || 'headhunter',
-        })
-        .eq('id', authData.user.id)
+    const { error: profileError } = await supabaseAdmin
+      .from('profiles')
+      .update({
+        organization_id,
+        full_name,
+        role: role || 'headhunter',
+      })
+      .eq('id', authData.user.id)
 
-      if (profileError) {
-        console.error('Profile update error:', profileError)
-      }
+    if (profileError) {
+      console.error('Profile update error:', profileError)
     }
 
     return NextResponse.json({
