@@ -19,6 +19,7 @@ interface JD {
   search_strategy: string
   difficulty_reason: string
   keywords: string[]
+  raw_text: string | null
   created_at: string
 }
 
@@ -27,6 +28,7 @@ const STATUS_FILTERS = ['전체', '검토중', '활성', '마감', '보류']
 export default function JDPage() {
   const [jds, setJds] = useState<JD[]>([])
   const [loading, setLoading] = useState(true)
+  const [showRawText, setShowRawText] = useState(false)
   const [filter, setFilter] = useState('전체')
   const [selected, setSelected] = useState<JD | null>(null)
 
@@ -58,7 +60,12 @@ export default function JDPage() {
     if (!confirm('이 JD를 삭제할까요?')) return
     await fetch(`/api/jd/${id}`, { method: 'DELETE' })
     setJds(prev => prev.filter(j => j.id !== id))
-    if (selected?.id === id) setSelected(null)
+    if (selected?.id === id) closeModal()
+  }
+
+  function closeModal() {
+    closeModal()
+    setShowRawText(false)
   }
 
   const filtered = filter === '전체' ? jds : jds.filter(j => j.status === filter)
@@ -130,14 +137,14 @@ export default function JDPage() {
 
       {/* 상세 모달 */}
       {selected && (
-        <div className="overlay" onClick={() => setSelected(null)}>
+        <div className="overlay" onClick={() => closeModal()}>
           <div className="modal" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
               <div>
                 <div style={{ fontSize: 12, color: 'var(--muted2)', marginBottom: 4 }}>{selected.company ?? '회사명 미상'}</div>
                 <div className="modal-title">{selected.position}</div>
               </div>
-              <button className="modal-close" onClick={() => setSelected(null)}>✕</button>
+              <button className="modal-close" onClick={() => closeModal()}>✕</button>
             </div>
 
             <div style={{ display: 'flex', gap: 6, marginBottom: 20 }}>
@@ -184,6 +191,34 @@ export default function JDPage() {
               </div>
             )}
 
+            {selected.raw_text && (
+              <div style={{ marginBottom: 20 }}>
+                <button
+                  className="btn btn-ghost btn-sm"
+                  onClick={() => setShowRawText(!showRawText)}
+                  style={{ marginBottom: 12 }}
+                >
+                  {showRawText ? '원문 숨기기 ▲' : 'JD 원문 보기 ▼'}
+                </button>
+                {showRawText && (
+                  <div style={{
+                    padding: 16,
+                    background: 'var(--bg-2)',
+                    borderRadius: 8,
+                    border: '1px solid var(--border)',
+                    maxHeight: 400,
+                    overflowY: 'auto',
+                    whiteSpace: 'pre-wrap',
+                    fontSize: 12,
+                    lineHeight: 1.6,
+                    color: 'var(--text)'
+                  }}>
+                    {selected.raw_text}
+                  </div>
+                )}
+              </div>
+            )}
+
             <div style={{ display: 'flex', gap: 8 }}>
               {selected.status === '검토중' && (
                 <button className="btn btn-success" onClick={() => updateStatus(selected.id, '활성')}>활성화</button>
@@ -194,7 +229,7 @@ export default function JDPage() {
               {selected.status !== '검토중' && (
                 <button className="btn btn-ghost" onClick={() => updateStatus(selected.id, '검토중')}>검토중으로</button>
               )}
-              <button className="btn btn-danger" onClick={() => { deleteJD(selected.id); setSelected(null) }}>삭제</button>
+              <button className="btn btn-danger" onClick={() => { deleteJD(selected.id); closeModal() }}>삭제</button>
             </div>
           </div>
         </div>
