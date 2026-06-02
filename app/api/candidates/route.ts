@@ -10,7 +10,15 @@ export async function GET(req: NextRequest) {
 
     let q = supabaseAdmin
       .from('candidates')
-      .select('*')
+      .select(`
+        *,
+        pipeline:pipeline!pipeline_candidate_id_fkey(
+          id,
+          stage,
+          is_active,
+          job_descriptions(company, position)
+        )
+      `)
       .order('created_at', { ascending: false })
 
     // organization_id가 있으면 필터링 (admin도 특정 조직 선택 시 필터링)

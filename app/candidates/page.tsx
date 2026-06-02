@@ -4,6 +4,16 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { getProfile } from '@/lib/auth'
 
+interface PipelineInfo {
+  id: string
+  stage: string
+  is_active: boolean
+  job_descriptions: {
+    company: string | null
+    position: string
+  }
+}
+
 interface Candidate {
   id: string
   name: string
@@ -25,6 +35,7 @@ interface Candidate {
   status: string
   job_search_status: string
   created_at: string
+  pipeline?: PipelineInfo[]
 }
 
 const STATUS_FILTERS = ['전체', '검토중', '활성', '제안중', '합격', '보류']
@@ -181,6 +192,28 @@ export default function CandidatesPage() {
                 {candidate.market_value && <span className="jd-tag">💰 {candidate.market_value}</span>}
                 <span className={`jd-tag badge-${candidate.job_search_status}`}>{candidate.job_search_status}</span>
               </div>
+              {candidate.pipeline && candidate.pipeline.filter(p => p.is_active).length > 0 && (
+                <div style={{ marginTop: 10, display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                  {candidate.pipeline.filter(p => p.is_active).map(p => (
+                    <span
+                      key={p.id}
+                      style={{
+                        fontSize: 11,
+                        padding: '4px 8px',
+                        borderRadius: 4,
+                        background: 'var(--accent)',
+                        color: 'var(--bg)',
+                        fontWeight: 500,
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 4
+                      }}
+                    >
+                      🔄 {p.job_descriptions.company ?? '회사'} - {p.stage}
+                    </span>
+                  ))}
+                </div>
+              )}
               {(candidate.skills?.length > 0 || candidate.tech_stack?.length > 0) && (
                 <div className="skills-wrap" style={{ marginTop: 10 }}>
                   {[...(candidate.skills ?? []), ...(candidate.tech_stack ?? [])].slice(0, 5).map(s => <span key={s} className="skill-chip">{s}</span>)}
