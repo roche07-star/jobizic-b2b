@@ -13,8 +13,8 @@ export async function GET(req: NextRequest) {
       .select('*')
       .order('created_at', { ascending: false })
 
-    // Admin이 아니면 organization_id로 필터링
-    if (role !== 'admin' && organizationId) {
+    // organization_id가 있으면 필터링 (admin도 특정 조직 선택 시 필터링)
+    if (organizationId) {
       q = q.eq('organization_id', organizationId)
     }
 
