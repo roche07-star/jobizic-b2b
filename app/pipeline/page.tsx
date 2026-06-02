@@ -44,6 +44,11 @@ interface PipelineItem {
 
 const STAGES = ['신규', '서류검토', '1차면접', '2차면접', '최종면접', '처우협의', '합격', '불합격']
 
+interface Organization {
+  id: string
+  name: string
+}
+
 export default function PipelinePage() {
   const [pipeline, setPipeline] = useState<PipelineItem[]>([])
   const [jds, setJds] = useState<JD[]>([])
@@ -54,6 +59,25 @@ export default function PipelinePage() {
   const [selectedJd, setSelectedJd] = useState('')
   const [selectedCandidate, setSelectedCandidate] = useState('')
   const [matching, setMatching] = useState(false)
+  const [isAdmin, setIsAdmin] = useState(false)
+  const [organizations, setOrganizations] = useState<Organization[]>([])
+  const [selectedOrgId, setSelectedOrgId] = useState<string>('전체')
+
+  useEffect(() => {
+    async function loadOrganizations() {
+      const profile = await getProfile()
+      if (!profile) return
+
+      setIsAdmin(profile.role === 'admin')
+
+      if (profile.role === 'admin') {
+        const res = await fetch('/api/admin/organizations')
+        const data = await res.json()
+        setOrganizations(data.organizations ?? [])
+      }
+    }
+    loadOrganizations()
+  }, [])
 
   useEffect(() => {
     async function loadData() {
@@ -62,7 +86,8 @@ export default function PipelinePage() {
 
       const params = new URLSearchParams({
         role: profile.role,
-        ...(profile.organization_id && { organization_id: profile.organization_id })
+        ...(profile.role === 'admin' && selectedOrgId !== '전체' && { organization_id: selectedOrgId }),
+        ...(profile.role !== 'admin' && profile.organization_id && { organization_id: profile.organization_id })
       })
 
       Promise.all([
@@ -72,7 +97,7 @@ export default function PipelinePage() {
       ]).finally(() => setLoading(false))
     }
     loadData()
-  }, [])
+  }, [selectedOrgId])
 
   async function addToPipeline() {
     if (!selectedJd || !selectedCandidate) return
@@ -164,7 +189,28 @@ export default function PipelinePage() {
           <div className="page-title">채용 파이프라인</div>
           <div className="page-sub">총 {pipeline.length}건 진행 중</div>
         </div>
-        <button className="btn btn-primary" onClick={() => setShowAddModal(true)}>+ JD-후보자 추가</button>
+        <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+          {isAdmin && organizations.length > 0 && (
+            <select
+              value={selectedOrgId}
+              onChange={(e) => setSelectedOrgId(e.target.value)}
+              style={{
+                padding: '8px 12px',
+                borderRadius: 6,
+                border: '1px solid var(--border)',
+                background: 'var(--bg-2)',
+                color: 'var(--text)',
+                fontSize: 13
+              }}
+            >
+              <option value="전체">전체 조직</option>
+              {organizations.map(org => (
+                <option key={org.id} value={org.id}>{org.name}</option>
+              ))}
+            </select>
+          )}
+          <button className="btn btn-primary" onClick={() => setShowAddModal(true)}>+ JD-후보자 추가</button>
+        </div>
       </div>
 
       {loading ? (

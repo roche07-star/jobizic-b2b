@@ -29,12 +29,36 @@ interface Candidate {
 
 const STATUS_FILTERS = ['전체', '검토중', '활성', '제안중', '합격', '보류']
 
+interface Organization {
+  id: string
+  name: string
+}
+
 export default function CandidatesPage() {
   const [candidates, setCandidates] = useState<Candidate[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('전체')
   const [search, setSearch] = useState('')
   const [selected, setSelected] = useState<Candidate | null>(null)
+  const [isAdmin, setIsAdmin] = useState(false)
+  const [organizations, setOrganizations] = useState<Organization[]>([])
+  const [selectedOrgId, setSelectedOrgId] = useState<string>('전체')
+
+  useEffect(() => {
+    async function loadOrganizations() {
+      const profile = await getProfile()
+      if (!profile) return
+
+      setIsAdmin(profile.role === 'admin')
+
+      if (profile.role === 'admin') {
+        const res = await fetch('/api/admin/organizations')
+        const data = await res.json()
+        setOrganizations(data.organizations ?? [])
+      }
+    }
+    loadOrganizations()
+  }, [])
 
   useEffect(() => {
     async function loadCandidates() {
@@ -43,7 +67,8 @@ export default function CandidatesPage() {
 
       const params = new URLSearchParams({
         role: profile.role,
-        ...(profile.organization_id && { organization_id: profile.organization_id })
+        ...(profile.role === 'admin' && selectedOrgId !== '전체' && { organization_id: selectedOrgId }),
+        ...(profile.role !== 'admin' && profile.organization_id && { organization_id: profile.organization_id })
       })
 
       fetch(`/api/candidates?${params}`)
@@ -52,7 +77,7 @@ export default function CandidatesPage() {
         .finally(() => setLoading(false))
     }
     loadCandidates()
-  }, [])
+  }, [selectedOrgId])
 
   async function updateStatus(id: string, status: string) {
     await fetch(`/api/candidates/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status }) })
@@ -84,9 +109,30 @@ export default function CandidatesPage() {
           <div className="page-title">후보자 관리</div>
           <div className="page-sub">총 {candidates.length}명</div>
         </div>
-        <Link href="/candidates/new">
-          <button className="btn btn-primary">+ 후보자 등록</button>
-        </Link>
+        <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+          {isAdmin && organizations.length > 0 && (
+            <select
+              value={selectedOrgId}
+              onChange={(e) => setSelectedOrgId(e.target.value)}
+              style={{
+                padding: '8px 12px',
+                borderRadius: 6,
+                border: '1px solid var(--border)',
+                background: 'var(--bg-2)',
+                color: 'var(--text)',
+                fontSize: 13
+              }}
+            >
+              <option value="전체">전체 조직</option>
+              {organizations.map(org => (
+                <option key={org.id} value={org.id}>{org.name}</option>
+              ))}
+            </select>
+          )}
+          <Link href="/candidates/new">
+            <button className="btn btn-primary">+ 후보자 등록</button>
+          </Link>
+        </div>
       </div>
 
       <div style={{ marginBottom: 16 }}>

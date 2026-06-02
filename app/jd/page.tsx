@@ -25,12 +25,36 @@ interface JD {
 
 const STATUS_FILTERS = ['전체', '검토중', '활성', '마감', '보류']
 
+interface Organization {
+  id: string
+  name: string
+}
+
 export default function JDPage() {
   const [jds, setJds] = useState<JD[]>([])
   const [loading, setLoading] = useState(true)
   const [showRawText, setShowRawText] = useState(false)
   const [filter, setFilter] = useState('전체')
   const [selected, setSelected] = useState<JD | null>(null)
+  const [isAdmin, setIsAdmin] = useState(false)
+  const [organizations, setOrganizations] = useState<Organization[]>([])
+  const [selectedOrgId, setSelectedOrgId] = useState<string>('전체')
+
+  useEffect(() => {
+    async function loadOrganizations() {
+      const profile = await getProfile()
+      if (!profile) return
+
+      setIsAdmin(profile.role === 'admin')
+
+      if (profile.role === 'admin') {
+        const res = await fetch('/api/admin/organizations')
+        const data = await res.json()
+        setOrganizations(data.organizations ?? [])
+      }
+    }
+    loadOrganizations()
+  }, [])
 
   useEffect(() => {
     async function loadJDs() {
@@ -39,7 +63,8 @@ export default function JDPage() {
 
       const params = new URLSearchParams({
         role: profile.role,
-        ...(profile.organization_id && { organization_id: profile.organization_id })
+        ...(profile.role === 'admin' && selectedOrgId !== '전체' && { organization_id: selectedOrgId }),
+        ...(profile.role !== 'admin' && profile.organization_id && { organization_id: profile.organization_id })
       })
 
       fetch(`/api/jd?${params}`)
@@ -48,7 +73,7 @@ export default function JDPage() {
         .finally(() => setLoading(false))
     }
     loadJDs()
-  }, [])
+  }, [selectedOrgId])
 
   async function updateStatus(id: string, status: string) {
     await fetch(`/api/jd/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status }) })
@@ -77,9 +102,30 @@ export default function JDPage() {
           <div className="page-title">JD 관리</div>
           <div className="page-sub">총 {jds.length}건</div>
         </div>
-        <Link href="/jd/new">
-          <button className="btn btn-primary">+ JD 등록</button>
-        </Link>
+        <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+          {isAdmin && organizations.length > 0 && (
+            <select
+              value={selectedOrgId}
+              onChange={(e) => setSelectedOrgId(e.target.value)}
+              style={{
+                padding: '8px 12px',
+                borderRadius: 6,
+                border: '1px solid var(--border)',
+                background: 'var(--bg-2)',
+                color: 'var(--text)',
+                fontSize: 13
+              }}
+            >
+              <option value="전체">전체 조직</option>
+              {organizations.map(org => (
+                <option key={org.id} value={org.id}>{org.name}</option>
+              ))}
+            </select>
+          )}
+          <Link href="/jd/new">
+            <button className="btn btn-primary">+ JD 등록</button>
+          </Link>
+        </div>
       </div>
 
       <div className="filter-bar">
