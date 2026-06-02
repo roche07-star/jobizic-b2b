@@ -123,7 +123,7 @@ export default function PipelinePage() {
       })
       const matchData = await matchRes.json()
 
-      // 파이프라인에 추가
+      // 프로세스에 추가
       const res = await fetch('/api/pipeline', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -171,7 +171,7 @@ export default function PipelinePage() {
   }
 
   async function deletePipeline(id: string) {
-    if (!confirm('파이프라인에서 제거할까요?')) return
+    if (!confirm('프로세스에서 제거할까요?')) return
     await fetch(`/api/pipeline/${id}`, { method: 'DELETE' })
     setPipeline(prev => prev.filter(p => p.id !== id))
     if (selected?.id === id) setSelected(null)
@@ -186,7 +186,7 @@ export default function PipelinePage() {
     <main className="page">
       <div className="page-header">
         <div>
-          <div className="page-title">채용 파이프라인</div>
+          <div className="page-title">채용 프로세스</div>
           <div className="page-sub">총 {pipeline.length}건 진행 중</div>
         </div>
         <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
@@ -220,7 +220,7 @@ export default function PipelinePage() {
       ) : pipeline.length === 0 ? (
         <div className="empty">
           <div className="empty-icon">🔄</div>
-          <div className="empty-text">진행 중인 파이프라인이 없습니다</div>
+          <div className="empty-text">진행 중인 프로세스이 없습니다</div>
           <div className="empty-sub">JD와 후보자를 매칭하여 채용을 시작하세요</div>
         </div>
       ) : (
@@ -343,7 +343,7 @@ export default function PipelinePage() {
 
             <div style={{ display: 'flex', gap: 8 }}>
               <button className="btn btn-danger" onClick={() => { deletePipeline(selected.id); setSelected(null) }}>
-                파이프라인에서 제거
+                프로세스에서 제거
               </button>
             </div>
           </div>
@@ -355,7 +355,7 @@ export default function PipelinePage() {
         <div className="overlay" onClick={() => setShowAddModal(false)}>
           <div className="modal" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
-              <div className="modal-title">파이프라인에 추가</div>
+              <div className="modal-title">프로세스에 추가</div>
               <button className="modal-close" onClick={() => setShowAddModal(false)}>✕</button>
             </div>
 
@@ -397,7 +397,7 @@ export default function PipelinePage() {
               onClick={addToPipeline}
               disabled={!selectedJd || !selectedCandidate || matching}
             >
-              {matching ? <><div className="spinner" /> AI 매칭 분석 중...</> : '✅ 파이프라인에 추가'}
+              {matching ? <><div className="spinner" /> AI 매칭 분석 중...</> : '✅ 프로세스에 추가'}
             </button>
           </div>
         </div>

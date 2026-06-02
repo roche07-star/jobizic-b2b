@@ -9,7 +9,7 @@ const links = [
   { href: '/', label: '대시보드' },
   { href: '/jd', label: 'JD 관리' },
   { href: '/candidates', label: '후보자' },
-  { href: '/pipeline', label: '파이프라인' },
+  { href: '/pipeline', label: '채용 프로세스' },
 ]
 
 const adminLinks = [

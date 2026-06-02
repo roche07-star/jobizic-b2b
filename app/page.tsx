@@ -156,7 +156,7 @@ export default function Dashboard() {
             </Link>
             <Link href="/pipeline">
               <button className="btn btn-ghost" style={{ width: '100%', justifyContent: 'center' }}>
-                🔄 채용 파이프라인
+                🔄 채용 프로세스
               </button>
             </Link>
           </div>
