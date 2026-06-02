@@ -36,6 +36,15 @@ interface Candidate {
   job_search_status: string
   created_at: string
   pipeline?: PipelineInfo[]
+  organization?: {
+    id: string
+    name: string
+  }
+  created_by_user?: {
+    id: string
+    full_name: string | null
+    email: string
+  }
 }
 
 const STATUS_FILTERS = ['전체', '검토중', '활성', '제안중', '합격', '보류']
@@ -179,7 +188,31 @@ export default function CandidatesPage() {
             <div key={candidate.id} className="jd-card" onClick={() => setSelected(candidate)}>
               <div className="jd-card-top">
                 <div className="jd-company">{candidate.current_company ?? '프리랜서'}</div>
-                <div style={{ display: 'flex', gap: 4 }}>
+                <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                  {candidate.organization && (
+                    <span style={{
+                      fontSize: 11,
+                      padding: '2px 6px',
+                      borderRadius: 3,
+                      background: 'var(--accent)',
+                      color: 'var(--bg)',
+                      fontWeight: 500
+                    }}>
+                      🏢 {candidate.organization.name}
+                    </span>
+                  )}
+                  {candidate.created_by_user && (
+                    <span style={{
+                      fontSize: 11,
+                      padding: '2px 6px',
+                      borderRadius: 3,
+                      background: 'var(--muted2)',
+                      color: 'var(--bg)',
+                      fontWeight: 500
+                    }}>
+                      👤 {candidate.created_by_user.full_name || candidate.created_by_user.email}
+                    </span>
+                  )}
                   <span className={`badge badge-${candidate.status}`}>{candidate.status}</span>
                 </div>
               </div>
