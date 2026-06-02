@@ -115,13 +115,15 @@ export default function Dashboard() {
             style={{
               padding: '8px 12px',
               borderRadius: 6,
-              border: '1px solid var(--border)',
-              background: 'var(--bg-2)',
-              color: 'var(--text)',
-              fontSize: 13
+              border: '2px solid var(--accent)',
+              background: 'var(--bg)',
+              color: 'var(--accent)',
+              fontSize: 13,
+              fontWeight: 500,
+              cursor: 'pointer'
             }}
           >
-            <option value="전체">전체 조직</option>
+            <option value="전체">🏢 전체 조직</option>
             {organizations.map(org => (
               <option key={org.id} value={org.id}>{org.name}</option>
             ))}
