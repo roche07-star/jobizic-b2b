@@ -201,18 +201,6 @@ export default function CandidatesPage() {
                       🏢 {candidate.organization.name}
                     </span>
                   )}
-                  {candidate.created_by_user && (
-                    <span style={{
-                      fontSize: 11,
-                      padding: '2px 6px',
-                      borderRadius: 3,
-                      background: 'var(--muted2)',
-                      color: 'var(--bg)',
-                      fontWeight: 500
-                    }}>
-                      👤 {candidate.created_by_user.full_name || candidate.created_by_user.email}
-                    </span>
-                  )}
                   <span className={`badge badge-${candidate.status}`}>{candidate.status}</span>
                 </div>
               </div>
