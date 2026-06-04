@@ -64,6 +64,12 @@ export default function Nav() {
       <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 12 }}>
         {profile && (
           <div style={{ fontSize: 12, color: 'var(--muted2)' }}>
+            {profile.organization && (
+              <span style={{ color: 'var(--accent)', fontWeight: 500 }}>
+                {profile.organization.name}
+              </span>
+            )}
+            {profile.organization && <span style={{ margin: '0 6px' }}>·</span>}
             {profile.full_name || profile.email}
             {profile.role === 'admin' && <span style={{ color: 'var(--accent)', marginLeft: 6 }}>관리자</span>}
             {profile.role === 'client' && <span style={{ color: 'var(--muted2)', marginLeft: 6 }}>고객사</span>}

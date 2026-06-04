@@ -9,6 +9,10 @@ export interface Profile {
   client_company_name: string | null
   allowed_jd_ids: string[] | null
   is_active: boolean
+  organization?: {
+    id: string
+    name: string
+  } | null
 }
 
 export async function signIn(email: string, password: string) {
@@ -40,7 +44,10 @@ export async function getProfile(): Promise<Profile | null> {
 
   const { data, error } = await supabase
     .from('profiles')
-    .select('*')
+    .select(`
+      *,
+      organization:organizations(id, name)
+    `)
     .eq('id', session.user.id)
     .single()
 
