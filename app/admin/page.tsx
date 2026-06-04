@@ -9,6 +9,7 @@ interface Organization {
   name: string
   type: string
   contact_email: string
+  contact_phone?: string
   status: string
   created_at: string
 }
@@ -40,6 +41,15 @@ export default function AdminPage() {
   const [orgAdminEmail, setOrgAdminEmail] = useState('') // 관리자 이메일
   const [orgAdminName, setOrgAdminName] = useState('') // 관리자 이름
   const [creatingOrg, setCreatingOrg] = useState(false)
+
+  // 조직 수정 폼
+  const [editingOrg, setEditingOrg] = useState<Organization | null>(null)
+  const [editOrgName, setEditOrgName] = useState('')
+  const [editOrgType, setEditOrgType] = useState('')
+  const [editOrgEmail, setEditOrgEmail] = useState('')
+  const [editOrgPhone, setEditOrgPhone] = useState('')
+  const [editOrgStatus, setEditOrgStatus] = useState('')
+  const [updatingOrg, setUpdatingOrg] = useState(false)
 
   // 사용자 생성 폼
   const [showUserForm, setShowUserForm] = useState(false)
@@ -137,6 +147,44 @@ export default function AdminPage() {
       setError(e.message)
     } finally {
       setCreatingOrg(false)
+    }
+  }
+
+  function startEditOrg(org: Organization) {
+    setEditingOrg(org)
+    setEditOrgName(org.name)
+    setEditOrgType(org.type)
+    setEditOrgEmail(org.contact_email || '')
+    setEditOrgPhone(org.contact_phone || '')
+    setEditOrgStatus(org.status)
+  }
+
+  async function updateOrganization() {
+    if (!editingOrg) return
+    setUpdatingOrg(true)
+    setError(null)
+    try {
+      const res = await fetch(`/api/admin/organizations/${editingOrg.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: editOrgName,
+          type: editOrgType,
+          contact_email: editOrgEmail,
+          contact_phone: editOrgPhone,
+          status: editOrgStatus,
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error)
+
+      await loadData() // 새로고침
+      setEditingOrg(null)
+      alert('✅ 조직 정보가 수정되었습니다!')
+    } catch (e: any) {
+      setError(e.message)
+    } finally {
+      setUpdatingOrg(false)
     }
   }
 
@@ -353,7 +401,14 @@ export default function AdminPage() {
               <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                 <span className={`badge badge-${org.status}`}>{org.status}</span>
                 <button
-                  className={`btn btn-sm ${org.status === 'active' ? 'btn-ghost' : 'btn-primary'}`}
+                  className="btn btn-primary btn-sm"
+                  onClick={() => startEditOrg(org)}
+                  style={{ fontSize: 11 }}
+                >
+                  수정
+                </button>
+                <button
+                  className={`btn btn-sm ${org.status === 'active' ? 'btn-ghost' : 'btn-success'}`}
                   onClick={() => toggleOrgStatus(org.id, org.status)}
                   style={{ fontSize: 11 }}
                 >
@@ -460,6 +515,67 @@ export default function AdminPage() {
           ))}
         </div>
       </div>
+
+      {/* 조직 수정 모달 */}
+      {editingOrg && (
+        <div className="overlay" onClick={() => setEditingOrg(null)}>
+          <div className="modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <div>
+                <div className="modal-title">조직 정보 수정</div>
+                <div style={{ fontSize: 12, color: 'var(--muted2)', marginTop: 4 }}>{editingOrg.name}</div>
+              </div>
+              <button className="modal-close" onClick={() => setEditingOrg(null)}>✕</button>
+            </div>
+
+            <div className="form-group" style={{ marginBottom: 12 }}>
+              <label className="form-label">조직명</label>
+              <input className="form-input" value={editOrgName} onChange={e => setEditOrgName(e.target.value)} placeholder="ABC 써치펌" />
+            </div>
+
+            <div className="form-row" style={{ marginBottom: 12 }}>
+              <div className="form-group" style={{ marginBottom: 0 }}>
+                <label className="form-label">타입</label>
+                <select className="form-select" value={editOrgType} onChange={e => setEditOrgType(e.target.value)}>
+                  <option value="headhunter">헤드헌터</option>
+                  <option value="enterprise">기업</option>
+                </select>
+              </div>
+              <div className="form-group" style={{ marginBottom: 0 }}>
+                <label className="form-label">상태</label>
+                <select className="form-select" value={editOrgStatus} onChange={e => setEditOrgStatus(e.target.value)}>
+                  <option value="active">활성</option>
+                  <option value="inactive">비활성</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="form-row" style={{ marginBottom: 12 }}>
+              <div className="form-group" style={{ marginBottom: 0 }}>
+                <label className="form-label">담당자 이메일</label>
+                <input className="form-input" type="email" value={editOrgEmail} onChange={e => setEditOrgEmail(e.target.value)} placeholder="contact@abc.com" />
+              </div>
+              <div className="form-group" style={{ marginBottom: 0 }}>
+                <label className="form-label">전화번호</label>
+                <input className="form-input" value={editOrgPhone} onChange={e => setEditOrgPhone(e.target.value)} placeholder="02-1234-5678" />
+              </div>
+            </div>
+
+            {error && (
+              <div style={{ padding: 12, background: 'rgba(255,107,107,0.1)', border: '1px solid var(--danger)', borderRadius: 8, marginBottom: 16, color: 'var(--danger)', fontSize: 13 }}>
+                {error}
+              </div>
+            )}
+
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button className="btn btn-primary" onClick={updateOrganization} disabled={updatingOrg || !editOrgName}>
+                {updatingOrg ? '수정 중...' : '✅ 저장'}
+              </button>
+              <button className="btn btn-ghost" onClick={() => setEditingOrg(null)}>취소</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 사용자 수정 모달 */}
       {editingUser && (
