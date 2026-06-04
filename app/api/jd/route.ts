@@ -12,7 +12,7 @@ export async function GET(req: NextRequest) {
       .from('job_descriptions')
       .select(`
         *,
-        created_by_user:profiles!job_descriptions_created_by_fkey(id, full_name, email)
+        created_by_user:profiles!fk_jd_created_by_profile(id, full_name, email)
       `)
       .order('created_at', { ascending: false })
 

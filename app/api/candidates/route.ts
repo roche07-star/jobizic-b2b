@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
       .select(`
         *,
         organization:organizations(id, name),
-        created_by_user:profiles!candidates_created_by_fkey(id, full_name, email),
+        created_by_user:profiles!fk_candidates_created_by_profile(id, full_name, email),
         pipeline:pipeline!pipeline_candidate_id_fkey(
           id,
           stage,
