@@ -49,6 +49,14 @@ export default function AdminPage() {
   const [userOrgId, setUserOrgId] = useState('')
   const [creatingUser, setCreatingUser] = useState(false)
 
+  // 사용자 수정 폼
+  const [editingUser, setEditingUser] = useState<User | null>(null)
+  const [editFullName, setEditFullName] = useState('')
+  const [editRole, setEditRole] = useState('')
+  const [editOrgId, setEditOrgId] = useState('')
+  const [editIsActive, setEditIsActive] = useState(true)
+  const [updatingUser, setUpdatingUser] = useState(false)
+
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -191,6 +199,42 @@ export default function AdminPage() {
       setError(e.message)
     } finally {
       setCreatingUser(false)
+    }
+  }
+
+  function startEditUser(user: User) {
+    setEditingUser(user)
+    setEditFullName(user.full_name || '')
+    setEditRole(user.role)
+    setEditOrgId(user.organization_id || '')
+    setEditIsActive(user.is_active)
+  }
+
+  async function updateUser() {
+    if (!editingUser) return
+    setUpdatingUser(true)
+    setError(null)
+    try {
+      const res = await fetch(`/api/admin/users/${editingUser.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          full_name: editFullName,
+          role: editRole,
+          organization_id: editOrgId || null,
+          is_active: editIsActive,
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error)
+
+      await loadData() // 새로고침
+      setEditingUser(null)
+      alert('✅ 사용자 정보가 수정되었습니다!')
+    } catch (e: any) {
+      setError(e.message)
+    } finally {
+      setUpdatingUser(false)
     }
   }
 
@@ -398,6 +442,13 @@ export default function AdminPage() {
                   {user.is_active ? '활성' : '비활성'}
                 </span>
                 <button
+                  className="btn btn-primary btn-sm"
+                  onClick={() => startEditUser(user)}
+                  style={{ fontSize: 11 }}
+                >
+                  수정
+                </button>
+                <button
                   className="btn btn-danger btn-sm"
                   onClick={() => deleteUser(user.id, user.email)}
                   style={{ fontSize: 11 }}
@@ -409,6 +460,71 @@ export default function AdminPage() {
           ))}
         </div>
       </div>
+
+      {/* 사용자 수정 모달 */}
+      {editingUser && (
+        <div className="overlay" onClick={() => setEditingUser(null)}>
+          <div className="modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <div>
+                <div className="modal-title">사용자 정보 수정</div>
+                <div style={{ fontSize: 12, color: 'var(--muted2)', marginTop: 4 }}>{editingUser.email}</div>
+              </div>
+              <button className="modal-close" onClick={() => setEditingUser(null)}>✕</button>
+            </div>
+
+            <div className="form-group" style={{ marginBottom: 12 }}>
+              <label className="form-label">이름</label>
+              <input className="form-input" value={editFullName} onChange={e => setEditFullName(e.target.value)} placeholder="홍길동" />
+            </div>
+
+            <div className="form-row" style={{ marginBottom: 12 }}>
+              <div className="form-group" style={{ marginBottom: 0 }}>
+                <label className="form-label">역할</label>
+                <select className="form-select" value={editRole} onChange={e => setEditRole(e.target.value)}>
+                  <option value="admin">관리자</option>
+                  <option value="headhunter">헤드헌터</option>
+                  <option value="client">고객사</option>
+                </select>
+              </div>
+              <div className="form-group" style={{ marginBottom: 0 }}>
+                <label className="form-label">조직</label>
+                <select className="form-select" value={editOrgId} onChange={e => setEditOrgId(e.target.value)}>
+                  <option value="">조직 없음</option>
+                  {organizations.map(org => (
+                    <option key={org.id} value={org.id}>{org.name}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="form-group" style={{ marginBottom: 20 }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={editIsActive}
+                  onChange={e => setEditIsActive(e.target.checked)}
+                  style={{ width: 16, height: 16 }}
+                />
+                <span className="form-label" style={{ marginBottom: 0 }}>활성 계정</span>
+              </label>
+            </div>
+
+            {error && (
+              <div style={{ padding: 12, background: 'rgba(255,107,107,0.1)', border: '1px solid var(--danger)', borderRadius: 8, marginBottom: 16, color: 'var(--danger)', fontSize: 13 }}>
+                {error}
+              </div>
+            )}
+
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button className="btn btn-primary" onClick={updateUser} disabled={updatingUser}>
+                {updatingUser ? '수정 중...' : '✅ 저장'}
+              </button>
+              <button className="btn btn-ghost" onClick={() => setEditingUser(null)}>취소</button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   )
 }
