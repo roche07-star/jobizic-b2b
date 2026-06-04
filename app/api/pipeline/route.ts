@@ -5,6 +5,7 @@ export async function GET(req: NextRequest) {
   try {
     const organizationId = req.nextUrl.searchParams.get('organization_id')
     const role = req.nextUrl.searchParams.get('role')
+    const userEmail = req.nextUrl.searchParams.get('user_email')
     const jdId = req.nextUrl.searchParams.get('jd_id')
     const candidateId = req.nextUrl.searchParams.get('candidate_id')
     const stage = req.nextUrl.searchParams.get('stage')
@@ -18,7 +19,14 @@ export async function GET(req: NextRequest) {
       `)
       .order('created_at', { ascending: false })
 
-    // organization_id가 있으면 필터링 (admin도 특정 조직 선택 시 필터링)
+    // 본인이 등록한 파이프라인만 조회 (admin 제외)
+    console.log('[pipeline] User:', userEmail, 'Role:', role)
+    if (role !== 'admin' && userEmail) {
+      console.log('[pipeline] Filtering by created_by:', userEmail)
+      q = q.eq('created_by', userEmail)
+    }
+
+    // organization_id가 있으면 필터링 (admin이 특정 조직 선택 시)
     if (organizationId) {
       q = q.eq('organization_id', organizationId)
     }
