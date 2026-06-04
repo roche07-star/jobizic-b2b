@@ -25,7 +25,13 @@ export async function GET(req: NextRequest) {
     const { data, error } = await q
 
     if (error) {
+      console.error('[jd] Query error:', error)
       return NextResponse.json({ error: error.message }, { status: 500 })
+    }
+
+    console.log('[jd] Found:', data?.length, 'JDs')
+    if (data && data.length > 0) {
+      console.log('[jd] Sample created_by values:', data.slice(0, 3).map(j => j.created_by))
     }
 
     return NextResponse.json({ jds: data ?? [] })
