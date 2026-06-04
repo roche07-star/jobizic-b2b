@@ -154,18 +154,16 @@ export default function JDPage() {
               <div className="jd-card-top">
                 <div className="jd-company">{jd.company ?? '회사명 미상'}</div>
                 <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
-                  {jd.created_by && (
-                    <span style={{
-                      fontSize: 11,
-                      padding: '2px 6px',
-                      borderRadius: 3,
-                      background: 'rgba(136, 136, 128, 0.15)',
-                      color: 'var(--muted)',
-                      fontWeight: 500
-                    }}>
-                      👤 {jd.created_by.includes('@') ? jd.created_by.split('@')[0] : jd.created_by}
-                    </span>
-                  )}
+                  <span style={{
+                    fontSize: 11,
+                    padding: '2px 6px',
+                    borderRadius: 3,
+                    background: 'rgba(136, 136, 128, 0.15)',
+                    color: 'var(--muted)',
+                    fontWeight: 500
+                  }}>
+                    👤 {jd.created_by ? (jd.created_by.includes('@') ? jd.created_by.split('@')[0] : jd.created_by) : 'unknown'}
+                  </span>
                   <span className={`badge badge-${jd.priority}`}>{jd.priority}</span>
                   <span className={`badge badge-${jd.status}`}>{jd.status}</span>
                 </div>
