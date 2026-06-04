@@ -48,7 +48,7 @@ export async function GET(req: NextRequest) {
       }
     )
 
-    const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
+    const { data: sessionData, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
 
     if (exchangeError) {
       console.error('[AUTH CALLBACK] Exchange error:', exchangeError)
@@ -58,6 +58,23 @@ export async function GET(req: NextRequest) {
     }
 
     console.log('[AUTH CALLBACK] Session created successfully and stored in cookies')
+
+    // 초대받은 사용자인지 확인 (invited_at이 있으면 초대받은 사용자)
+    const user = sessionData?.user
+    const isInvitedUser = user?.invited_at && !user?.confirmed_at
+
+    console.log('[AUTH CALLBACK] User info:', {
+      email: user?.email,
+      invited_at: user?.invited_at,
+      confirmed_at: user?.confirmed_at,
+      isInvitedUser
+    })
+
+    // 초대받은 사용자는 무조건 비밀번호 설정 페이지로
+    if (isInvitedUser || requestUrl.searchParams.get('type') === 'invite') {
+      console.log('[AUTH CALLBACK] Redirecting to set-password (invited user)')
+      return NextResponse.redirect(`${requestUrl.origin}/auth/set-password`)
+    }
 
     // 비밀번호 설정 페이지로 리다이렉트 (쿠키에 세션 포함)
     return response

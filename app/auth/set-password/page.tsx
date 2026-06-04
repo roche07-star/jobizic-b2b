@@ -10,6 +10,25 @@ export default function SetPasswordPage() {
   const [confirmPassword, setConfirmPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [sessionChecked, setSessionChecked] = useState(false)
+
+  // 세션 확인
+  useEffect(() => {
+    async function checkSession() {
+      const { data: { session } } = await supabase.auth.getSession()
+
+      if (!session) {
+        console.error('[SET PASSWORD] No session found, redirecting to login')
+        router.push('/')
+        return
+      }
+
+      console.log('[SET PASSWORD] Session found:', session.user.email)
+      setSessionChecked(true)
+    }
+
+    checkSession()
+  }, [])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -41,6 +60,18 @@ export default function SetPasswordPage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  // 세션 확인 전에는 로딩 표시
+  if (!sessionChecked) {
+    return (
+      <main className="page" style={{ maxWidth: 500, margin: '0 auto', paddingTop: 80 }}>
+        <div className="card" style={{ textAlign: 'center', padding: 40 }}>
+          <div className="spinner" style={{ margin: '0 auto 16px' }} />
+          <p style={{ color: 'var(--muted2)' }}>로딩 중...</p>
+        </div>
+      </main>
+    )
   }
 
   return (
