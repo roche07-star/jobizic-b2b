@@ -30,8 +30,8 @@ export async function GET(req: NextRequest) {
 
     console.log('[AUTH CALLBACK] Session created successfully')
 
-    // 대시보드로 리다이렉트
-    return NextResponse.redirect(`${requestUrl.origin}/`)
+    // 비밀번호 설정 페이지로 리다이렉트 (초대받은 사용자)
+    return NextResponse.redirect(`${requestUrl.origin}/auth/set-password`)
   }
 
   // code도 error도 없으면 홈으로
