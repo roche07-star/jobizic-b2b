@@ -56,6 +56,8 @@ export async function DELETE(
   try {
     const { id } = await context.params
 
+    console.log('[DELETE ORG] Starting deletion for org ID:', id)
+
     // 조직에 속한 사용자가 있는지 확인
     const { data: users } = await supabaseAdmin
       .from('profiles')
@@ -64,18 +66,60 @@ export async function DELETE(
       .limit(1)
 
     if (users && users.length > 0) {
+      console.log('[DELETE ORG] Organization has users, cannot delete')
       return NextResponse.json(
         { error: '조직에 사용자가 있습니다. 먼저 사용자를 다른 조직으로 이동하거나 삭제하세요.' },
         { status: 400 }
       )
     }
 
+    console.log('[DELETE ORG] No users found, deleting related data...')
+
+    // 관련 데이터 삭제 (organization_id로 참조하는 모든 데이터)
+    // candidates 삭제
+    const { error: candidatesError } = await supabaseAdmin
+      .from('candidates')
+      .delete()
+      .eq('organization_id', id)
+
+    if (candidatesError) {
+      console.error('[DELETE ORG] Error deleting candidates:', candidatesError)
+    }
+
+    // job_descriptions 삭제
+    const { error: jdError } = await supabaseAdmin
+      .from('job_descriptions')
+      .delete()
+      .eq('organization_id', id)
+
+    if (jdError) {
+      console.error('[DELETE ORG] Error deleting JDs:', jdError)
+    }
+
+    // pipeline 삭제
+    const { error: pipelineError } = await supabaseAdmin
+      .from('pipeline')
+      .delete()
+      .eq('organization_id', id)
+
+    if (pipelineError) {
+      console.error('[DELETE ORG] Error deleting pipeline:', pipelineError)
+    }
+
+    console.log('[DELETE ORG] Related data deleted')
+
+    // 조직 삭제
     const { error } = await supabaseAdmin
       .from('organizations')
       .delete()
       .eq('id', id)
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    if (error) {
+      console.error('[DELETE ORG] Error deleting organization:', error)
+      return NextResponse.json({ error: error.message }, { status: 500 })
+    }
+
+    console.log('[DELETE ORG] Organization deleted successfully')
     return NextResponse.json({ success: true })
   } catch (e: any) {
     console.error('[organizations/[id] DELETE]', e)
