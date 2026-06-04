@@ -35,15 +35,11 @@ interface Candidate {
   status: string
   job_search_status: string
   created_at: string
+  created_by?: string
   pipeline?: PipelineInfo[]
   organization?: {
     id: string
     name: string
-  }
-  created_by_user?: {
-    id: string
-    full_name: string | null
-    email: string
   }
 }
 
@@ -199,6 +195,18 @@ export default function CandidatesPage() {
                       fontWeight: 500
                     }}>
                       🏢 {candidate.organization.name}
+                    </span>
+                  )}
+                  {candidate.created_by && (
+                    <span style={{
+                      fontSize: 11,
+                      padding: '2px 6px',
+                      borderRadius: 3,
+                      background: 'rgba(136, 136, 128, 0.15)',
+                      color: 'var(--muted)',
+                      fontWeight: 500
+                    }}>
+                      👤 {candidate.created_by.includes('@') ? candidate.created_by.split('@')[0] : candidate.created_by}
                     </span>
                   )}
                   <span className={`badge badge-${candidate.status}`}>{candidate.status}</span>
