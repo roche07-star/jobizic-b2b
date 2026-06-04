@@ -10,7 +10,10 @@ export async function GET(req: NextRequest) {
 
     let q = supabaseAdmin
       .from('job_descriptions')
-      .select('*')
+      .select(`
+        *,
+        created_by_user:users(id, full_name, email)
+      `)
       .order('created_at', { ascending: false })
 
     // organization_id가 있으면 필터링 (admin도 특정 조직 선택 시 필터링)

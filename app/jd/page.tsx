@@ -22,6 +22,11 @@ interface JD {
   raw_text: string | null
   created_at: string
   created_by?: string
+  created_by_user?: {
+    id: string
+    full_name: string | null
+    email: string
+  }
 }
 
 const STATUS_FILTERS = ['전체', '검토중', '활성', '마감', '보류']
@@ -162,7 +167,7 @@ export default function JDPage() {
                     color: 'var(--muted)',
                     fontWeight: 500
                   }}>
-                    👤 {jd.created_by ? (jd.created_by.includes('@') ? jd.created_by.split('@')[0] : jd.created_by) : 'unknown'}
+                    👤 {jd.created_by_user?.full_name || (jd.created_by ? jd.created_by.split('@')[0] : 'unknown')}
                   </span>
                   <span className={`badge badge-${jd.priority}`}>{jd.priority}</span>
                   <span className={`badge badge-${jd.status}`}>{jd.status}</span>
