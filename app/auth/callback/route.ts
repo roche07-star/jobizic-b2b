@@ -6,8 +6,9 @@ export async function GET(req: NextRequest) {
   const code = requestUrl.searchParams.get('code')
   const error = requestUrl.searchParams.get('error')
   const errorDescription = requestUrl.searchParams.get('error_description')
+  const type = requestUrl.searchParams.get('type')
 
-  console.log('[AUTH CALLBACK]', { code: !!code, error, errorDescription })
+  console.log('[AUTH CALLBACK]', { code: !!code, type, error, errorDescription })
 
   // 에러가 있으면 로그인 페이지로
   if (error) {
@@ -19,7 +20,8 @@ export async function GET(req: NextRequest) {
 
   // code가 있으면 세션 교환
   if (code) {
-    const response = NextResponse.redirect(`${requestUrl.origin}/auth/set-password`)
+    // 임시 response 생성 (쿠키 설정용)
+    let response = NextResponse.next()
 
     // 쿠키를 사용하는 Supabase 클라이언트 생성
     const supabase = createServerClient(
@@ -59,25 +61,44 @@ export async function GET(req: NextRequest) {
 
     console.log('[AUTH CALLBACK] Session created successfully and stored in cookies')
 
-    // 초대받은 사용자인지 확인 (invited_at이 있으면 초대받은 사용자)
+    // 사용자 정보 확인
     const user = sessionData?.user
     const isInvitedUser = user?.invited_at && !user?.confirmed_at
 
     console.log('[AUTH CALLBACK] User info:', {
       email: user?.email,
+      type,
       invited_at: user?.invited_at,
       confirmed_at: user?.confirmed_at,
       isInvitedUser
     })
 
-    // 초대받은 사용자는 무조건 비밀번호 설정 페이지로
-    if (isInvitedUser || requestUrl.searchParams.get('type') === 'invite') {
-      console.log('[AUTH CALLBACK] Redirecting to set-password (invited user)')
-      return NextResponse.redirect(`${requestUrl.origin}/auth/set-password`)
+    // type에 따라 리다이렉트 경로 결정
+    let redirectPath: string
+
+    if (type === 'recovery') {
+      // 비밀번호 재설정 플로우
+      console.log('[AUTH CALLBACK] Password recovery flow -> /auth/reset-password')
+      redirectPath = `${requestUrl.origin}/auth/reset-password`
+    } else if (isInvitedUser || type === 'invite') {
+      // 초대받은 사용자 플로우
+      console.log('[AUTH CALLBACK] Invited user flow -> /auth/set-password')
+      redirectPath = `${requestUrl.origin}/auth/set-password`
+    } else {
+      // 기타 (일반 로그인 등) - 홈으로
+      console.log('[AUTH CALLBACK] Regular login -> home')
+      redirectPath = `${requestUrl.origin}/`
     }
 
-    // 비밀번호 설정 페이지로 리다이렉트 (쿠키에 세션 포함)
-    return response
+    // 최종 response 생성 (쿠키 복사)
+    const finalResponse = NextResponse.redirect(redirectPath)
+
+    // 쿠키 복사
+    response.cookies.getAll().forEach(cookie => {
+      finalResponse.cookies.set(cookie)
+    })
+
+    return finalResponse
   }
 
   // code도 error도 없으면 홈으로
