@@ -76,6 +76,7 @@ export default function CandidateNewPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...parsed,
+          total_experience_years: parsed.total_experience_years ? Math.round(parsed.total_experience_years) : null,
           raw_resume: rawResume,
           status: '검토중',
           source: '수동',
