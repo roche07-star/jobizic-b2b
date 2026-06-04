@@ -25,11 +25,10 @@ export async function GET(req: NextRequest) {
 
     // 본인이 등록한 후보자만 조회 (admin 제외)
     console.log('[candidates] User:', userEmail, 'Role:', role)
-    // 임시 비활성화 - 500 에러 디버깅
-    // if (role !== 'admin' && userEmail) {
-    //   console.log('[candidates] Filtering by created_by:', userEmail)
-    //   q = q.eq('created_by', userEmail)
-    // }
+    if (role !== 'admin' && userEmail) {
+      console.log('[candidates] Filtering by created_by:', userEmail)
+      q = q.eq('created_by', userEmail)
+    }
 
     // organization_id가 있으면 필터링 (admin이 특정 조직 선택 시)
     if (organizationId) {
