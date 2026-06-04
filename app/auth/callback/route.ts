@@ -1,5 +1,5 @@
 ﻿import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import { createServerClient } from '@supabase/ssr'
 
 export async function GET(req: NextRequest) {
   const requestUrl = new URL(req.url)
@@ -19,6 +19,35 @@ export async function GET(req: NextRequest) {
 
   // code가 있으면 세션 교환
   if (code) {
+    const response = NextResponse.redirect(`${requestUrl.origin}/auth/set-password`)
+
+    // 쿠키를 사용하는 Supabase 클라이언트 생성
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get(name: string) {
+            return req.cookies.get(name)?.value
+          },
+          set(name: string, value: string, options: any) {
+            response.cookies.set({
+              name,
+              value,
+              ...options,
+            })
+          },
+          remove(name: string, options: any) {
+            response.cookies.set({
+              name,
+              value: '',
+              ...options,
+            })
+          },
+        },
+      }
+    )
+
     const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
 
     if (exchangeError) {
@@ -28,10 +57,10 @@ export async function GET(req: NextRequest) {
       )
     }
 
-    console.log('[AUTH CALLBACK] Session created successfully')
+    console.log('[AUTH CALLBACK] Session created successfully and stored in cookies')
 
-    // 비밀번호 설정 페이지로 리다이렉트 (초대받은 사용자)
-    return NextResponse.redirect(`${requestUrl.origin}/auth/set-password`)
+    // 비밀번호 설정 페이지로 리다이렉트 (쿠키에 세션 포함)
+    return response
   }
 
   // code도 error도 없으면 홈으로
