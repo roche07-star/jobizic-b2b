@@ -71,7 +71,8 @@ export default function JDNewPage() {
           raw_text: rawText,
           status: '검토중',
           source: '수동',
-          organization_id: profile.organization_id
+          organization_id: profile.organization_id,
+          created_by: profile.email
         }),
       })
       const data = await res.json()
