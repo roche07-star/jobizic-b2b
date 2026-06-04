@@ -61,6 +61,7 @@ export default function Dashboard() {
 
       const params = new URLSearchParams({
         role: profile.role,
+        user_email: profile.email,
         ...(profile.role === 'admin' && selectedOrgId !== '전체' && { organization_id: selectedOrgId }),
         ...(profile.role !== 'admin' && profile.organization_id && { organization_id: profile.organization_id })
       })
