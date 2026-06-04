@@ -5,6 +5,7 @@ export async function GET(req: NextRequest) {
   try {
     const organizationId = req.nextUrl.searchParams.get('organization_id')
     const role = req.nextUrl.searchParams.get('role')
+    const userEmail = req.nextUrl.searchParams.get('user_email')
     const status = req.nextUrl.searchParams.get('status')
     const search = req.nextUrl.searchParams.get('search')
 
@@ -22,7 +23,12 @@ export async function GET(req: NextRequest) {
       `)
       .order('created_at', { ascending: false })
 
-    // organization_id가 있으면 필터링 (admin도 특정 조직 선택 시 필터링)
+    // 본인이 등록한 후보자만 조회 (admin 제외)
+    if (role !== 'admin' && userEmail) {
+      q = q.eq('created_by', userEmail)
+    }
+
+    // organization_id가 있으면 필터링 (admin이 특정 조직 선택 시)
     if (organizationId) {
       q = q.eq('organization_id', organizationId)
     }
