@@ -22,11 +22,6 @@ interface JD {
   raw_text: string | null
   created_at: string
   created_by?: string
-  created_by_user?: {
-    id: string
-    full_name: string | null
-    email: string
-  }
 }
 
 const STATUS_FILTERS = ['전체', '검토중', '활성', '마감', '보류']
@@ -159,16 +154,18 @@ export default function JDPage() {
               <div className="jd-card-top">
                 <div className="jd-company">{jd.company ?? '회사명 미상'}</div>
                 <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
-                  <span style={{
-                    fontSize: 11,
-                    padding: '2px 6px',
-                    borderRadius: 3,
-                    background: 'rgba(136, 136, 128, 0.15)',
-                    color: 'var(--muted)',
-                    fontWeight: 500
-                  }}>
-                    👤 {jd.created_by_user?.full_name || (jd.created_by ? jd.created_by.split('@')[0] : 'unknown')}
-                  </span>
+                  {jd.created_by && (
+                    <span style={{
+                      fontSize: 11,
+                      padding: '2px 6px',
+                      borderRadius: 3,
+                      background: 'rgba(136, 136, 128, 0.15)',
+                      color: 'var(--muted)',
+                      fontWeight: 500
+                    }}>
+                      👤 {jd.created_by.split('@')[0]}
+                    </span>
+                  )}
                   <span className={`badge badge-${jd.priority}`}>{jd.priority}</span>
                   <span className={`badge badge-${jd.status}`}>{jd.status}</span>
                 </div>

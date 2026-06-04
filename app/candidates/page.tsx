@@ -36,11 +36,6 @@ interface Candidate {
   job_search_status: string
   created_at: string
   created_by?: string
-  created_by_user?: {
-    id: string
-    full_name: string | null
-    email: string
-  }
   pipeline?: PipelineInfo[]
   organization?: {
     id: string
@@ -203,7 +198,7 @@ export default function CandidatesPage() {
                       🏢 {candidate.organization.name}
                     </span>
                   )}
-                  {(candidate.created_by_user || candidate.created_by) && (
+                  {candidate.created_by && (
                     <span style={{
                       fontSize: 11,
                       padding: '2px 6px',
@@ -212,7 +207,7 @@ export default function CandidatesPage() {
                       color: 'var(--muted)',
                       fontWeight: 500
                     }}>
-                      👤 {candidate.created_by_user?.full_name || (candidate.created_by ? candidate.created_by.split('@')[0] : 'unknown')}
+                      👤 {candidate.created_by.split('@')[0]}
                     </span>
                   )}
                   <span className={`badge badge-${candidate.status}`}>{candidate.status}</span>
