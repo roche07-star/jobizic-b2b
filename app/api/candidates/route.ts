@@ -24,9 +24,12 @@ export async function GET(req: NextRequest) {
       .order('created_at', { ascending: false })
 
     // 본인이 등록한 후보자만 조회 (admin 제외)
-    if (role !== 'admin' && userEmail) {
-      q = q.eq('created_by', userEmail)
-    }
+    // 임시 비활성화 - created_by 값 확인용
+    console.log('[candidates] User:', userEmail, 'Role:', role)
+    // if (role !== 'admin' && userEmail) {
+    //   console.log('[candidates] Filtering by created_by:', userEmail)
+    //   q = q.eq('created_by', userEmail)
+    // }
 
     // organization_id가 있으면 필터링 (admin이 특정 조직 선택 시)
     if (organizationId) {
@@ -39,7 +42,14 @@ export async function GET(req: NextRequest) {
     }
 
     const { data, error } = await q
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    if (error) {
+      console.error('[candidates] Query error:', error)
+      return NextResponse.json({ error: error.message }, { status: 500 })
+    }
+    console.log('[candidates] Found:', data?.length, 'candidates for user:', userEmail)
+    if (data && data.length > 0) {
+      console.log('[candidates] Sample created_by values:', data.slice(0, 3).map(c => c.created_by))
+    }
     return NextResponse.json({ candidates: data ?? [] })
   } catch (e) {
     console.error('[api/candidates GET]', e)
