@@ -210,7 +210,7 @@ export default function CandidatesPage() {
                       color: 'var(--muted)',
                       fontWeight: 500
                     }}>
-                      👤 {candidate.created_by_user.full_name || candidate.created_by_user.email}
+                      👤 {candidate.created_by_user.full_name || candidate.created_by_user.email.split('@')[0]}
                     </span>
                   )}
                   <span className={`badge badge-${candidate.status}`}>{candidate.status}</span>
