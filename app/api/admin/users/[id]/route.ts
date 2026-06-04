@@ -42,12 +42,80 @@ export async function DELETE(
   try {
     const { id } = await context.params
 
-    // Supabase Auth에서 사용자 삭제 (profiles는 CASCADE로 자동 삭제)
-    const { error } = await supabaseAdmin.auth.admin.deleteUser(id)
+    console.log('[DELETE USER] Starting deletion for user ID:', id)
 
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 })
+    // 1. 먼저 사용자 정보 가져오기 (email 필요)
+    const { data: profile, error: profileError } = await supabaseAdmin
+      .from('profiles')
+      .select('email')
+      .eq('id', id)
+      .single()
+
+    if (profileError || !profile) {
+      console.error('[DELETE USER] Profile not found:', profileError)
+      return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
+
+    const userEmail = profile.email
+    console.log('[DELETE USER] User email:', userEmail)
+
+    // 2. 관련 데이터 삭제 (created_by로 참조하는 모든 데이터)
+    console.log('[DELETE USER] Deleting related data...')
+
+    // candidates 삭제
+    const { error: candidatesError } = await supabaseAdmin
+      .from('candidates')
+      .delete()
+      .eq('created_by', userEmail)
+
+    if (candidatesError) {
+      console.error('[DELETE USER] Error deleting candidates:', candidatesError)
+    }
+
+    // job_descriptions 삭제
+    const { error: jdError } = await supabaseAdmin
+      .from('job_descriptions')
+      .delete()
+      .eq('created_by', userEmail)
+
+    if (jdError) {
+      console.error('[DELETE USER] Error deleting JDs:', jdError)
+    }
+
+    // pipeline 삭제
+    const { error: pipelineError } = await supabaseAdmin
+      .from('pipeline')
+      .delete()
+      .eq('created_by', userEmail)
+
+    if (pipelineError) {
+      console.error('[DELETE USER] Error deleting pipeline:', pipelineError)
+    }
+
+    console.log('[DELETE USER] Related data deleted')
+
+    // 3. profiles 삭제
+    const { error: deleteProfileError } = await supabaseAdmin
+      .from('profiles')
+      .delete()
+      .eq('id', id)
+
+    if (deleteProfileError) {
+      console.error('[DELETE USER] Error deleting profile:', deleteProfileError)
+      return NextResponse.json({ error: deleteProfileError.message }, { status: 500 })
+    }
+
+    console.log('[DELETE USER] Profile deleted')
+
+    // 4. Supabase Auth에서 사용자 삭제
+    const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(id)
+
+    if (authError) {
+      console.error('[DELETE USER] Error deleting auth user:', authError)
+      return NextResponse.json({ error: authError.message }, { status: 500 })
+    }
+
+    console.log('[DELETE USER] Auth user deleted successfully')
 
     return NextResponse.json({ success: true })
   } catch (e: any) {
