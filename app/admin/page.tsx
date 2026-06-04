@@ -286,6 +286,24 @@ export default function AdminPage() {
     }
   }
 
+  async function resetPassword(email: string) {
+    if (!confirm(`"${email}" 사용자에게 비밀번호 재설정 이메일을 발송하시겠습니까?`)) return
+
+    try {
+      const res = await fetch('/api/admin/users/reset-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error)
+
+      alert(`✅ ${email}로 비밀번호 재설정 이메일이 발송되었습니다!`)
+    } catch (e: any) {
+      alert('❌ ' + e.message)
+    }
+  }
+
   async function deleteUser(id: string, email: string) {
     if (!confirm(`"${email}" 사용자를 삭제하시겠습니까?\n\n이 작업은 되돌릴 수 없습니다.`)) return
 
@@ -502,6 +520,13 @@ export default function AdminPage() {
                   style={{ fontSize: 11 }}
                 >
                   수정
+                </button>
+                <button
+                  className="btn btn-ghost btn-sm"
+                  onClick={() => resetPassword(user.email)}
+                  style={{ fontSize: 11 }}
+                >
+                  🔒 초기화
                 </button>
                 <button
                   className="btn btn-danger btn-sm"
