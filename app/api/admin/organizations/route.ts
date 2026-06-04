@@ -66,6 +66,9 @@ export async function POST(req: NextRequest) {
           console.log(`[ORG CREATE DEV] User created with password: ${devPassword}`)
         } else {
           // 프로덕션 모드: 이메일 초대
+          console.log('[ORG CREATE PROD] Sending invite email to:', admin_email)
+          console.log('[ORG CREATE PROD] Redirect URL:', `${process.env.NEXT_PUBLIC_SITE_URL || 'https://jobizic-biz.vercel.app'}/auth/callback`)
+
           const result = await supabaseAdmin.auth.admin.inviteUserByEmail(admin_email, {
             data: {
               full_name: admin_name,
@@ -76,13 +79,21 @@ export async function POST(req: NextRequest) {
           })
           authData = result.data
           authError = result.error
+
+          console.log('[ORG CREATE PROD] Invite result:', {
+            success: !authError,
+            user: authData?.user?.email,
+            error: authError?.message
+          })
         }
 
         console.log('[ORG CREATE] Auth response:', { authData, authError })
 
         if (authError) {
           console.error('[ORG CREATE] Auth error:', authError)
-          throw new Error(`사용자 생성 실패: ${authError.message}`)
+          console.error('[ORG CREATE] Full error details:', JSON.stringify(authError, null, 2))
+          // 에러를 throw 하지 않고 계속 진행 (조직은 생성됨)
+          console.warn('[ORG CREATE] User creation failed but organization was created')
         }
 
         if (authData?.user) {
