@@ -63,6 +63,7 @@ export default function Dashboard() {
   const [recentJDs, setRecentJDs] = useState<JD[]>([])
   const [loading, setLoading] = useState(true)
   const [isAdmin, setIsAdmin] = useState(false)
+  const [isOwner, setIsOwner] = useState(false)
   const [isOwnerOrPM, setIsOwnerOrPM] = useState(false)
   const [organizations, setOrganizations] = useState<Organization[]>([])
   const [selectedOrgId, setSelectedOrgId] = useState<string>('전체')
@@ -74,6 +75,7 @@ export default function Dashboard() {
       if (!profile) return
 
       setIsAdmin(profile.role === 'admin')
+      setIsOwner(profile.role === 'owner')
       setIsOwnerOrPM(profile.role === 'owner' || profile.role === 'headhunter')
 
       if (profile.role === 'admin') {
@@ -258,7 +260,7 @@ export default function Dashboard() {
       </div>
 
       {/* Owner 전용: 팀 통계 */}
-      {profile?.role === 'owner' && dashboardStats && (
+      {isOwner && dashboardStats && (
         <>
           {/* 멤버별 활동 통계 */}
           <div className="card" style={{ marginTop: 20 }}>
@@ -308,7 +310,7 @@ export default function Dashboard() {
             {/* JD 상태별 */}
             <div className="card">
               <div className="card-title">
-                {profile?.role === 'owner' ? 'JD 현황' : '내 JD 현황'}
+                {isOwner ? 'JD 현황' : '내 JD 현황'}
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 12 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -338,7 +340,7 @@ export default function Dashboard() {
             {/* 파이프라인 단계별 */}
             <div className="card">
               <div className="card-title">
-                {profile?.role === 'owner' ? '파이프라인 단계별' : '내 파이프라인 단계별'}
+                {isOwner ? '파이프라인 단계별' : '내 파이프라인 단계별'}
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 12 }}>
                 {Object.entries(dashboardStats.pipelineByStage)
