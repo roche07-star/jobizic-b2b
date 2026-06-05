@@ -56,7 +56,7 @@ export async function GET(req: NextRequest) {
       }
     )
 
-    const { data: sessionData, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
+    const { data: sessionData, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code!)
 
     if (exchangeError) {
       console.error('[AUTH CALLBACK] Exchange error:', exchangeError)
