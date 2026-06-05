@@ -31,6 +31,7 @@ interface JD {
 }
 
 const STATUS_FILTERS = ['전체', '검토중', '활성', '마감', '보류']
+const PRIORITY_FILTERS = ['전체', '긴급', '높음', '보통', '낮음']
 
 interface Organization {
   id: string
@@ -42,6 +43,7 @@ export default function JDPage() {
   const [loading, setLoading] = useState(true)
   const [showRawText, setShowRawText] = useState(false)
   const [filter, setFilter] = useState('전체')
+  const [priorityFilter, setPriorityFilter] = useState('전체')
   const [selected, setSelected] = useState<JD | null>(null)
   const [isAdmin, setIsAdmin] = useState(false)
   const [organizations, setOrganizations] = useState<Organization[]>([])
@@ -100,7 +102,8 @@ export default function JDPage() {
     setShowRawText(false)
   }
 
-  const filtered = filter === '전체' ? jds : jds.filter(j => j.status === filter)
+  const statusFiltered = filter === '전체' ? jds : jds.filter(j => j.status === filter)
+  const filtered = priorityFilter === '전체' ? statusFiltered : statusFiltered.filter(j => j.priority === priorityFilter)
 
   return (
     <main className="page">
@@ -150,6 +153,15 @@ export default function JDPage() {
         {STATUS_FILTERS.map(f => (
           <button key={f} className={`filter-btn${filter === f ? ' active' : ''}`} onClick={() => setFilter(f)}>
             {f} {f !== '전체' && <span style={{ opacity: 0.6 }}>({jds.filter(j => j.status === f).length})</span>}
+          </button>
+        ))}
+      </div>
+
+      <div className="filter-bar" style={{ marginTop: 8 }}>
+        <span style={{ fontSize: 12, color: 'var(--muted2)', marginRight: 8 }}>우선순위:</span>
+        {PRIORITY_FILTERS.map(f => (
+          <button key={f} className={`filter-btn${priorityFilter === f ? ' active' : ''}`} onClick={() => setPriorityFilter(f)}>
+            {f} {f !== '전체' && <span style={{ opacity: 0.6 }}>({statusFiltered.filter(j => j.priority === f).length})</span>}
           </button>
         ))}
       </div>

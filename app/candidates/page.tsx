@@ -61,6 +61,10 @@ export default function CandidatesPage() {
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('전체')
   const [search, setSearch] = useState('')
+  const [skillSearch, setSkillSearch] = useState('')
+  const [minExperience, setMinExperience] = useState('')
+  const [maxExperience, setMaxExperience] = useState('')
+  const [showAdvancedFilter, setShowAdvancedFilter] = useState(false)
   const [selected, setSelected] = useState<Candidate | null>(null)
   const [isAdmin, setIsAdmin] = useState(false)
   const [organizations, setOrganizations] = useState<Organization[]>([])
@@ -115,7 +119,10 @@ export default function CandidatesPage() {
     if (selected?.id === id) setSelected(null)
   }
 
+  // 기본 필터 (상태)
   const filtered = filter === '전체' ? candidates : candidates.filter(c => c.status === filter)
+
+  // 검색 (이름, 이메일, 회사, 직무)
   const searched = search.trim()
     ? filtered.filter(c =>
         c.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -124,6 +131,27 @@ export default function CandidatesPage() {
         c.current_position?.toLowerCase().includes(search.toLowerCase())
       )
     : filtered
+
+  // 고급 필터
+  let advanced = searched
+
+  // 스킬 검색
+  if (skillSearch.trim()) {
+    advanced = advanced.filter(c => {
+      const skills = [...(c.skills || []), ...(c.tech_stack || [])]
+      return skills.some(s => s.toLowerCase().includes(skillSearch.toLowerCase()))
+    })
+  }
+
+  // 경력 범위
+  if (minExperience) {
+    advanced = advanced.filter(c => (c.total_experience_years || 0) >= parseInt(minExperience))
+  }
+  if (maxExperience) {
+    advanced = advanced.filter(c => (c.total_experience_years || 0) <= parseInt(maxExperience))
+  }
+
+  const finalFiltered = advanced
 
   return (
     <main className="page">
@@ -178,6 +206,75 @@ export default function CandidatesPage() {
         />
       </div>
 
+      {/* 고급 필터 */}
+      <div style={{ marginBottom: 16 }}>
+        <button
+          className="btn btn-ghost btn-sm"
+          onClick={() => setShowAdvancedFilter(!showAdvancedFilter)}
+          style={{ fontSize: 13, marginBottom: showAdvancedFilter ? 12 : 0 }}
+        >
+          {showAdvancedFilter ? '🔽' : '▶️'} 고급 필터
+        </button>
+
+        {showAdvancedFilter && (
+          <div style={{
+            padding: 16,
+            background: 'var(--bg3)',
+            borderRadius: 8,
+            display: 'grid',
+            gridTemplateColumns: '1fr 1fr 1fr',
+            gap: 12,
+          }}>
+            <div className="form-group" style={{ marginBottom: 0 }}>
+              <label className="form-label" style={{ fontSize: 12 }}>스킬 검색</label>
+              <input
+                className="form-input"
+                placeholder="예: React, Python"
+                value={skillSearch}
+                onChange={e => setSkillSearch(e.target.value)}
+                style={{ fontSize: 13 }}
+              />
+            </div>
+
+            <div className="form-group" style={{ marginBottom: 0 }}>
+              <label className="form-label" style={{ fontSize: 12 }}>최소 경력 (년)</label>
+              <input
+                className="form-input"
+                type="number"
+                placeholder="0"
+                value={minExperience}
+                onChange={e => setMinExperience(e.target.value)}
+                style={{ fontSize: 13 }}
+              />
+            </div>
+
+            <div className="form-group" style={{ marginBottom: 0 }}>
+              <label className="form-label" style={{ fontSize: 12 }}>최대 경력 (년)</label>
+              <input
+                className="form-input"
+                type="number"
+                placeholder="30"
+                value={maxExperience}
+                onChange={e => setMaxExperience(e.target.value)}
+                style={{ fontSize: 13 }}
+              />
+            </div>
+
+            <button
+              className="btn btn-ghost btn-sm"
+              onClick={() => {
+                setSkillSearch('')
+                setMinExperience('')
+                setMaxExperience('')
+              }}
+              style={{ fontSize: 12, gridColumn: '1 / -1', justifyContent: 'center' }}
+            >
+              ✕ 필터 초기화
+            </button>
+          </div>
+        )}
+      </div>
+
       <div className="filter-bar">
         {STATUS_FILTERS.map(f => (
           <button key={f} className={`filter-btn${filter === f ? ' active' : ''}`} onClick={() => setFilter(f)}>
@@ -188,7 +285,7 @@ export default function CandidatesPage() {
 
       {loading ? (
         <div className="empty"><div className="spinner" style={{ margin: '0 auto 12px' }} /></div>
-      ) : searched.length === 0 ? (
+      ) : finalFiltered.length === 0 ? (
         <div className="empty">
           <div className="empty-icon">👤</div>
           <div className="empty-text">등록된 후보자가 없습니다</div>
@@ -196,7 +293,7 @@ export default function CandidatesPage() {
         </div>
       ) : (
         <div className="jd-grid">
-          {searched.map(candidate => (
+          {finalFiltered.map(candidate => (
             <div key={candidate.id} className="jd-card" onClick={() => setSelected(candidate)}>
               <div className="jd-card-top">
                 <div className="jd-company">{candidate.current_company ?? '프리랜서'}</div>
