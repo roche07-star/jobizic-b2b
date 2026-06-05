@@ -1,5 +1,6 @@
 ﻿import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
+import { supabaseAdmin } from '@/lib/supabase-admin'
 
 export async function GET(req: NextRequest) {
   const requestUrl = new URL(req.url)
@@ -64,12 +65,16 @@ export async function GET(req: NextRequest) {
     // 사용자 정보 확인
     const user = sessionData?.user
 
-    // profiles 테이블에서 password_set 확인
-    const { data: profile } = await supabase
+    // profiles 테이블에서 password_set 확인 (Admin으로 RLS 우회)
+    const { data: profile, error: profileError } = await supabaseAdmin
       .from('profiles')
       .select('password_set')
       .eq('id', user.id)
       .single()
+
+    if (profileError) {
+      console.error('[AUTH CALLBACK] Profile fetch error:', profileError)
+    }
 
     // 초대된 사용자 판단: password_set이 false이면 비밀번호 설정 필요
     const needsPasswordSetup = profile?.password_set === false
@@ -83,6 +88,7 @@ export async function GET(req: NextRequest) {
       passwordSet: profile?.password_set,
       needsPasswordSetup,
       isInvitedUser,
+      profileError: profileError?.message,
       user_metadata: user?.user_metadata
     })
 
