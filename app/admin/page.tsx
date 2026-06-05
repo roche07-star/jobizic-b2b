@@ -475,9 +475,14 @@ export default function AdminPage() {
                 <label className="form-label">역할</label>
                 <select className="form-select" value={userRole} onChange={e => setUserRole(e.target.value)}>
                   <option value="admin">관리자</option>
-                  <option value="owner">오너</option>
+                  <option value="owner">오너 (헤드헌터 조직)</option>
                   <option value="headhunter">헤드헌터</option>
-                  <option value="client">고객사</option>
+                  <option value="client">고객사 (레거시)</option>
+                  <optgroup label="고객사 Role">
+                    <option value="client_owner">Client Owner</option>
+                    <option value="client_pm">Client PM</option>
+                    <option value="client_searcher">Client Searcher</option>
+                  </optgroup>
                 </select>
               </div>
               <div className="form-group" style={{ marginBottom: 0 }}>
@@ -626,9 +631,14 @@ export default function AdminPage() {
                 <label className="form-label">역할</label>
                 <select className="form-select" value={editRole} onChange={e => setEditRole(e.target.value)}>
                   <option value="admin">관리자</option>
-                  <option value="owner">오너</option>
+                  <option value="owner">오너 (헤드헌터 조직)</option>
                   <option value="headhunter">헤드헌터</option>
-                  <option value="client">고객사</option>
+                  <option value="client">고객사 (레거시)</option>
+                  <optgroup label="고객사 Role">
+                    <option value="client_owner">Client Owner</option>
+                    <option value="client_pm">Client PM</option>
+                    <option value="client_searcher">Client Searcher</option>
+                  </optgroup>
                 </select>
               </div>
               <div className="form-group" style={{ marginBottom: 0 }}>
