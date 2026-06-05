@@ -4,11 +4,6 @@ import { supabaseAdmin } from '@/lib/supabase-admin'
 
 export async function GET(req: NextRequest) {
   const requestUrl = new URL(req.url)
-
-  // 🔥 TEST: 무조건 set-password로 보내기
-  console.log('[AUTH CALLBACK TEST] Forcing redirect to set-password')
-  return NextResponse.redirect(`${requestUrl.origin}/auth/set-password`)
-
   const code = requestUrl.searchParams.get('code')
   const error = requestUrl.searchParams.get('error')
   const errorDescription = requestUrl.searchParams.get('error_description')
@@ -69,6 +64,10 @@ export async function GET(req: NextRequest) {
 
     // 사용자 정보 확인
     const user = sessionData?.user
+    if (!user) {
+      console.error('[AUTH CALLBACK] No user in session')
+      return NextResponse.redirect(`${requestUrl.origin}/`)
+    }
 
     // profiles 테이블에서 password_set 확인 (Admin으로 RLS 우회)
     const { data: profile, error: profileError } = await supabaseAdmin
@@ -157,14 +156,15 @@ export async function GET(req: NextRequest) {
 
   const { data: { session } } = await supabase.auth.getSession()
 
-  if (session?.user) {
-    console.log('[AUTH CALLBACK] Session found for:', session.user.email)
+  const user = session?.user
+  if (user) {
+    console.log('[AUTH CALLBACK] Session found for:', user.email)
 
     // profiles 테이블에서 password_set 확인
     const { data: profile } = await supabaseAdmin
       .from('profiles')
       .select('password_set')
-      .eq('id', session.user.id)
+      .eq('id', user.id)
       .single()
 
     const needsPasswordSetup = profile?.password_set === false
