@@ -1,0 +1,86 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { supabaseAdmin } from '@/lib/supabase-admin'
+
+export async function GET(req: NextRequest) {
+  try {
+    const role = req.nextUrl.searchParams.get('role')
+    const organizationId = req.nextUrl.searchParams.get('organization_id')
+
+    if (!organizationId) {
+      return NextResponse.json({ error: 'organization_id is required' }, { status: 400 })
+    }
+
+    // 1. 조직의 모든 멤버 조회
+    const { data: members } = await supabaseAdmin
+      .from('profiles')
+      .select('id, email, full_name, role')
+      .eq('organization_id', organizationId)
+      .eq('is_active', true)
+      .order('full_name')
+
+    // 2. JD 통계
+    const { data: jds } = await supabaseAdmin
+      .from('job_descriptions')
+      .select('id, created_by, status')
+      .eq('organization_id', organizationId)
+
+    // 3. 후보자 통계
+    const { data: candidates } = await supabaseAdmin
+      .from('candidates')
+      .select('id, assigned_to')
+
+    // 4. 파이프라인 통계
+    const { data: pipelines } = await supabaseAdmin
+      .from('pipeline')
+      .select('id, assigned_to, stage, jd_id, is_active')
+      .in('jd_id', (jds || []).map(jd => jd.id))
+
+    // 멤버별 통계 계산
+    const memberStats = (members || []).map(member => {
+      const memberJDs = (jds || []).filter(jd => jd.created_by === member.email)
+      const memberCandidates = (candidates || []).filter(c => c.assigned_to === member.email)
+      const memberPipelines = (pipelines || []).filter(p => p.assigned_to === member.email)
+
+      return {
+        id: member.id,
+        name: member.full_name || member.email,
+        email: member.email,
+        role: member.role,
+        jdCount: memberJDs.length,
+        candidateCount: memberCandidates.length,
+        pipelineCount: memberPipelines.length,
+        activePipelineCount: memberPipelines.filter(p => p.is_active).length,
+      }
+    })
+
+    // JD 상태별 통계
+    const jdByStatus = {
+      active: (jds || []).filter(jd => jd.status === '활성').length,
+      closed: (jds || []).filter(jd => jd.status === '완료').length,
+      hold: (jds || []).filter(jd => jd.status === '보류').length,
+    }
+
+    // 파이프라인 단계별 통계
+    const pipelineByStage = (pipelines || []).reduce((acc: any, p) => {
+      const stage = p.stage || '신규'
+      acc[stage] = (acc[stage] || 0) + 1
+      return acc
+    }, {})
+
+    return NextResponse.json({
+      memberStats,
+      jdByStatus,
+      pipelineByStage,
+      totals: {
+        members: members?.length || 0,
+        jds: jds?.length || 0,
+        candidates: candidates?.length || 0,
+        pipelines: pipelines?.length || 0,
+        activePipelines: (pipelines || []).filter(p => p.is_active).length,
+      },
+    })
+  } catch (e: any) {
+    console.error('[dashboard/stats GET]', e)
+    return NextResponse.json({ error: e.message }, { status: 500 })
+  }
+}

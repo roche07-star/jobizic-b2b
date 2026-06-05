@@ -25,6 +25,34 @@ interface Organization {
   name: string
 }
 
+interface MemberStat {
+  id: string
+  name: string
+  email: string
+  role: string
+  jdCount: number
+  candidateCount: number
+  pipelineCount: number
+  activePipelineCount: number
+}
+
+interface DashboardStats {
+  memberStats: MemberStat[]
+  jdByStatus: {
+    active: number
+    closed: number
+    hold: number
+  }
+  pipelineByStage: Record<string, number>
+  totals: {
+    members: number
+    jds: number
+    candidates: number
+    pipelines: number
+    activePipelines: number
+  }
+}
+
 export default function Dashboard() {
   const [stats, setStats] = useState<Stats>({
     totalJDs: 0,
@@ -35,8 +63,10 @@ export default function Dashboard() {
   const [recentJDs, setRecentJDs] = useState<JD[]>([])
   const [loading, setLoading] = useState(true)
   const [isAdmin, setIsAdmin] = useState(false)
+  const [isOwnerOrPM, setIsOwnerOrPM] = useState(false)
   const [organizations, setOrganizations] = useState<Organization[]>([])
   const [selectedOrgId, setSelectedOrgId] = useState<string>('전체')
+  const [dashboardStats, setDashboardStats] = useState<DashboardStats | null>(null)
 
   useEffect(() => {
     async function loadOrganizations() {
@@ -44,6 +74,7 @@ export default function Dashboard() {
       if (!profile) return
 
       setIsAdmin(profile.role === 'admin')
+      setIsOwnerOrPM(profile.role === 'owner' || profile.role === 'headhunter')
 
       if (profile.role === 'admin') {
         const res = await fetch('/api/admin/organizations')
@@ -90,6 +121,18 @@ export default function Dashboard() {
         })
 
         setRecentJDs(jds.slice(0, 5))
+
+        // Owner/PM인 경우 추가 통계 로드
+        if (profile.role === 'owner' || profile.role === 'headhunter') {
+          const statsParams = new URLSearchParams({
+            role: profile.role,
+            organization_id: profile.organization_id || '',
+          })
+          fetch(`/api/dashboard/stats?${statsParams}`)
+            .then(r => r.json())
+            .then(data => setDashboardStats(data))
+            .catch(err => console.error('Failed to load dashboard stats:', err))
+        }
       }).finally(() => setLoading(false))
     }
     loadData()
@@ -212,6 +255,106 @@ export default function Dashboard() {
           )}
         </div>
       </div>
+
+      {/* Owner/PM 전용: 팀 통계 */}
+      {isOwnerOrPM && dashboardStats && (
+        <>
+          {/* 멤버별 활동 통계 */}
+          <div className="card" style={{ marginTop: 20 }}>
+            <div className="card-title">팀 멤버 활동 현황</div>
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr style={{ borderBottom: '2px solid var(--border)' }}>
+                    <th style={{ padding: '12px 8px', textAlign: 'left', fontSize: 12, color: 'var(--muted2)', fontWeight: 600 }}>멤버</th>
+                    <th style={{ padding: '12px 8px', textAlign: 'left', fontSize: 12, color: 'var(--muted2)', fontWeight: 600 }}>역할</th>
+                    <th style={{ padding: '12px 8px', textAlign: 'center', fontSize: 12, color: 'var(--muted2)', fontWeight: 600 }}>담당 JD</th>
+                    <th style={{ padding: '12px 8px', textAlign: 'center', fontSize: 12, color: 'var(--muted2)', fontWeight: 600 }}>담당 후보자</th>
+                    <th style={{ padding: '12px 8px', textAlign: 'center', fontSize: 12, color: 'var(--muted2)', fontWeight: 600 }}>파이프라인</th>
+                    <th style={{ padding: '12px 8px', textAlign: 'center', fontSize: 12, color: 'var(--muted2)', fontWeight: 600 }}>진행 중</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {dashboardStats.memberStats.map(member => (
+                    <tr key={member.id} style={{ borderBottom: '1px solid var(--border)' }}>
+                      <td style={{ padding: '12px 8px' }}>
+                        <div style={{ fontWeight: 600, fontSize: 13 }}>{member.name}</div>
+                        <div style={{ fontSize: 11, color: 'var(--muted2)', marginTop: 2 }}>{member.email}</div>
+                      </td>
+                      <td style={{ padding: '12px 8px' }}>
+                        <span className="badge" style={{ fontSize: 11 }}>
+                          {member.role === 'owner' ? '오너' : member.role === 'headhunter' ? 'PM' : member.role === 'searcher' ? 'Searcher' : member.role}
+                        </span>
+                      </td>
+                      <td style={{ padding: '12px 8px', textAlign: 'center', fontSize: 14, fontWeight: 600 }}>{member.jdCount}</td>
+                      <td style={{ padding: '12px 8px', textAlign: 'center', fontSize: 14, fontWeight: 600 }}>{member.candidateCount}</td>
+                      <td style={{ padding: '12px 8px', textAlign: 'center', fontSize: 14, fontWeight: 600 }}>{member.pipelineCount}</td>
+                      <td style={{ padding: '12px 8px', textAlign: 'center', fontSize: 14, fontWeight: 600, color: 'var(--accent)' }}>{member.activePipelineCount}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* JD & 파이프라인 현황 */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginTop: 20 }}>
+            {/* JD 상태별 */}
+            <div className="card">
+              <div className="card-title">JD 현황</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 12 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#10b981' }} />
+                    <span style={{ fontSize: 13, color: 'var(--muted)' }}>활성</span>
+                  </div>
+                  <span style={{ fontSize: 16, fontWeight: 600 }}>{dashboardStats.jdByStatus.active}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#6b7280' }} />
+                    <span style={{ fontSize: 13, color: 'var(--muted)' }}>완료</span>
+                  </div>
+                  <span style={{ fontSize: 16, fontWeight: 600 }}>{dashboardStats.jdByStatus.closed}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#f59e0b' }} />
+                    <span style={{ fontSize: 13, color: 'var(--muted)' }}>보류</span>
+                  </div>
+                  <span style={{ fontSize: 16, fontWeight: 600 }}>{dashboardStats.jdByStatus.hold}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* 파이프라인 단계별 */}
+            <div className="card">
+              <div className="card-title">파이프라인 단계별</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 12 }}>
+                {Object.entries(dashboardStats.pipelineByStage)
+                  .sort(([, a], [, b]) => (b as number) - (a as number))
+                  .slice(0, 5)
+                  .map(([stage, count]) => (
+                    <div key={stage} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <div style={{ flex: '0 0 80px', fontSize: 12, color: 'var(--muted)' }}>{stage}</div>
+                      <div style={{ flex: 1, height: 20, background: 'var(--bg3)', borderRadius: 4, overflow: 'hidden', position: 'relative' }}>
+                        <div
+                          style={{
+                            height: '100%',
+                            width: `${Math.min(100, ((count as number) / dashboardStats.totals.pipelines) * 100)}%`,
+                            background: 'var(--accent)',
+                            transition: 'width 0.3s'
+                          }}
+                        />
+                      </div>
+                      <div style={{ flex: '0 0 30px', fontSize: 13, fontWeight: 600, textAlign: 'right' }}>{count}</div>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          </div>
+        </>
+      )}
     </main>
   )
 }
