@@ -6,6 +6,7 @@ export async function GET(req: NextRequest) {
     // 쿼리 파라미터에서 organization_id 받기 (클라이언트에서 전달)
     const organizationId = req.nextUrl.searchParams.get('organization_id')
     const role = req.nextUrl.searchParams.get('role')
+    const userEmail = req.nextUrl.searchParams.get('user_email')
     const status = req.nextUrl.searchParams.get('status')
 
     let q = supabaseAdmin
@@ -16,8 +17,16 @@ export async function GET(req: NextRequest) {
       `)
       .order('created_at', { ascending: false })
 
-    // organization_id가 있으면 필터링 (admin도 특정 조직 선택 시 필터링)
-    if (organizationId) {
+    // Role 기반 필터링
+    console.log('[jd] User:', userEmail, 'Role:', role)
+
+    // Searcher와 client는 같은 조직 JD만 조회
+    if (role && (role === 'searcher' || role.startsWith('client_'))) {
+      if (organizationId) {
+        q = q.eq('organization_id', organizationId)
+      }
+    } else if (organizationId) {
+      // admin, owner, PM은 organization_id가 있으면 필터링
       q = q.eq('organization_id', organizationId)
     }
 
@@ -47,6 +56,31 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
+    const { created_by } = body
+
+    // 권한 체크: PM/owner만 JD 등록 가능
+    if (created_by) {
+      const { data: profile } = await supabaseAdmin
+        .from('profiles')
+        .select('role')
+        .eq('email', created_by)
+        .single()
+
+      if (profile && profile.role === 'searcher') {
+        return NextResponse.json(
+          { error: 'Searcher는 JD를 등록할 수 없습니다. PM 또는 Owner에게 문의하세요.' },
+          { status: 403 }
+        )
+      }
+
+      if (profile && profile.role.startsWith('client_')) {
+        return NextResponse.json(
+          { error: '채용사 계정은 JD를 직접 등록할 수 없습니다.' },
+          { status: 403 }
+        )
+      }
+    }
+
     const { data, error } = await supabaseAdmin
       .from('job_descriptions')
       .insert(body)

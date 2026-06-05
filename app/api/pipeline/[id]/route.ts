@@ -25,6 +25,26 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
   try {
     const { id } = await context.params
     const body = await req.json()
+    const { stage, updated_by } = body
+
+    // Stage Gate: Searcher는 "제안" 단계까지만 변경 가능
+    if (stage && updated_by) {
+      const { data: profile } = await supabaseAdmin
+        .from('profiles')
+        .select('role')
+        .eq('email', updated_by)
+        .single()
+
+      if (profile && profile.role === 'searcher') {
+        const restrictedStages = ['클라이언트 제출', '1차 면접', '2차 면접', '최종 면접', '합격', '탈락', 'submitted', 'interview', 'offer', 'hired', 'rejected']
+        if (restrictedStages.some(s => stage.toLowerCase().includes(s.toLowerCase()))) {
+          return NextResponse.json(
+            { error: 'Searcher는 "제안" 단계까지만 진행할 수 있습니다. PM 또는 Owner에게 문의하세요.' },
+            { status: 403 }
+          )
+        }
+      }
+    }
 
     // last_activity_at 자동 업데이트
     body.last_activity_at = new Date().toISOString()
