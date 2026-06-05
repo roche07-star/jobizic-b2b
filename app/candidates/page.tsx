@@ -306,7 +306,7 @@ export default function CandidatesPage() {
               <div style={{ marginBottom: 16 }}>
                 <div className="form-label">스킬 & 기술스택</div>
                 <div className="skills-wrap">
-                  {[...(selected.skills ?? []), ...(selected.tech_stack ?? [])].map(s => <span key={s} className="skill-chip">{s}</span>)}
+                  {[...(selected.skills ?? []), ...(selected.tech_stack ?? [])].map((s, i) => <span key={`skill-${i}`} className="skill-chip">{s}</span>)}
                 </div>
               </div>
             )}
