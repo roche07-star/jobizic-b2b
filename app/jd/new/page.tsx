@@ -63,11 +63,14 @@ export default function JDNewPage() {
         return
       }
 
+      // _v2 제외하고 저장 (DB에 컬럼 없음)
+      const { _v2, ...dataToSave } = parsed as any
+
       const res = await fetch('/api/jd', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          ...parsed,
+          ...dataToSave,
           raw_text: rawText,
           status: '검토중',
           source: '수동',
