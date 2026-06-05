@@ -120,7 +120,62 @@ export async function GET(req: NextRequest) {
     return finalResponse
   }
 
-  // code도 error도 없으면 홈으로
-  console.warn('[AUTH CALLBACK] No code or error, redirecting to home')
+  // code가 없어도 세션이 있을 수 있음 (invite flow)
+  console.log('[AUTH CALLBACK] No code, checking for existing session...')
+
+  let response = NextResponse.next()
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) {
+          return req.cookies.get(name)?.value
+        },
+        set(name: string, value: string, options: any) {
+          response.cookies.set({
+            name,
+            value,
+            ...options,
+          })
+        },
+        remove(name: string, options: any) {
+          response.cookies.set({
+            name,
+            value: '',
+            ...options,
+          })
+        },
+      },
+    }
+  )
+
+  const { data: { session } } = await supabase.auth.getSession()
+
+  if (session?.user) {
+    console.log('[AUTH CALLBACK] Session found for:', session.user.email)
+
+    // profiles 테이블에서 password_set 확인
+    const { data: profile } = await supabaseAdmin
+      .from('profiles')
+      .select('password_set')
+      .eq('id', session.user.id)
+      .single()
+
+    const needsPasswordSetup = profile?.password_set === false
+
+    console.log('[AUTH CALLBACK] Session user needs password setup:', needsPasswordSetup)
+
+    if (needsPasswordSetup) {
+      const finalResponse = NextResponse.redirect(`${requestUrl.origin}/auth/set-password`)
+      response.cookies.getAll().forEach(cookie => {
+        finalResponse.cookies.set(cookie)
+      })
+      return finalResponse
+    }
+  }
+
+  // 세션도 없으면 홈으로
+  console.warn('[AUTH CALLBACK] No code, no session, redirecting to home')
   return NextResponse.redirect(requestUrl.origin)
 }
