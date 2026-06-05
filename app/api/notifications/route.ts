@@ -6,9 +6,14 @@ import { cookies } from 'next/headers'
 export async function GET(req: NextRequest) {
   try {
     const cookieStore = await cookies()
+    const allCookies = cookieStore.getAll()
+    console.log('[notifications] All cookies:', allCookies.map(c => c.name))
+
     const authToken = cookieStore.get('sb-fwmjqfadsrzbzkpwbwue-auth-token')
+    console.log('[notifications] Auth token found:', !!authToken)
 
     if (!authToken) {
+      console.log('[notifications] No auth token, returning 401')
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
