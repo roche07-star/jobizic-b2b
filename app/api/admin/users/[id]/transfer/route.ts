@@ -4,11 +4,11 @@ import { supabaseAdmin } from '@/lib/supabase-admin'
 // 사용자 업무 이관 API
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { target_email } = await req.json()
-    const userId = params.id
+    const { id: userId } = await params
 
     if (!target_email) {
       return NextResponse.json({ error: '이관받을 사용자를 선택하세요.' }, { status: 400 })
