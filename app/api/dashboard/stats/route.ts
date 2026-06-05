@@ -5,10 +5,15 @@ export async function GET(req: NextRequest) {
   try {
     const role = req.nextUrl.searchParams.get('role')
     const organizationId = req.nextUrl.searchParams.get('organization_id')
+    const userEmail = req.nextUrl.searchParams.get('user_email')
 
     if (!organizationId) {
       return NextResponse.json({ error: 'organization_id is required' }, { status: 400 })
     }
+
+    // PM은 본인 데이터만
+    const isPM = role === 'headhunter'
+    const filterByUser = isPM && userEmail
 
     // 1. 조직의 모든 멤버 조회
     const { data: members } = await supabaseAdmin
@@ -19,24 +24,39 @@ export async function GET(req: NextRequest) {
       .order('full_name')
 
     // 2. JD 통계
-    const { data: jds } = await supabaseAdmin
+    let jdQuery = supabaseAdmin
       .from('job_descriptions')
       .select('id, created_by, status')
       .eq('organization_id', organizationId)
+
+    // PM은 본인 JD만
+    if (filterByUser) {
+      jdQuery = jdQuery.eq('created_by', userEmail)
+    }
+
+    const { data: jds } = await jdQuery
 
     // 3. 후보자 통계
     const { data: candidates } = await supabaseAdmin
       .from('candidates')
       .select('id, assigned_to')
 
-    // 4. 파이프라인 통계
-    const { data: pipelines } = await supabaseAdmin
+    // 4. 파이프라인 통계 (본인 JD에 연결된 파이프라인만)
+    let pipelineQuery = supabaseAdmin
       .from('pipeline')
       .select('id, assigned_to, stage, jd_id, is_active')
-      .in('jd_id', (jds || []).map(jd => jd.id))
 
-    // 멤버별 통계 계산
-    const memberStats = (members || []).map(member => {
+    if ((jds || []).length > 0) {
+      pipelineQuery = pipelineQuery.in('jd_id', jds.map(jd => jd.id))
+    } else {
+      // JD가 없으면 파이프라인도 없음
+      const { data: pipelines } = { data: [] }
+    }
+
+    const { data: pipelines } = await pipelineQuery
+
+    // 멤버별 통계 계산 (Owner만)
+    const memberStats = isPM ? [] : (members || []).map(member => {
       const memberJDs = (jds || []).filter(jd => jd.created_by === member.email)
       const memberCandidates = (candidates || []).filter(c => c.assigned_to === member.email)
       const memberPipelines = (pipelines || []).filter(p => p.assigned_to === member.email)

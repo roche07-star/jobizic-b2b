@@ -127,6 +127,7 @@ export default function Dashboard() {
           const statsParams = new URLSearchParams({
             role: profile.role,
             organization_id: profile.organization_id || '',
+            user_email: profile.email, // PM은 본인 데이터만
           })
           fetch(`/api/dashboard/stats?${statsParams}`)
             .then(r => r.json())
@@ -256,8 +257,8 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Owner/PM 전용: 팀 통계 */}
-      {isOwnerOrPM && dashboardStats && (
+      {/* Owner 전용: 팀 통계 */}
+      {profile?.role === 'owner' && dashboardStats && (
         <>
           {/* 멤버별 활동 통계 */}
           <div className="card" style={{ marginTop: 20 }}>
@@ -297,11 +298,18 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* JD & 파이프라인 현황 */}
+        </>
+      )}
+
+      {/* Owner/PM 공통: JD & 파이프라인 현황 */}
+      {isOwnerOrPM && dashboardStats && (
+        <>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginTop: 20 }}>
             {/* JD 상태별 */}
             <div className="card">
-              <div className="card-title">JD 현황</div>
+              <div className="card-title">
+                {profile?.role === 'owner' ? 'JD 현황' : '내 JD 현황'}
+              </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 12 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -329,7 +337,9 @@ export default function Dashboard() {
 
             {/* 파이프라인 단계별 */}
             <div className="card">
-              <div className="card-title">파이프라인 단계별</div>
+              <div className="card-title">
+                {profile?.role === 'owner' ? '파이프라인 단계별' : '내 파이프라인 단계별'}
+              </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 12 }}>
                 {Object.entries(dashboardStats.pipelineByStage)
                   .sort(([, a], [, b]) => (b as number) - (a as number))
