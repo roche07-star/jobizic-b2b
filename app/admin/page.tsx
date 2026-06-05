@@ -518,7 +518,7 @@ export default function AdminPage() {
               <div className="form-group" style={{ marginBottom: 0 }}>
                 <label className="form-label">역할</label>
                 <select className="form-select" value={userRole} onChange={e => setUserRole(e.target.value)}>
-                  <option value="admin">관리자</option>
+                  <option value="admin">Super Admin</option>
                   <option value="owner">오너 (써치펌 대표)</option>
                   <option value="headhunter">PM (써치펌)</option>
                   <option value="searcher">Searcher (써치펌)</option>
@@ -675,7 +675,7 @@ export default function AdminPage() {
               <div className="form-group" style={{ marginBottom: 0 }}>
                 <label className="form-label">역할</label>
                 <select className="form-select" value={editRole} onChange={e => setEditRole(e.target.value)}>
-                  <option value="admin">관리자</option>
+                  <option value="admin">Super Admin</option>
                   <option value="owner">오너 (써치펌 대표)</option>
                   <option value="headhunter">PM (써치펌)</option>
                   <option value="searcher">Searcher (써치펌)</option>
