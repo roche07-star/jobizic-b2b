@@ -42,18 +42,17 @@ export async function GET(req: NextRequest) {
       .select('id, assigned_to')
 
     // 4. 파이프라인 통계 (본인 JD에 연결된 파이프라인만)
-    let pipelineQuery = supabaseAdmin
-      .from('pipeline')
-      .select('id, assigned_to, stage, jd_id, is_active')
+    let pipelines = null
 
-    if ((jds || []).length > 0) {
-      pipelineQuery = pipelineQuery.in('jd_id', jds.map(jd => jd.id))
-    } else {
-      // JD가 없으면 파이프라인도 없음
-      const { data: pipelines } = { data: [] }
+    if (jds && jds.length > 0) {
+      const pipelineQuery = supabaseAdmin
+        .from('pipeline')
+        .select('id, assigned_to, stage, jd_id, is_active')
+        .in('jd_id', jds.map(jd => jd.id))
+
+      const { data } = await pipelineQuery
+      pipelines = data
     }
-
-    const { data: pipelines } = await pipelineQuery
 
     // 멤버별 통계 계산 (Owner만)
     const memberStats = isPM ? [] : (members || []).map(member => {
