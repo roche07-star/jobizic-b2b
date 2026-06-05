@@ -58,6 +58,7 @@ export async function POST(req: NextRequest) {
           full_name,
           role: role || 'headhunter',
           organization_id,
+          needs_password_setup: true, // 비밀번호 설정 필요 플래그
         },
         redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://jobizic-biz.vercel.app'}/auth/callback`,
       })

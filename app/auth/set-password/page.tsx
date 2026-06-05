@@ -47,13 +47,19 @@ export default function SetPasswordPage() {
     setError(null)
 
     try {
+      // 비밀번호 설정 & metadata에서 needs_password_setup 플래그 제거
+      const { data: { user } } = await supabase.auth.getUser()
+      const updatedMetadata = { ...user?.user_metadata }
+      delete updatedMetadata.needs_password_setup
+
       const { error: updateError } = await supabase.auth.updateUser({
         password: password,
+        data: updatedMetadata,
       })
 
       if (updateError) throw updateError
 
-      alert('✅ 비밀번호가 설정되었습니다! 로그인하세요.')
+      alert('✅ 비밀번호가 설정되었습니다!')
       router.push('/')
     } catch (err: any) {
       setError(err.message)
