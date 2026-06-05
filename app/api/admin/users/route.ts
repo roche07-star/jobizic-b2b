@@ -77,6 +77,7 @@ export async function POST(req: NextRequest) {
         organization_id,
         full_name,
         role: role || 'headhunter',
+        password_set: isDev ? true : false, // 개발: true, 초대: false
       })
       .eq('id', authData.user.id)
 

@@ -64,23 +64,24 @@ export async function GET(req: NextRequest) {
     // 사용자 정보 확인
     const user = sessionData?.user
 
-    // 초대된 사용자 판단 방법:
-    // 1. type=invite 파라미터
-    // 2. user_metadata.needs_password_setup 플래그
-    // 3. invited_at이 있고 첫 로그인
-    const needsPasswordSetup = user?.user_metadata?.needs_password_setup === true
-    const isFirstLogin = !user?.last_sign_in_at
-    const wasInvited = !!user?.invited_at
-    const isInvitedUser = needsPasswordSetup || (wasInvited && isFirstLogin)
+    // profiles 테이블에서 password_set 확인
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('password_set')
+      .eq('id', user.id)
+      .single()
+
+    // 초대된 사용자 판단: password_set이 false이면 비밀번호 설정 필요
+    const needsPasswordSetup = profile?.password_set === false
+    const isInvitedUser = needsPasswordSetup || type === 'invite'
 
     console.log('[AUTH CALLBACK] User info:', {
       email: user?.email,
       type,
       invited_at: user?.invited_at,
       last_sign_in_at: user?.last_sign_in_at,
+      passwordSet: profile?.password_set,
       needsPasswordSetup,
-      isFirstLogin,
-      wasInvited,
       isInvitedUser,
       user_metadata: user?.user_metadata
     })
