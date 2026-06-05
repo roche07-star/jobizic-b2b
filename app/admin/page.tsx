@@ -243,14 +243,7 @@ export default function AdminPage() {
       setUserFullName('')
       setUserOrgId('')
 
-      // 임시 비밀번호 표시
-      const tempPassword = data.tempPassword
-      const message = `✅ 사용자 생성 완료!\n\n임시 비밀번호: ${tempPassword}\n\n이 비밀번호를 사용자에게 전달하세요.\n첫 로그인 시 비밀번호 변경이 필요합니다.`
-
-      if (confirm(message + '\n\n비밀번호를 클립보드에 복사하시겠습니까?')) {
-        navigator.clipboard.writeText(tempPassword)
-        alert('📋 비밀번호가 클립보드에 복사되었습니다!')
-      }
+      alert(data.message || '✅ 초대 이메일이 발송되었습니다!')
     } catch (e: any) {
       setError(e.message)
     } finally {
