@@ -67,6 +67,11 @@ export default function AdminPage() {
   const [editIsActive, setEditIsActive] = useState(true)
   const [updatingUser, setUpdatingUser] = useState(false)
 
+  // 업무 이관
+  const [showTransferUI, setShowTransferUI] = useState(false)
+  const [transferTarget, setTransferTarget] = useState('')
+  const [transferring, setTransferring] = useState(false)
+
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -266,6 +271,13 @@ export default function AdminPage() {
 
   async function updateUser() {
     if (!editingUser) return
+
+    // 비활성화 시도 시 업무 이관 확인
+    if (editingUser.is_active && !editIsActive) {
+      setShowTransferUI(true)
+      return
+    }
+
     setUpdatingUser(true)
     setError(null)
     try {
@@ -284,11 +296,38 @@ export default function AdminPage() {
 
       await loadData() // 새로고침
       setEditingUser(null)
+      setShowTransferUI(false)
+      setTransferTarget('')
       alert('✅ 사용자 정보가 수정되었습니다!')
     } catch (e: any) {
       setError(e.message)
     } finally {
       setUpdatingUser(false)
+    }
+  }
+
+  async function transferWork() {
+    if (!editingUser || !transferTarget) return
+
+    setTransferring(true)
+    setError(null)
+    try {
+      const res = await fetch(`/api/admin/users/${editingUser.id}/transfer`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ target_email: transferTarget }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error)
+
+      alert(`✅ 업무 이관 완료!\n\nJD: ${data.counts.jds}개\n후보자: ${data.counts.candidates}개\n파이프라인: ${data.counts.pipelines}개`)
+
+      // 이관 완료 후 사용자 비활성화
+      await updateUser()
+    } catch (e: any) {
+      setError(e.message)
+    } finally {
+      setTransferring(false)
     }
   }
 
@@ -617,14 +656,14 @@ export default function AdminPage() {
 
       {/* 사용자 수정 모달 */}
       {editingUser && (
-        <div className="overlay" onClick={() => setEditingUser(null)}>
+        <div className="overlay" onClick={() => { setEditingUser(null); setShowTransferUI(false); setTransferTarget('') }}>
           <div className="modal" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
               <div>
                 <div className="modal-title">사용자 정보 수정</div>
                 <div style={{ fontSize: 12, color: 'var(--muted2)', marginTop: 4 }}>{editingUser.email}</div>
               </div>
-              <button className="modal-close" onClick={() => setEditingUser(null)}>✕</button>
+              <button className="modal-close" onClick={() => { setEditingUser(null); setShowTransferUI(false); setTransferTarget('') }}>✕</button>
             </div>
 
             <div className="form-group" style={{ marginBottom: 12 }}>
@@ -671,6 +710,57 @@ export default function AdminPage() {
               </label>
             </div>
 
+            {/* 업무 이관 UI */}
+            {showTransferUI && (
+              <div style={{ padding: 16, background: 'var(--bg3)', borderRadius: 8, marginBottom: 16 }}>
+                <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 12, color: 'var(--danger)' }}>
+                  🚨 업무 이관 필요
+                </div>
+                <div style={{ fontSize: 13, color: 'var(--muted2)', marginBottom: 16 }}>
+                  이 사용자를 비활성화하려면 담당 업무를 다른 멤버에게 이관해야 합니다.
+                </div>
+                <div className="form-group" style={{ marginBottom: 12 }}>
+                  <label className="form-label">이관받을 멤버</label>
+                  <select
+                    className="form-select"
+                    value={transferTarget}
+                    onChange={e => setTransferTarget(e.target.value)}
+                  >
+                    <option value="">멤버 선택</option>
+                    {users
+                      .filter(u =>
+                        u.id !== editingUser.id &&
+                        u.is_active &&
+                        u.organization_id === editingUser.organization_id
+                      )
+                      .map(u => (
+                        <option key={u.id} value={u.email}>
+                          {u.full_name || u.email} ({u.role})
+                        </option>
+                      ))}
+                  </select>
+                </div>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button
+                    className="btn btn-primary btn-sm"
+                    onClick={transferWork}
+                    disabled={transferring || !transferTarget}
+                  >
+                    {transferring ? '이관 중...' : '✅ 업무 이관 & 비활성화'}
+                  </button>
+                  <button
+                    className="btn btn-ghost btn-sm"
+                    onClick={() => {
+                      setShowTransferUI(false)
+                      setEditIsActive(true) // 체크박스 되돌리기
+                    }}
+                  >
+                    취소
+                  </button>
+                </div>
+              </div>
+            )}
+
             {error && (
               <div style={{ padding: 12, background: 'rgba(255,107,107,0.1)', border: '1px solid var(--danger)', borderRadius: 8, marginBottom: 16, color: 'var(--danger)', fontSize: 13 }}>
                 {error}
@@ -678,10 +768,10 @@ export default function AdminPage() {
             )}
 
             <div style={{ display: 'flex', gap: 8 }}>
-              <button className="btn btn-primary" onClick={updateUser} disabled={updatingUser}>
+              <button className="btn btn-primary" onClick={updateUser} disabled={updatingUser || showTransferUI}>
                 {updatingUser ? '수정 중...' : '✅ 저장'}
               </button>
-              <button className="btn btn-ghost" onClick={() => setEditingUser(null)}>취소</button>
+              <button className="btn btn-ghost" onClick={() => { setEditingUser(null); setShowTransferUI(false); setTransferTarget('') }}>취소</button>
             </div>
           </div>
         </div>
