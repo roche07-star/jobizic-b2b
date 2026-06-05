@@ -63,14 +63,13 @@ export async function GET(req: NextRequest) {
 
     // 사용자 정보 확인
     const user = sessionData?.user
-    const isInvitedUser = user?.invited_at && !user?.confirmed_at
 
     console.log('[AUTH CALLBACK] User info:', {
       email: user?.email,
       type,
       invited_at: user?.invited_at,
       confirmed_at: user?.confirmed_at,
-      isInvitedUser
+      user_metadata: user?.user_metadata
     })
 
     // type에 따라 리다이렉트 경로 결정
@@ -80,8 +79,8 @@ export async function GET(req: NextRequest) {
       // 비밀번호 재설정 플로우
       console.log('[AUTH CALLBACK] Password recovery flow -> /auth/reset-password')
       redirectPath = `${requestUrl.origin}/auth/reset-password`
-    } else if (isInvitedUser || type === 'invite') {
-      // 초대받은 사용자 플로우
+    } else if (type === 'invite') {
+      // 초대받은 사용자 플로우 (type=invite로만 판단)
       console.log('[AUTH CALLBACK] Invited user flow -> /auth/set-password')
       redirectPath = `${requestUrl.origin}/auth/set-password`
     } else {
