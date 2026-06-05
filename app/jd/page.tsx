@@ -76,9 +76,25 @@ export default function JDPage() {
         ...(profile.role !== 'admin' && profile.organization_id && { organization_id: profile.organization_id })
       })
 
+      console.log('[JD Page] Loading JDs with params:', Object.fromEntries(params))
+      console.log('[JD Page] Profile:', { role: profile.role, org_id: profile.organization_id })
+
       fetch(`/api/jd?${params}`)
-        .then(r => r.json())
-        .then(d => setJds(d.jds ?? []))
+        .then(r => {
+          console.log('[JD Page] Response status:', r.status)
+          if (!r.ok) {
+            throw new Error(`HTTP ${r.status}: ${r.statusText}`)
+          }
+          return r.json()
+        })
+        .then(d => {
+          console.log('[JD Page] Loaded JDs:', d.jds?.length)
+          setJds(d.jds ?? [])
+        })
+        .catch(err => {
+          console.error('[JD Page] Error loading JDs:', err)
+          alert('JD 목록을 불러오는데 실패했습니다: ' + err.message)
+        })
         .finally(() => setLoading(false))
     }
     loadJDs()
