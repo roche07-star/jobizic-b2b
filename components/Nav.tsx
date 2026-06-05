@@ -22,8 +22,15 @@ export default function Nav() {
   const [profile, setProfile] = useState<Profile | null>(null)
 
   useEffect(() => {
-    getProfile().then(setProfile)
-  }, [])
+    getProfile().then(p => {
+      setProfile(p)
+
+      // 비밀번호 변경이 필요한 경우 (임시 비밀번호로 로그인)
+      if (p?.password_set === false && path !== '/auth/set-password') {
+        router.push('/auth/set-password')
+      }
+    })
+  }, [path, router])
 
   async function handleSignOut() {
     setProfile(null) // 즉시 UI 클리어

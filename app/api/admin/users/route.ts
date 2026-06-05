@@ -25,6 +25,16 @@ export async function GET() {
   }
 }
 
+// 랜덤 임시 비밀번호 생성
+function generateTempPassword() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789'
+  let password = ''
+  for (let i = 0; i < 8; i++) {
+    password += chars.charAt(Math.floor(Math.random() * chars.length))
+  }
+  return password
+}
+
 export async function POST(req: NextRequest) {
   try {
     const { email, full_name, role, organization_id } = await req.json()
@@ -33,51 +43,34 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: '이메일은 필수입니다.' }, { status: 400 })
     }
 
-    const isDev = process.env.DEV_MODE === 'true'
-    let authData, authError
+    // 임시 비밀번호 생성
+    const tempPassword = generateTempPassword()
 
-    if (isDev) {
-      // 개발 모드: 임시 비밀번호로 바로 생성 (이메일 발송 없음)
-      const devPassword = process.env.DEV_DEFAULT_PASSWORD || 'test1234'
-      const result = await supabaseAdmin.auth.admin.createUser({
-        email,
-        password: devPassword,
-        email_confirm: true,
-        user_metadata: {
-          full_name,
-          role: role || 'headhunter',
-        },
-      })
-      authData = result.data
-      authError = result.error
-      console.log(`[DEV MODE] User created with password: ${devPassword}`)
-    } else {
-      // 프로덕션 모드: 이메일 초대 발송
-      const result = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
-        data: {
-          full_name,
-          role: role || 'headhunter',
-          organization_id,
-          needs_password_setup: true, // 비밀번호 설정 필요 플래그
-        },
-        redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://jobizic-biz.vercel.app'}/auth/callback`,
-      })
-      authData = result.data
-      authError = result.error
-    }
+    // 사용자 생성 (임시 비밀번호 포함)
+    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
+      email,
+      password: tempPassword,
+      email_confirm: true,
+      user_metadata: {
+        full_name,
+        role: role || 'headhunter',
+      },
+    })
 
     if (authError || !authData?.user) {
       return NextResponse.json({ error: authError?.message || '사용자 생성 실패' }, { status: 500 })
     }
 
-    // Profile 업데이트 (트리거로 생성되었으므로 업데이트만)
+    console.log(`[CREATE USER] ${email} with temp password: ${tempPassword}`)
+
+    // Profile 업데이트 (password_set=false로 첫 로그인 시 비밀번호 변경 강제)
     const { error: profileError } = await supabaseAdmin
       .from('profiles')
       .update({
         organization_id,
         full_name,
         role: role || 'headhunter',
-        password_set: isDev ? true : false, // 개발: true, 초대: false
+        password_set: false, // 비밀번호 변경 필요
       })
       .eq('id', authData.user.id)
 
@@ -88,11 +81,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       id: authData.user.id,
       email: authData.user.email,
-      message: isDev ? `사용자 생성 완료 (비밀번호: ${process.env.DEV_DEFAULT_PASSWORD || 'test1234'})` : '초대 이메일이 발송되었습니다.',
-      dev_mode: isDev,
+      tempPassword: tempPassword,
+      message: `사용자 생성 완료! 임시 비밀번호를 사용자에게 전달하세요.`,
     })
   } catch (e: any) {
     console.error('[admin/users POST]', e)
-    return NextResponse.json({ error: e.message || '초대 중 오류가 발생했습니다.' }, { status: 500 })
+    return NextResponse.json({ error: e.message || '사용자 생성 중 오류가 발생했습니다.' }, { status: 500 })
   }
 }

@@ -9,6 +9,7 @@ export interface Profile {
   client_company_name: string | null
   allowed_jd_ids: string[] | null
   is_active: boolean
+  password_set?: boolean
   organization?: {
     id: string
     name: string
