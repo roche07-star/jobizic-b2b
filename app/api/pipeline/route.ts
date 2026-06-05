@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
+import { createNotification } from '@/lib/notifications'
 
 export async function GET(req: NextRequest) {
   try {
@@ -50,7 +51,11 @@ export async function POST(req: NextRequest) {
     const { data, error } = await supabaseAdmin
       .from('pipeline')
       .insert(body)
-      .select('id')
+      .select(`
+        id,
+        job_descriptions (id, position, company, created_by),
+        candidates (id, name)
+      `)
       .single()
     if (error) {
       // 중복 체크
@@ -59,6 +64,41 @@ export async function POST(req: NextRequest) {
       }
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
+
+    // 후보자-JD 매칭 알림 - JD 담당자에게 (본인이 아니면)
+    const jd = data.job_descriptions as any
+    const candidate = data.candidates as any
+
+    if (jd?.created_by && body.created_by) {
+      const { data: creator } = await supabaseAdmin
+        .from('profiles')
+        .select('id, full_name')
+        .eq('email', body.created_by)
+        .single()
+
+      // JD 담당자 조회
+      const { data: jdOwner } = await supabaseAdmin
+        .from('profiles')
+        .select('id')
+        .eq('email', jd.created_by)
+        .single()
+
+      // JD 담당자가 본인이 아니면 알림
+      if (jdOwner && creator && jdOwner.id !== creator.id) {
+        await createNotification({
+          userId: jdOwner.id,
+          type: 'assignment',
+          title: '새 후보자 매칭',
+          message: `${jd.company || '회사'} - ${jd.position} 포지션에 "${candidate?.name || '후보자'}" 후보자가 매칭되었습니다.`,
+          relatedId: data.id,
+          relatedType: 'pipeline',
+          actionUrl: `/pipeline`,
+          senderId: creator.id,
+          senderName: creator.full_name || body.created_by,
+        })
+      }
+    }
+
     return NextResponse.json({ id: data.id })
   } catch (e) {
     console.error('[api/pipeline POST]', e)

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
+import { notifyOrganizationMembers } from '@/lib/notifications'
 
 export async function GET(req: NextRequest) {
   try {
@@ -84,9 +85,36 @@ export async function POST(req: NextRequest) {
     const { data, error } = await supabaseAdmin
       .from('job_descriptions')
       .insert(body)
-      .select('id')
+      .select('id, position, company, organization_id')
       .single()
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+    // 새 JD 등록 알림 - 조직 멤버들에게 (본인 제외)
+    if (data.organization_id && created_by) {
+      const { data: creator } = await supabaseAdmin
+        .from('profiles')
+        .select('id, full_name')
+        .eq('email', created_by)
+        .single()
+
+      if (creator) {
+        await notifyOrganizationMembers(
+          data.organization_id,
+          {
+            type: 'new_jd',
+            title: '새 JD 등록',
+            message: `${data.company || '회사'} - ${data.position} 포지션이 등록되었습니다.`,
+            relatedId: data.id,
+            relatedType: 'jd',
+            actionUrl: '/jd',
+            senderId: creator.id,
+            senderName: creator.full_name || created_by,
+          },
+          creator.id // 본인 제외
+        )
+      }
+    }
+
     return NextResponse.json({ id: data.id })
   } catch (e) {
     console.error('[api/jd POST]', e)

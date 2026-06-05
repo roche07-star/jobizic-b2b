@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
+import { notifyMembersByRole } from '@/lib/notifications'
 
 export async function GET(req: NextRequest) {
   try {
@@ -69,9 +70,36 @@ export async function POST(req: NextRequest) {
     const { data, error } = await supabaseAdmin
       .from('candidates')
       .insert(body)
-      .select('id')
+      .select('id, name, current_position, organization_id, created_by')
       .single()
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+    // 새 후보자 등록 알림 - owner/PM에게 (본인 제외)
+    if (data.organization_id && data.created_by) {
+      const { data: creator } = await supabaseAdmin
+        .from('profiles')
+        .select('id, full_name')
+        .eq('email', data.created_by)
+        .single()
+
+      if (creator) {
+        await notifyMembersByRole(
+          data.organization_id,
+          ['owner', 'headhunter'], // owner와 PM에게만 알림
+          {
+            type: 'new_candidate',
+            title: '새 후보자 등록',
+            message: `${data.name} (${data.current_position || '포지션 미상'}) 후보자가 등록되었습니다.`,
+            relatedId: data.id,
+            relatedType: 'candidate',
+            actionUrl: '/candidates',
+            senderId: creator.id,
+            senderName: creator.full_name || data.created_by,
+          }
+        )
+      }
+    }
+
     return NextResponse.json({ id: data.id })
   } catch (e) {
     console.error('[api/candidates POST]', e)
