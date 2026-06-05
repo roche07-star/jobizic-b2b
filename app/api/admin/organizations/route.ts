@@ -2,12 +2,22 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 
 // Admin API - RLS로 보호됨 (클라이언트에서 admin 체크)
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
-    const { data, error } = await supabaseAdmin
+    const role = req.nextUrl.searchParams.get('role')
+    const organizationId = req.nextUrl.searchParams.get('organization_id')
+
+    let q = supabaseAdmin
       .from('organizations')
       .select('*')
       .order('created_at', { ascending: false })
+
+    // Owner는 본인 조직만 조회
+    if (role === 'owner' && organizationId) {
+      q = q.eq('id', organizationId)
+    }
+
+    const { data, error } = await q
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
     return NextResponse.json({ organizations: data })

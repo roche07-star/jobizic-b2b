@@ -23,6 +23,8 @@ export default function Nav() {
 
   useEffect(() => {
     getProfile().then(p => {
+      console.log('[Nav] Profile loaded:', p)
+      console.log('[Nav] Profile role:', p?.role)
       setProfile(p)
 
       // 비밀번호 변경이 필요한 경우 (임시 비밀번호로 로그인)
@@ -58,15 +60,19 @@ export default function Nav() {
             {l.label}
           </Link>
         ))}
-        {(profile?.role === 'admin' || profile?.role === 'owner') && adminLinks.map(l => (
-          <Link
-            key={l.href}
-            href={l.href}
-            className={`nav-link${path === l.href || (l.href !== '/' && path.startsWith(l.href)) ? ' active' : ''}`}
-          >
-            {l.label}
-          </Link>
-        ))}
+        {(() => {
+          const shouldShow = profile?.role === 'admin' || profile?.role === 'owner'
+          console.log('[Nav] Should show admin links?', shouldShow, 'profile.role:', profile?.role)
+          return shouldShow && adminLinks.map(l => (
+            <Link
+              key={l.href}
+              href={l.href}
+              className={`nav-link${path === l.href || (l.href !== '/' && path.startsWith(l.href)) ? ' active' : ''}`}
+            >
+              {l.label}
+            </Link>
+          ))
+        })()}
       </div>
       <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 12 }}>
         {profile && (

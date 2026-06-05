@@ -88,7 +88,7 @@ export default function AdminPage() {
       if (p?.organization_id) params.set('organization_id', p.organization_id)
 
       const [orgsRes, usersRes] = await Promise.all([
-        fetch('/api/admin/organizations'),
+        fetch(`/api/admin/organizations?${params}`),
         fetch(`/api/admin/users?${params}`),
       ])
       const orgsData = await orgsRes.json()
@@ -333,7 +333,7 @@ export default function AdminPage() {
     )
   }
 
-  if (!profile || profile.role !== 'admin') {
+  if (!profile || (profile.role !== 'admin' && profile.role !== 'owner')) {
     return null
   }
 
