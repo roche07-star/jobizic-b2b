@@ -1,9 +1,20 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { getProfile, signOut, type Profile } from '@/lib/auth'
+
+interface Notification {
+  id: string
+  type: string
+  title: string
+  message: string | null
+  action_url: string | null
+  is_read: boolean
+  created_at: string
+  sender_name: string | null
+}
 
 const links = [
   { href: '/', label: '대시보드' },
@@ -20,6 +31,10 @@ export default function Nav() {
   const path = usePathname()
   const router = useRouter()
   const [profile, setProfile] = useState<Profile | null>(null)
+  const [notifications, setNotifications] = useState<Notification[]>([])
+  const [unreadCount, setUnreadCount] = useState(0)
+  const [showNotifications, setShowNotifications] = useState(false)
+  const notifRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     getProfile().then(p => {
@@ -31,8 +46,62 @@ export default function Nav() {
       if (p?.password_set === false && path !== '/auth/set-password') {
         router.push('/auth/set-password')
       }
+
+      // 알림 로드
+      if (p) {
+        loadNotifications()
+      }
     })
   }, [path, router])
+
+  // 알림 로드
+  async function loadNotifications() {
+    try {
+      const [notifRes, countRes] = await Promise.all([
+        fetch('/api/notifications?limit=10'),
+        fetch('/api/notifications/unread-count'),
+      ])
+
+      const notifData = await notifRes.json()
+      const countData = await countRes.json()
+
+      setNotifications(notifData.notifications || [])
+      setUnreadCount(countData.count || 0)
+    } catch (e) {
+      console.error('[loadNotifications] Error:', e)
+    }
+  }
+
+  // 알림 읽음 처리
+  async function markAsRead(id: string) {
+    try {
+      await fetch(`/api/notifications/${id}`, { method: 'PATCH' })
+      await loadNotifications()
+    } catch (e) {
+      console.error('[markAsRead] Error:', e)
+    }
+  }
+
+  // 전체 읽음 처리
+  async function markAllAsRead() {
+    try {
+      await fetch('/api/notifications/mark-all-read', { method: 'POST' })
+      await loadNotifications()
+    } catch (e) {
+      console.error('[markAllAsRead] Error:', e)
+    }
+  }
+
+  // 드롭다운 외부 클릭 시 닫기
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (notifRef.current && !notifRef.current.contains(e.target as Node)) {
+        setShowNotifications(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
 
   async function handleSignOut() {
     setProfile(null) // 즉시 UI 클리어
@@ -89,6 +158,139 @@ export default function Nav() {
             {profile.role === 'client' && <span style={{ color: 'var(--muted2)', marginLeft: 6 }}>고객사</span>}
           </div>
         )}
+
+        {/* 알림 */}
+        {profile && (
+          <div style={{ position: 'relative' }} ref={notifRef}>
+            <button
+              className="btn btn-ghost btn-sm"
+              onClick={() => setShowNotifications(!showNotifications)}
+              style={{ position: 'relative', fontSize: 16, padding: '4px 8px' }}
+            >
+              🔔
+              {unreadCount > 0 && (
+                <span style={{
+                  position: 'absolute',
+                  top: 0,
+                  right: 0,
+                  background: 'var(--danger)',
+                  color: 'white',
+                  borderRadius: '50%',
+                  width: 16,
+                  height: 16,
+                  fontSize: 10,
+                  fontWeight: 600,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}>
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </span>
+              )}
+            </button>
+
+            {/* 알림 드롭다운 */}
+            {showNotifications && (
+              <div style={{
+                position: 'absolute',
+                top: 'calc(100% + 8px)',
+                right: 0,
+                width: 360,
+                maxHeight: 500,
+                background: 'var(--bg2)',
+                border: '2px solid var(--border)',
+                borderRadius: 12,
+                boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
+                zIndex: 1000,
+                overflow: 'hidden',
+              }}>
+                <div style={{
+                  padding: '12px 16px',
+                  borderBottom: '1px solid var(--border)',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                }}>
+                  <div style={{ fontWeight: 600, fontSize: 14 }}>알림</div>
+                  {unreadCount > 0 && (
+                    <button
+                      className="btn btn-ghost btn-sm"
+                      onClick={markAllAsRead}
+                      style={{ fontSize: 11, padding: '2px 8px' }}
+                    >
+                      전체 읽음
+                    </button>
+                  )}
+                </div>
+
+                <div style={{ maxHeight: 400, overflowY: 'auto' }}>
+                  {notifications.length === 0 ? (
+                    <div style={{
+                      padding: 40,
+                      textAlign: 'center',
+                      color: 'var(--muted2)',
+                      fontSize: 13,
+                    }}>
+                      알림이 없습니다
+                    </div>
+                  ) : (
+                    notifications.map(notif => (
+                      <div
+                        key={notif.id}
+                        style={{
+                          padding: '12px 16px',
+                          borderBottom: '1px solid var(--border)',
+                          background: notif.is_read ? 'transparent' : 'rgba(255,255,255,0.03)',
+                          cursor: notif.action_url ? 'pointer' : 'default',
+                        }}
+                        onClick={() => {
+                          if (!notif.is_read) markAsRead(notif.id)
+                          if (notif.action_url) {
+                            router.push(notif.action_url)
+                            setShowNotifications(false)
+                          }
+                        }}
+                      >
+                        <div style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'flex-start',
+                          marginBottom: 4,
+                        }}>
+                          <div style={{ fontWeight: 600, fontSize: 13 }}>
+                            {notif.title}
+                          </div>
+                          {!notif.is_read && (
+                            <div style={{
+                              width: 8,
+                              height: 8,
+                              borderRadius: '50%',
+                              background: 'var(--accent)',
+                              marginTop: 4,
+                            }} />
+                          )}
+                        </div>
+                        {notif.message && (
+                          <div style={{
+                            fontSize: 12,
+                            color: 'var(--muted)',
+                            marginBottom: 4,
+                          }}>
+                            {notif.message}
+                          </div>
+                        )}
+                        <div style={{ fontSize: 11, color: 'var(--muted2)' }}>
+                          {new Date(notif.created_at).toLocaleString('ko-KR')}
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
         <button
           className="btn btn-ghost btn-sm"
           onClick={handleSignOut}
