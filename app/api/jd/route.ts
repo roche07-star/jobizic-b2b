@@ -89,8 +89,11 @@ export async function POST(req: NextRequest) {
       .single()
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
+    console.log('[JD POST] Created JD:', { id: data.id, org_id: data.organization_id, created_by })
+
     // 새 JD 등록 알림 - 조직 멤버들에게 (본인 제외)
     if (data.organization_id && created_by) {
+      console.log('[JD POST] Sending notifications to organization:', data.organization_id)
       const { data: creator } = await supabaseAdmin
         .from('profiles')
         .select('id, full_name')
@@ -98,7 +101,8 @@ export async function POST(req: NextRequest) {
         .single()
 
       if (creator) {
-        await notifyOrganizationMembers(
+        console.log('[JD POST] Creator found:', { id: creator.id, name: creator.full_name })
+        const notifications = await notifyOrganizationMembers(
           data.organization_id,
           {
             type: 'new_jd',
@@ -112,7 +116,12 @@ export async function POST(req: NextRequest) {
           },
           creator.id // 본인 제외
         )
+        console.log('[JD POST] Notifications sent:', notifications.length)
+      } else {
+        console.log('[JD POST] Creator not found for email:', created_by)
       }
+    } else {
+      console.log('[JD POST] Skipping notifications - missing org_id or created_by')
     }
 
     return NextResponse.json({ id: data.id })
