@@ -5,7 +5,7 @@ export interface Profile {
   organization_id: string | null
   email: string
   full_name: string | null
-  role: 'admin' | 'owner' | 'headhunter' | 'client' | 'client_owner' | 'client_pm' | 'client_searcher'
+  role: 'admin' | 'owner' | 'headhunter' | 'searcher' | 'client' | 'client_owner' | 'client_pm' | 'client_searcher'
   client_company_name: string | null
   allowed_jd_ids: string[] | null
   is_active: boolean
