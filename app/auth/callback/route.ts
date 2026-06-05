@@ -61,7 +61,7 @@ export async function GET(req: NextRequest) {
     if (exchangeError) {
       console.error('[AUTH CALLBACK] Exchange error:', exchangeError)
       return NextResponse.redirect(
-        `${requestUrl.origin}/?error=${encodeURIComponent(exchangeError.message)}`
+        `${requestUrl.origin}/?error=${encodeURIComponent(exchangeError?.message || 'Authentication error')}`
       )
     }
 
