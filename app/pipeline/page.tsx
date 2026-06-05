@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { getProfile } from '@/lib/auth'
+import { downloadPipelineAsCSV } from '@/lib/csv-export'
 
 interface JD {
   id: string
@@ -212,6 +213,15 @@ export default function PipelinePage() {
                 <option key={org.id} value={org.id}>{org.name}</option>
               ))}
             </select>
+          )}
+          {pipeline.length > 0 && (
+            <button
+              className="btn btn-ghost"
+              onClick={() => downloadPipelineAsCSV(pipeline)}
+              style={{ fontSize: 13 }}
+            >
+              📥 엑셀 다운로드
+            </button>
           )}
           <button className="btn btn-primary" onClick={() => setShowAddModal(true)}>+ JD-후보자 추가</button>
         </div>

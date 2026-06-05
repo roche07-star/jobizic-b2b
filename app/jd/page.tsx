@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { getProfile } from '@/lib/auth'
+import { downloadJDsAsCSV } from '@/lib/csv-export'
 
 interface JD {
   id: string
@@ -129,6 +130,15 @@ export default function JDPage() {
                 <option key={org.id} value={org.id}>{org.name}</option>
               ))}
             </select>
+          )}
+          {jds.length > 0 && (
+            <button
+              className="btn btn-ghost"
+              onClick={() => downloadJDsAsCSV(filtered)}
+              style={{ fontSize: 13 }}
+            >
+              📥 엑셀 다운로드
+            </button>
           )}
           <Link href="/jd/new">
             <button className="btn btn-primary">+ JD 등록</button>

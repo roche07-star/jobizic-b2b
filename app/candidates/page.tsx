@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { getProfile } from '@/lib/auth'
+import { downloadCandidatesAsCSV } from '@/lib/csv-export'
 
 interface PipelineInfo {
   id: string
@@ -152,6 +153,15 @@ export default function CandidatesPage() {
                 <option key={org.id} value={org.id}>{org.name}</option>
               ))}
             </select>
+          )}
+          {candidates.length > 0 && (
+            <button
+              className="btn btn-ghost"
+              onClick={() => downloadCandidatesAsCSV(filtered)}
+              style={{ fontSize: 13 }}
+            >
+              📥 엑셀 다운로드
+            </button>
           )}
           <Link href="/candidates/new">
             <button className="btn btn-primary">+ 후보자 등록</button>
