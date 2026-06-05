@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { getProfile, signOut, type Profile } from '@/lib/auth'
+import { createClient } from '@supabase/supabase-js'
 
 interface Notification {
   id: string
@@ -57,16 +58,26 @@ export default function Nav() {
   // 알림 로드
   async function loadNotifications() {
     try {
-      const [notifRes, countRes] = await Promise.all([
-        fetch('/api/notifications?limit=10'),
-        fetch('/api/notifications/unread-count'),
-      ])
+      const supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      )
 
-      const notifData = await notifRes.json()
-      const countData = await countRes.json()
+      // 알림 목록 조회 (RLS 적용)
+      const { data: notifications } = await supabase
+        .from('notifications')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(10)
 
-      setNotifications(notifData.notifications || [])
-      setUnreadCount(countData.count || 0)
+      // 읽지 않은 알림 개수
+      const { count } = await supabase
+        .from('notifications')
+        .select('*', { count: 'exact', head: true })
+        .eq('is_read', false)
+
+      setNotifications(notifications || [])
+      setUnreadCount(count || 0)
     } catch (e) {
       console.error('[loadNotifications] Error:', e)
     }
@@ -75,7 +86,19 @@ export default function Nav() {
   // 알림 읽음 처리
   async function markAsRead(id: string) {
     try {
-      await fetch(`/api/notifications/${id}`, { method: 'PATCH' })
+      const supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      )
+
+      await supabase
+        .from('notifications')
+        .update({
+          is_read: true,
+          read_at: new Date().toISOString(),
+        })
+        .eq('id', id)
+
       await loadNotifications()
     } catch (e) {
       console.error('[markAsRead] Error:', e)
@@ -85,7 +108,23 @@ export default function Nav() {
   // 전체 읽음 처리
   async function markAllAsRead() {
     try {
-      await fetch('/api/notifications/mark-all-read', { method: 'POST' })
+      const supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      )
+
+      const { data: user } = await supabase.auth.getUser()
+      if (!user?.user?.id) return
+
+      await supabase
+        .from('notifications')
+        .update({
+          is_read: true,
+          read_at: new Date().toISOString(),
+        })
+        .eq('user_id', user.user.id)
+        .eq('is_read', false)
+
       await loadNotifications()
     } catch (e) {
       console.error('[markAllAsRead] Error:', e)
