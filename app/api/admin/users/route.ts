@@ -2,10 +2,13 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 
 // Admin API - service_role key 사용 (RLS bypass)
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
+    const role = req.nextUrl.searchParams.get('role')
+    const organizationId = req.nextUrl.searchParams.get('organization_id')
+
     // Profiles 조회 (organizations 조인)
-    const { data, error } = await supabaseAdmin
+    let q = supabaseAdmin
       .from('profiles')
       .select(`
         *,
@@ -16,6 +19,13 @@ export async function GET() {
         )
       `)
       .order('created_at', { ascending: false })
+
+    // Owner는 본인 조직 멤버만 조회
+    if (role === 'owner' && organizationId) {
+      q = q.eq('organization_id', organizationId)
+    }
+
+    const { data, error } = await q
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
     return NextResponse.json({ users: data })

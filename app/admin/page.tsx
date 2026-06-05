@@ -71,7 +71,7 @@ export default function AdminPage() {
 
   useEffect(() => {
     getProfile().then(p => {
-      if (!p || p.role !== 'admin') {
+      if (!p || (p.role !== 'admin' && p.role !== 'owner')) {
         router.push('/')
         return
       }
@@ -82,9 +82,14 @@ export default function AdminPage() {
 
   async function loadData() {
     try {
+      const p = await getProfile()
+      const params = new URLSearchParams()
+      if (p?.role) params.set('role', p.role)
+      if (p?.organization_id) params.set('organization_id', p.organization_id)
+
       const [orgsRes, usersRes] = await Promise.all([
         fetch('/api/admin/organizations'),
-        fetch('/api/admin/users'),
+        fetch(`/api/admin/users?${params}`),
       ])
       const orgsData = await orgsRes.json()
       const usersData = await usersRes.json()
