@@ -64,11 +64,19 @@ export async function GET(req: NextRequest) {
     // 사용자 정보 확인
     const user = sessionData?.user
 
+    // 초대된 사용자 판단: invited_at이 있고 첫 로그인인 경우
+    const isFirstLogin = !user?.last_sign_in_at
+    const wasInvited = !!user?.invited_at
+    const isInvitedUser = wasInvited && isFirstLogin
+
     console.log('[AUTH CALLBACK] User info:', {
       email: user?.email,
       type,
       invited_at: user?.invited_at,
-      confirmed_at: user?.confirmed_at,
+      last_sign_in_at: user?.last_sign_in_at,
+      isFirstLogin,
+      wasInvited,
+      isInvitedUser,
       user_metadata: user?.user_metadata
     })
 
@@ -79,8 +87,8 @@ export async function GET(req: NextRequest) {
       // 비밀번호 재설정 플로우
       console.log('[AUTH CALLBACK] Password recovery flow -> /auth/reset-password')
       redirectPath = `${requestUrl.origin}/auth/reset-password`
-    } else if (type === 'invite') {
-      // 초대받은 사용자 플로우 (type=invite로만 판단)
+    } else if (type === 'invite' || isInvitedUser) {
+      // 초대받은 사용자 플로우
       console.log('[AUTH CALLBACK] Invited user flow -> /auth/set-password')
       redirectPath = `${requestUrl.origin}/auth/set-password`
     } else {
