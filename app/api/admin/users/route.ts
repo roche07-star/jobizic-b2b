@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
+import { Resend } from 'resend'
 
 // Admin API - service_role key 사용 (RLS bypass)
 export async function GET() {
@@ -78,11 +79,52 @@ export async function POST(req: NextRequest) {
       console.error('Profile update error:', profileError)
     }
 
+    // 이메일 발송 (API 키가 있을 때만)
+    if (process.env.RESEND_API_KEY) {
+      try {
+        const resend = new Resend(process.env.RESEND_API_KEY)
+        await resend.emails.send({
+        from: 'JOBIZIC <onboarding@resend.dev>', // 나중에 실제 도메인으로 변경
+        to: email,
+        subject: 'JOBIZIC 계정이 생성되었습니다',
+        html: `
+          <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #333;">안녕하세요!</h2>
+            <p>JOBIZIC 계정이 생성되었습니다.</p>
+
+            <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
+              <h3 style="margin-top: 0;">로그인 정보</h3>
+              <p><strong>이메일:</strong> ${email}</p>
+              <p><strong>임시 비밀번호:</strong> <code style="background: #fff; padding: 4px 8px; border-radius: 4px; font-size: 16px;">${tempPassword}</code></p>
+            </div>
+
+            <p>
+              <a href="${process.env.NEXT_PUBLIC_SITE_URL || 'https://jobizic-biz.vercel.app'}/login"
+                 style="display: inline-block; background: #CDFF00; color: #000; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: 600;">
+                로그인하기
+              </a>
+            </p>
+
+            <p style="color: #666; font-size: 14px;">
+              ⚠️ 첫 로그인 시 비밀번호 변경이 필요합니다.
+            </p>
+          </div>
+        `,
+      })
+        console.log(`[EMAIL SENT] Welcome email sent to ${email}`)
+      } catch (emailError) {
+        console.error('[EMAIL ERROR]', emailError)
+        // 이메일 발송 실패해도 사용자 생성은 성공으로 처리
+      }
+    } else {
+      console.log('[EMAIL SKIP] RESEND_API_KEY not configured')
+    }
+
     return NextResponse.json({
       id: authData.user.id,
       email: authData.user.email,
       tempPassword: tempPassword,
-      message: `사용자 생성 완료! 임시 비밀번호를 사용자에게 전달하세요.`,
+      message: `✅ 사용자 생성 완료! 환영 이메일이 발송되었습니다.`,
     })
   } catch (e: any) {
     console.error('[admin/users POST]', e)
