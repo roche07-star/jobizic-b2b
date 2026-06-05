@@ -94,7 +94,33 @@ export async function POST(req: NextRequest) {
     if (!match) return NextResponse.json({ error: '파싱 실패. 다시 시도해 주세요.' }, { status: 500 })
 
     const parsed = JSON.parse(match[0])
-    return NextResponse.json(parsed)
+
+    // Backward compatibility: 이전 구조도 함께 반환
+    const legacy = {
+      company: parsed.step1_context?.company || null,
+      position: parsed.step1_context?.position_official || parsed.step1_context?.position_actual || '포지션명',
+      location: parsed.metadata?.location || null,
+      salary: parsed.metadata?.salary || null,
+      deadline: parsed.metadata?.deadline || 'ASAP',
+      keywords: [
+        ...(parsed.step2_requirements?.must_have || []).slice(0, 3),
+        ...(parsed.step2_requirements?.nice_to_have || []).slice(0, 2)
+      ],
+      required_skills: parsed.step2_requirements?.must_have || [],
+      preferred_skills: parsed.step2_requirements?.nice_to_have || [],
+      priority: parsed.metadata?.priority || '일반',
+      difficulty: parsed.metadata?.difficulty || '중',
+      difficulty_reason: `난이도 ${parsed.metadata?.difficulty || '중'}`,
+      target_profile: parsed.step3_headhunter_insight?.core_profile || '',
+      search_strategy: parsed.step3_headhunter_insight?.search_direction || '',
+      salary_estimate: parsed.metadata?.salary || '협의',
+      key_points: parsed.step3_headhunter_insight?.caution_points || []
+    }
+
+    return NextResponse.json({
+      ...legacy,
+      _v2: parsed // 새 구조는 _v2에 저장
+    })
   } catch (e) {
     console.error('[jd/parse]', e)
     return NextResponse.json({ error: '서버 오류가 발생했습니다.' }, { status: 500 })
