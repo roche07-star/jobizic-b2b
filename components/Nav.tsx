@@ -58,7 +58,7 @@ export default function Nav() {
             {l.label}
           </Link>
         ))}
-        {profile?.role === 'admin' && adminLinks.map(l => (
+        {(profile?.role === 'admin' || profile?.role === 'owner') && adminLinks.map(l => (
           <Link
             key={l.href}
             href={l.href}
@@ -79,6 +79,7 @@ export default function Nav() {
             {profile.organization && <span style={{ margin: '0 6px' }}>·</span>}
             {profile.full_name || profile.email}
             {profile.role === 'admin' && <span style={{ color: 'var(--accent)', marginLeft: 6 }}>관리자</span>}
+            {profile.role === 'owner' && <span style={{ color: 'var(--accent)', marginLeft: 6 }}>오너</span>}
             {profile.role === 'client' && <span style={{ color: 'var(--muted2)', marginLeft: 6 }}>고객사</span>}
           </div>
         )}
