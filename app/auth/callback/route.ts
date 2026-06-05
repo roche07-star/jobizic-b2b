@@ -4,6 +4,11 @@ import { supabaseAdmin } from '@/lib/supabase-admin'
 
 export async function GET(req: NextRequest) {
   const requestUrl = new URL(req.url)
+
+  // 🔥 TEST: 무조건 set-password로 보내기
+  console.log('[AUTH CALLBACK TEST] Forcing redirect to set-password')
+  return NextResponse.redirect(`${requestUrl.origin}/auth/set-password`)
+
   const code = requestUrl.searchParams.get('code')
   const error = requestUrl.searchParams.get('error')
   const errorDescription = requestUrl.searchParams.get('error_description')
