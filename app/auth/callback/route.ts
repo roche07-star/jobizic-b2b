@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
   if (error) {
     console.error('[AUTH CALLBACK] Error:', error, errorDescription)
     return NextResponse.redirect(
-      `${requestUrl.origin}/?error=${encodeURIComponent(errorDescription || error)}`
+      `${requestUrl.origin}/?error=${encodeURIComponent(errorDescription || error || 'Unknown error')}`
     )
   }
 
