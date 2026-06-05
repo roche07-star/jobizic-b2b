@@ -64,51 +64,34 @@ export async function GET(req: NextRequest) {
 
     // 사용자 정보 확인
     const user = sessionData?.user
-    if (!user) {
-      console.error('[AUTH CALLBACK] No user in session')
-      return NextResponse.redirect(`${requestUrl.origin}/`)
-    }
 
-    // profiles 테이블에서 password_set 확인 (Admin으로 RLS 우회)
-    const { data: profile, error: profileError } = await supabaseAdmin
-      .from('profiles')
-      .select('password_set')
-      .eq('id', user.id)
-      .single()
-
-    if (profileError) {
-      console.error('[AUTH CALLBACK] Profile fetch error:', profileError)
-    }
-
-    // 초대된 사용자 판단: password_set이 false이면 비밀번호 설정 필요
-    const needsPasswordSetup = profile?.password_set === false
-    const isInvitedUser = needsPasswordSetup || type === 'invite'
+    // 초대받은 사용자인지 확인 (invited_at이 있으면 초대받은 사용자)
+    const isInvitedUser = user?.invited_at
 
     console.log('[AUTH CALLBACK] User info:', {
       email: user?.email,
       type,
       invited_at: user?.invited_at,
-      last_sign_in_at: user?.last_sign_in_at,
-      passwordSet: profile?.password_set,
-      needsPasswordSetup,
-      isInvitedUser,
-      profileError: profileError?.message,
-      user_metadata: user?.user_metadata
+      isInvitedUser
     })
+
+    // 초대받은 사용자는 무조건 비밀번호 설정 페이지로
+    if (isInvitedUser || type === 'invite') {
+      console.log('[AUTH CALLBACK] Redirecting to set-password (invited user)')
+      const finalResponse = NextResponse.redirect(`${requestUrl.origin}/auth/set-password`)
+      response.cookies.getAll().forEach(cookie => {
+        finalResponse.cookies.set(cookie)
+      })
+      return finalResponse
+    }
 
     // type에 따라 리다이렉트 경로 결정
     let redirectPath: string
 
     if (type === 'recovery') {
-      // 비밀번호 재설정 플로우
       console.log('[AUTH CALLBACK] Password recovery flow -> /auth/reset-password')
       redirectPath = `${requestUrl.origin}/auth/reset-password`
-    } else if (type === 'invite' || isInvitedUser) {
-      // 초대받은 사용자 플로우
-      console.log('[AUTH CALLBACK] Invited user flow -> /auth/set-password')
-      redirectPath = `${requestUrl.origin}/auth/set-password`
     } else {
-      // 기타 (일반 로그인 등) - 홈으로
       console.log('[AUTH CALLBACK] Regular login -> home')
       redirectPath = `${requestUrl.origin}/`
     }
