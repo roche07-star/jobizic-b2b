@@ -265,7 +265,7 @@ export default function JDPage() {
           {filtered.map(jd => (
             <div key={jd.id} className="jd-card" onClick={() => setSelected(jd)}>
               <div className="jd-card-top">
-                <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'space-between', width: '100%' }}>
                   <div className="jd-company">{jd.company ?? '회사명 미상'}</div>
                   <button
                     onClick={(e) => {
@@ -273,15 +273,18 @@ export default function JDPage() {
                       toggleInterest(jd.id)
                     }}
                     style={{
-                      background: 'transparent',
-                      border: 'none',
+                      background: interests.includes(jd.id) ? 'rgba(255,215,0,0.2)' : 'transparent',
+                      border: '1px solid ' + (interests.includes(jd.id) ? '#ffd700' : '#666'),
+                      borderRadius: 4,
                       cursor: 'pointer',
-                      fontSize: 18,
-                      padding: 0,
+                      fontSize: 20,
+                      padding: '4px 8px',
                       lineHeight: 1,
                       display: 'flex',
                       alignItems: 'center',
-                      minWidth: 20,
+                      justifyContent: 'center',
+                      minWidth: 32,
+                      flexShrink: 0,
                     }}
                     title={interests.includes(jd.id) ? '관심 해제' : '관심 등록'}
                   >
