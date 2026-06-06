@@ -156,11 +156,13 @@ body {
 .divider { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
 
 @media (max-width: 768px) {
-  .stats-grid { grid-template-columns: repeat(2, 1fr); }
-  .jd-grid { grid-template-columns: 1fr; }
+  /* 기본 레이아웃 */
+  body { font-size: 13px; }
+  .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .jd-grid { grid-template-columns: 1fr; gap: 10px; }
   .form-row { grid-template-columns: 1fr; }
-  .nav { padding: 0 12px; }
-  .page { padding: 72px 12px 32px; }
+  .nav { padding: 0 12px; height: 52px; }
+  .page { padding: 64px 12px 24px; }
 
   /* 모바일 네비게이션 */
   .nav-desktop { display: none !important; }
@@ -168,4 +170,44 @@ body {
   .nav-profile { font-size: 10px !important; }
   .nav-profile-name { display: none !important; }
   .nav-profile span { margin: 0 2px !important; }
+
+  /* 타이틀 & 헤더 */
+  .page-title { font-size: 18px; }
+  .page-sub { font-size: 12px; }
+  .page-header { margin-bottom: 20px; flex-direction: column; align-items: flex-start; gap: 12px; }
+
+  /* 카드 */
+  .card { padding: 14px; border-radius: 10px; }
+  .card-title { font-size: 10px; margin-bottom: 10px; }
+
+  /* 통계 카드 */
+  .stat-card { padding: 12px 14px; border-radius: 10px; }
+  .stat-value { font-size: 22px; }
+  .stat-label { font-size: 11px; }
+
+  /* JD 카드 */
+  .jd-card { padding: 14px 16px; border-radius: 10px; }
+  .jd-company { font-size: 10px; }
+  .jd-position { font-size: 14px; margin-bottom: 8px; }
+  .jd-tag { font-size: 10px; padding: 2px 6px; }
+  .jd-actions { margin-top: 10px; padding-top: 10px; gap: 4px; }
+
+  /* 버튼 */
+  .btn { padding: 6px 12px; font-size: 12px; border-radius: 6px; }
+  .btn-sm { padding: 4px 10px; font-size: 11px; }
+
+  /* 폼 */
+  .form-label { font-size: 10px; }
+  .form-input, .form-textarea, .form-select {
+    padding: 8px 12px;
+    font-size: 13px;
+    border-radius: 6px;
+  }
+
+  /* 배지 */
+  .badge { font-size: 10px; padding: 2px 8px; }
+
+  /* 스킬 칩 */
+  .skill-chip { font-size: 10px; padding: 3px 8px; }
+  .skills-wrap { gap: 4px; }
 }
