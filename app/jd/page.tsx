@@ -30,6 +30,17 @@ interface JD {
   }
 }
 
+interface BoardPost {
+  id: string
+  jd_id: string
+  author_id: string
+  author_email: string
+  title: string
+  content: string
+  created_at: string
+  updated_at: string
+}
+
 const STATUS_FILTERS = ['전체', '검토중', '활성', '마감', '보류']
 const PRIORITY_FILTERS = ['전체', '긴급', '높음', '보통', '낮음']
 
@@ -53,6 +64,11 @@ export default function JDPage() {
   const [selectedOrgId, setSelectedOrgId] = useState<string>('전체')
   const [viewMode, setViewMode] = useState<'all' | 'interest'>('all')
   const [interests, setInterests] = useState<string[]>([])
+  const [modalTab, setModalTab] = useState<'overview' | 'board'>('overview')
+  const [boardPosts, setBoardPosts] = useState<BoardPost[]>([])
+  const [boardLoading, setBoardLoading] = useState(false)
+  const [boardForm, setBoardForm] = useState({ title: '', content: '' })
+  const [showBoardForm, setShowBoardForm] = useState(false)
 
   useEffect(() => {
     async function loadOrganizations() {
@@ -138,6 +154,81 @@ export default function JDPage() {
   function closeModal() {
     setSelected(null)
     setShowRawText(false)
+    setModalTab('overview')
+    setBoardPosts([])
+    setBoardForm({ title: '', content: '' })
+    setShowBoardForm(false)
+  }
+
+  // 게시판 글 목록 로드
+  async function loadBoardPosts(jdId: string) {
+    setBoardLoading(true)
+    try {
+      const res = await fetch(`/api/jd/${jdId}/board`, {
+        headers: { 'x-user-email': userEmail }
+      })
+      const data = await res.json()
+      if (res.ok) {
+        setBoardPosts(data.posts || [])
+      } else {
+        console.error('[Board] Load error:', data.error)
+      }
+    } catch (e) {
+      console.error('[Board] Load exception:', e)
+    } finally {
+      setBoardLoading(false)
+    }
+  }
+
+  // 게시글 작성
+  async function createBoardPost() {
+    if (!selected || !boardForm.title.trim() || !boardForm.content.trim()) {
+      alert('제목과 내용을 입력해주세요.')
+      return
+    }
+
+    try {
+      const res = await fetch(`/api/jd/${selected.id}/board`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-user-email': userEmail
+        },
+        body: JSON.stringify(boardForm)
+      })
+      const data = await res.json()
+      if (res.ok) {
+        setBoardPosts([data.post, ...boardPosts])
+        setBoardForm({ title: '', content: '' })
+        setShowBoardForm(false)
+      } else {
+        alert(data.error || '작성 실패')
+      }
+    } catch (e) {
+      console.error('[Board] Create exception:', e)
+      alert('작성 중 오류가 발생했습니다.')
+    }
+  }
+
+  // 게시글 삭제
+  async function deleteBoardPost(postId: string) {
+    if (!selected || !confirm('이 게시글을 삭제할까요?')) return
+
+    try {
+      const res = await fetch(`/api/jd/${selected.id}/board/${postId}`, {
+        method: 'DELETE',
+        headers: { 'x-user-email': userEmail }
+      })
+      if (res.ok) {
+        setBoardPosts(prev => prev.filter(p => p.id !== postId))
+      } else {
+        const data = await res.json()
+        alert(data.error || '삭제 실패')
+      }
+    } catch (e) {
+      console.error('[Board] Delete exception:', e)
+      alert('삭제 중 오류가 발생했습니다.')
+    }
   }
 
   // 관심 JD 필터링
@@ -380,11 +471,52 @@ export default function JDPage() {
               <button className="modal-close" onClick={() => closeModal()}>✕</button>
             </div>
 
-            <div style={{ display: 'flex', gap: 6, marginBottom: 20 }}>
-              <span className={`badge badge-${selected.priority}`}>{selected.priority}</span>
-              <span className={`badge badge-${selected.status}`}>{selected.status}</span>
-              <span className={`badge badge-${selected.difficulty}`}>난이도 {selected.difficulty}</span>
+            {/* 탭 버튼 */}
+            <div style={{ display: 'flex', gap: 8, marginBottom: 20, borderBottom: '2px solid var(--border)' }}>
+              <button
+                onClick={() => setModalTab('overview')}
+                style={{
+                  padding: '10px 16px',
+                  background: 'transparent',
+                  border: 'none',
+                  borderBottom: modalTab === 'overview' ? '2px solid var(--accent)' : '2px solid transparent',
+                  color: modalTab === 'overview' ? 'var(--accent)' : 'var(--muted)',
+                  fontWeight: modalTab === 'overview' ? 600 : 400,
+                  fontSize: 14,
+                  cursor: 'pointer',
+                  marginBottom: -2,
+                }}
+              >
+                📋 상세정보
+              </button>
+              <button
+                onClick={() => {
+                  setModalTab('board')
+                  if (boardPosts.length === 0) loadBoardPosts(selected.id)
+                }}
+                style={{
+                  padding: '10px 16px',
+                  background: 'transparent',
+                  border: 'none',
+                  borderBottom: modalTab === 'board' ? '2px solid var(--accent)' : '2px solid transparent',
+                  color: modalTab === 'board' ? 'var(--accent)' : 'var(--muted)',
+                  fontWeight: modalTab === 'board' ? 600 : 400,
+                  fontSize: 14,
+                  cursor: 'pointer',
+                  marginBottom: -2,
+                }}
+              >
+                💬 게시판
+              </button>
             </div>
+
+            {modalTab === 'overview' && (
+              <>
+                <div style={{ display: 'flex', gap: 6, marginBottom: 20 }}>
+                  <span className={`badge badge-${selected.priority}`}>{selected.priority}</span>
+                  <span className={`badge badge-${selected.status}`}>{selected.status}</span>
+                  <span className={`badge badge-${selected.difficulty}`}>난이도 {selected.difficulty}</span>
+                </div>
 
             <div className="form-row" style={{ marginBottom: 16 }}>
               {selected.location && <div><span className="form-label">근무지</span><div>{selected.location}</div></div>}
@@ -468,6 +600,137 @@ export default function JDPage() {
                 </>
               )}
             </div>
+              </>
+            )}
+
+            {/* 게시판 탭 */}
+            {modalTab === 'board' && (
+              <div>
+                {/* 글쓰기 버튼 */}
+                {!showBoardForm && (
+                  <button
+                    className="btn btn-primary"
+                    onClick={() => setShowBoardForm(true)}
+                    style={{ marginBottom: 16, width: '100%' }}
+                  >
+                    ✏️ 글쓰기
+                  </button>
+                )}
+
+                {/* 글쓰기 폼 */}
+                {showBoardForm && (
+                  <div style={{
+                    padding: 16,
+                    background: 'var(--bg-2)',
+                    borderRadius: 8,
+                    border: '1px solid var(--border)',
+                    marginBottom: 16
+                  }}>
+                    <input
+                      type="text"
+                      placeholder="제목"
+                      value={boardForm.title}
+                      onChange={(e) => setBoardForm({ ...boardForm, title: e.target.value })}
+                      style={{
+                        width: '100%',
+                        padding: '10px 12px',
+                        marginBottom: 10,
+                        borderRadius: 6,
+                        border: '1px solid var(--border)',
+                        background: 'var(--bg)',
+                        color: 'var(--text)',
+                        fontSize: 14
+                      }}
+                    />
+                    <textarea
+                      placeholder="내용을 입력하세요"
+                      value={boardForm.content}
+                      onChange={(e) => setBoardForm({ ...boardForm, content: e.target.value })}
+                      rows={5}
+                      style={{
+                        width: '100%',
+                        padding: '10px 12px',
+                        marginBottom: 10,
+                        borderRadius: 6,
+                        border: '1px solid var(--border)',
+                        background: 'var(--bg)',
+                        color: 'var(--text)',
+                        fontSize: 13,
+                        lineHeight: 1.5,
+                        resize: 'vertical'
+                      }}
+                    />
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <button className="btn btn-primary" onClick={createBoardPost}>등록</button>
+                      <button className="btn btn-ghost" onClick={() => {
+                        setShowBoardForm(false)
+                        setBoardForm({ title: '', content: '' })
+                      }}>취소</button>
+                    </div>
+                  </div>
+                )}
+
+                {/* 게시글 목록 */}
+                {boardLoading ? (
+                  <div style={{ textAlign: 'center', padding: 40 }}>
+                    <div className="spinner" style={{ margin: '0 auto' }} />
+                  </div>
+                ) : boardPosts.length === 0 ? (
+                  <div style={{ textAlign: 'center', padding: 40, color: 'var(--muted)' }}>
+                    <div style={{ fontSize: 32, marginBottom: 12 }}>📝</div>
+                    <div style={{ fontSize: 14 }}>등록된 게시글이 없습니다</div>
+                    <div style={{ fontSize: 12, marginTop: 4, opacity: 0.7 }}>진행 상황을 공유해보세요</div>
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                    {boardPosts.map(post => (
+                      <div key={post.id} style={{
+                        padding: 16,
+                        background: 'var(--bg-2)',
+                        borderRadius: 8,
+                        border: '1px solid var(--border)'
+                      }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: 8 }}>
+                          <div style={{ flex: 1 }}>
+                            <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 4 }}>{post.title}</div>
+                            <div style={{ fontSize: 11, color: 'var(--muted)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                              <span>✍️ {post.author_email.split('@')[0]}</span>
+                              <span>•</span>
+                              <span>{new Date(post.created_at).toLocaleDateString('ko-KR', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+                            </div>
+                          </div>
+                          {(post.author_email === userEmail || selected.created_by === userEmail || userRole === 'owner') && (
+                            <button
+                              onClick={() => deleteBoardPost(post.id)}
+                              style={{
+                                padding: '4px 8px',
+                                fontSize: 12,
+                                background: 'transparent',
+                                border: '1px solid var(--border)',
+                                borderRadius: 4,
+                                color: 'var(--muted)',
+                                cursor: 'pointer'
+                              }}
+                              title="삭제"
+                            >
+                              🗑️
+                            </button>
+                          )}
+                        </div>
+                        <div style={{
+                          fontSize: 13,
+                          lineHeight: 1.6,
+                          whiteSpace: 'pre-wrap',
+                          color: 'var(--text)'
+                        }}>
+                          {post.content}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       )}
