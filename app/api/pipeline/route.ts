@@ -76,8 +76,13 @@ export async function POST(req: NextRequest) {
         .eq('email', body.created_by)
         .single()
 
+      if (!creator) {
+        console.log('[pipeline POST] Creator not found:', body.created_by)
+        return NextResponse.json({ id: data.id })
+      }
+
       // 1. JD 담당자(PM)에게 알림 - 본인이 만든 JD인 경우만
-      if (jd?.created_by && creator && jd.created_by !== body.created_by) {
+      if (jd?.created_by && jd.created_by !== body.created_by) {
         const { data: jdOwner } = await supabaseAdmin
           .from('profiles')
           .select('id, role')
