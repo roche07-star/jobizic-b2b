@@ -39,6 +39,22 @@ body {
 .nav-link:hover { background: rgba(255,255,255,0.06); color: var(--text); }
 .nav-link.active { background: rgba(232,255,71,0.1); color: var(--accent); }
 
+/* 모바일 네비게이션 */
+.nav-mobile { display: none; position: relative; }
+.nav-desktop { display: flex; }
+.nav-profile-name { display: inline; }
+
+/* 모바일 반응형 (768px 이하) */
+@media (max-width: 768px) {
+  .nav { padding: 0 12px; gap: 12px; }
+  .nav-logo { font-size: 13px; }
+  .nav-desktop { display: none; }
+  .nav-mobile { display: block; }
+  .nav-profile { font-size: 10px !important; }
+  .nav-profile-name { display: none; }
+  .nav-profile span { margin: 0 2px !important; }
+}
+
 .page { padding: 80px 24px 48px; max-width: 1200px; margin: 0 auto; }
 .page-header { margin-bottom: 28px; display: flex; justify-content: space-between; align-items: flex-end; }
 .page-title { font-size: 22px; font-weight: 700; }
@@ -143,6 +159,13 @@ body {
   .stats-grid { grid-template-columns: repeat(2, 1fr); }
   .jd-grid { grid-template-columns: 1fr; }
   .form-row { grid-template-columns: 1fr; }
-  .nav { padding: 0 16px; }
-  .page { padding: 72px 16px 40px; }
+  .nav { padding: 0 12px; }
+  .page { padding: 72px 12px 32px; }
+
+  /* 모바일 네비게이션 */
+  .nav-desktop { display: none !important; }
+  .nav-mobile { display: block !important; }
+  .nav-profile { font-size: 10px !important; }
+  .nav-profile-name { display: none !important; }
+  .nav-profile span { margin: 0 2px !important; }
 }

@@ -35,7 +35,9 @@ export default function Nav() {
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [unreadCount, setUnreadCount] = useState(0)
   const [showNotifications, setShowNotifications] = useState(false)
+  const [showMobileMenu, setShowMobileMenu] = useState(false)
   const notifRef = useRef<HTMLDivElement>(null)
+  const mobileMenuRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     getProfile().then(p => {
@@ -137,6 +139,9 @@ export default function Nav() {
       if (notifRef.current && !notifRef.current.contains(e.target as Node)) {
         setShowNotifications(false)
       }
+      if (mobileMenuRef.current && !mobileMenuRef.current.contains(e.target as Node)) {
+        setShowMobileMenu(false)
+      }
     }
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
@@ -153,12 +158,19 @@ export default function Nav() {
     return null
   }
 
+  const allLinks = [
+    ...links,
+    ...((profile?.role === 'admin' || profile?.role === 'owner') ? adminLinks : [])
+  ]
+
   return (
     <nav className="nav">
       <Link href="/" className="nav-logo">
         JOBIZIC <span>biz</span>
       </Link>
-      <div className="nav-links">
+
+      {/* 데스크톱 메뉴 */}
+      <div className="nav-links nav-desktop">
         {links.map(l => (
           <Link
             key={l.href}
@@ -182,16 +194,63 @@ export default function Nav() {
           ))
         })()}
       </div>
+
+      {/* 모바일 햄버거 메뉴 */}
+      <div className="nav-mobile" ref={mobileMenuRef}>
+        <button
+          className="btn btn-ghost btn-sm"
+          onClick={() => setShowMobileMenu(!showMobileMenu)}
+          style={{ fontSize: 20, padding: '4px 8px' }}
+        >
+          ☰
+        </button>
+
+        {showMobileMenu && (
+          <div style={{
+            position: 'absolute',
+            top: 'calc(100% + 8px)',
+            left: 0,
+            right: 0,
+            background: 'var(--bg2)',
+            border: '2px solid var(--border)',
+            borderRadius: 12,
+            boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
+            zIndex: 1000,
+            overflow: 'hidden',
+          }}>
+            {allLinks.map(l => (
+              <Link
+                key={l.href}
+                href={l.href}
+                className={`mobile-nav-link${path === l.href || (l.href !== '/' && path.startsWith(l.href)) ? ' active' : ''}`}
+                onClick={() => setShowMobileMenu(false)}
+                style={{
+                  display: 'block',
+                  padding: '12px 16px',
+                  borderBottom: '1px solid var(--border)',
+                  color: 'var(--text)',
+                  textDecoration: 'none',
+                  fontSize: 14,
+                  fontWeight: path === l.href || (l.href !== '/' && path.startsWith(l.href)) ? 600 : 400,
+                  background: path === l.href || (l.href !== '/' && path.startsWith(l.href)) ? 'rgba(232, 255, 71, 0.1)' : 'transparent',
+                }}
+              >
+                {l.label}
+              </Link>
+            ))}
+          </div>
+        )}
+      </div>
       <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 12 }}>
         {profile && (
-          <div style={{ fontSize: 12, color: 'var(--muted2)' }}>
+          <div className="nav-profile" style={{ fontSize: 12, color: 'var(--muted2)' }}>
             {profile.organization && (
               <span style={{ color: 'var(--accent)', fontWeight: 500 }}>
                 {profile.organization.name}
               </span>
             )}
             {profile.organization && <span style={{ margin: '0 6px' }}>·</span>}
-            {profile.full_name || profile.email}
+            <span className="nav-profile-name">{profile.full_name || profile.email}</span>
             {profile.role === 'admin' && <span style={{ color: 'var(--accent)', marginLeft: 6 }}>Super Admin</span>}
             {profile.role === 'owner' && <span style={{ color: 'var(--accent)', marginLeft: 6 }}>오너</span>}
             {profile.role === 'client' && <span style={{ color: 'var(--muted2)', marginLeft: 6 }}>고객사</span>}
