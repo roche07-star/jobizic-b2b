@@ -66,22 +66,26 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
-    // created_by 이메일로 profiles 조회하여 추천자 정보 추가
+    // created_by와 JD created_by 이메일로 profiles 조회하여 추천자/JD오너 정보 추가
     if (data && data.length > 0) {
       const creatorEmails = [...new Set(data.map((p: any) => p.created_by).filter(Boolean))]
+      const jdOwnerEmails = [...new Set(data.map((p: any) => p.job_descriptions?.created_by).filter(Boolean))]
+      const allEmails = [...new Set([...creatorEmails, ...jdOwnerEmails])]
 
-      if (creatorEmails.length > 0) {
+      if (allEmails.length > 0) {
         const { data: profiles } = await supabaseAdmin
           .from('profiles')
           .select('id, email, full_name')
-          .in('email', creatorEmails)
+          .in('email', allEmails)
 
-        // 각 파이프라인에 추천자 정보 추가
+        // 각 파이프라인에 추천자 및 JD 오너 정보 추가
         const enrichedData = data.map((pipeline: any) => {
           const creator = profiles?.find((p: any) => p.email === pipeline.created_by)
+          const jdOwner = profiles?.find((p: any) => p.email === pipeline.job_descriptions?.created_by)
           return {
             ...pipeline,
-            created_by_user: creator || null
+            created_by_user: creator || null,
+            jd_owner_user: jdOwner || null
           }
         })
 
