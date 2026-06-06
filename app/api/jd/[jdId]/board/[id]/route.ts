@@ -4,10 +4,10 @@ import { supabaseAdmin } from '@/lib/supabase-admin'
 // 게시글 수정
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { jdId: string; id: string } }
+  { params }: { params: Promise<{ jdId: string; id: string }> }
 ) {
   try {
-    const { jdId, id } = params
+    const { jdId, id } = await params
     const userEmail = req.headers.get('x-user-email')
     const { title, content } = await req.json()
 
@@ -63,10 +63,10 @@ export async function PUT(
 // 게시글 삭제
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { jdId: string; id: string } }
+  { params }: { params: Promise<{ jdId: string; id: string }> }
 ) {
   try {
-    const { jdId, id } = params
+    const { jdId, id } = await params
     const userEmail = req.headers.get('x-user-email')
 
     if (!userEmail) {

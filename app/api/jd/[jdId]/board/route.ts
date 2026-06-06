@@ -4,10 +4,10 @@ import { supabaseAdmin } from '@/lib/supabase-admin'
 // 게시글 목록 조회
 export async function GET(
   req: NextRequest,
-  { params }: { params: { jdId: string } }
+  { params }: { params: Promise<{ jdId: string }> }
 ) {
   try {
-    const { jdId } = params
+    const { jdId } = await params
     const userEmail = req.headers.get('x-user-email')
 
     if (!userEmail) {
@@ -46,10 +46,10 @@ export async function GET(
 // 게시글 작성
 export async function POST(
   req: NextRequest,
-  { params }: { params: { jdId: string } }
+  { params }: { params: Promise<{ jdId: string }> }
 ) {
   try {
-    const { jdId } = params
+    const { jdId } = await params
     const userEmail = req.headers.get('x-user-email')
     const { title, content } = await req.json()
 
