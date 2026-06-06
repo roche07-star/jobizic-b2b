@@ -37,17 +37,25 @@ export async function GET(req: NextRequest) {
     const { data: jds } = await jdQuery
 
     // 3. 후보자 통계
-    const { data: candidates } = await supabaseAdmin
+    let candidateQuery = supabaseAdmin
       .from('candidates')
-      .select('id, assigned_to')
+      .select('id, created_by, organization_id')
+      .eq('organization_id', organizationId)
 
-    // 4. 파이프라인 통계 (본인 JD에 연결된 파이프라인만)
+    // PM은 본인 후보자만
+    if (filterByUser) {
+      candidateQuery = candidateQuery.eq('created_by', userEmail)
+    }
+
+    const { data: candidates } = await candidateQuery
+
+    // 4. 채용 프로세스 통계 (본인 JD에 연결된 파이프라인만)
     let pipelines = null
 
     if (jds && jds.length > 0) {
       const pipelineQuery = supabaseAdmin
         .from('pipeline')
-        .select('id, assigned_to, stage, jd_id, is_active')
+        .select('id, created_by, stage, jd_id, is_active')
         .in('jd_id', jds.map(jd => jd.id))
 
       const { data } = await pipelineQuery
@@ -57,8 +65,8 @@ export async function GET(req: NextRequest) {
     // 멤버별 통계 계산 (Owner만)
     const memberStats = isPM ? [] : (members || []).map(member => {
       const memberJDs = (jds || []).filter(jd => jd.created_by === member.email)
-      const memberCandidates = (candidates || []).filter(c => c.assigned_to === member.email)
-      const memberPipelines = (pipelines || []).filter(p => p.assigned_to === member.email)
+      const memberCandidates = (candidates || []).filter(c => c.created_by === member.email)
+      const memberPipelines = (pipelines || []).filter(p => p.created_by === member.email)
 
       return {
         id: member.id,

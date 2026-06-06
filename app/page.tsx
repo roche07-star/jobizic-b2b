@@ -133,11 +133,11 @@ export default function Dashboard() {
           activePipelines: pipeline.filter((p: any) => p.is_active).length,
         })
 
-        // 최근 JD: 관심 JD 우선 + 파이프라인 현황 추가
+        // 최근 JD: 관심 JD 우선 + 채용 프로세스 현황 추가
         const interestJDs = jds.filter((jd: any) =>
           jd.created_by === profile.email || interestIds.includes(jd.id)
         ).map((jd: any) => {
-          // 각 JD별 파이프라인 카운트
+          // 각 JD별 채용 프로세스 카운트
           const jdPipelines = pipeline.filter((p: any) => p.jd_id === jd.id)
           const activePipelines = jdPipelines.filter((p: any) => p.is_active)
 
@@ -304,7 +304,7 @@ export default function Dashboard() {
                     <th style={{ padding: '12px 8px', textAlign: 'left', fontSize: 12, color: 'var(--muted2)', fontWeight: 600 }}>역할</th>
                     <th style={{ padding: '12px 8px', textAlign: 'center', fontSize: 12, color: 'var(--muted2)', fontWeight: 600 }}>담당 JD</th>
                     <th style={{ padding: '12px 8px', textAlign: 'center', fontSize: 12, color: 'var(--muted2)', fontWeight: 600 }}>담당 후보자</th>
-                    <th style={{ padding: '12px 8px', textAlign: 'center', fontSize: 12, color: 'var(--muted2)', fontWeight: 600 }}>파이프라인</th>
+                    <th style={{ padding: '12px 8px', textAlign: 'center', fontSize: 12, color: 'var(--muted2)', fontWeight: 600 }}>채용 프로세스</th>
                     <th style={{ padding: '12px 8px', textAlign: 'center', fontSize: 12, color: 'var(--muted2)', fontWeight: 600 }}>진행 중</th>
                   </tr>
                 </thead>
@@ -334,7 +334,7 @@ export default function Dashboard() {
         </>
       )}
 
-      {/* Owner/PM 공통: JD & 파이프라인 현황 */}
+      {/* Owner/PM 공통: JD & 채용 프로세스 현황 */}
       {isOwnerOrPM && dashboardStats && (
         <>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginTop: 20 }}>
@@ -368,10 +368,10 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {/* 파이프라인 단계별 */}
+            {/* 채용 프로세스 단계별 */}
             <div className="card">
               <div className="card-title">
-                {isOwner ? '파이프라인 단계별' : '내 파이프라인 단계별'}
+                {isOwner ? '채용 프로세스 단계별' : '내 채용 프로세스 단계별'}
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 12 }}>
                 {Object.entries(dashboardStats.pipelineByStage)
