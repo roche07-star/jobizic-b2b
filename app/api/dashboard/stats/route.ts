@@ -49,7 +49,7 @@ export async function GET(req: NextRequest) {
 
     const { data: candidates } = await candidateQuery
 
-    // 4. 채용 프로세스 통계 (본인 JD에 연결된 파이프라인만)
+    // 4. 채용 프로세스 통계 (Owner는 조직 전체, PM은 본인 JD만)
     let pipelines = null
 
     if (jds && jds.length > 0) {
