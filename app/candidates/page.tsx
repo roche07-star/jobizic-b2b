@@ -82,6 +82,8 @@ export default function CandidatesPage() {
   const [transferTarget, setTransferTarget] = useState('')
   const [transferring, setTransferring] = useState(false)
   const [orgMembers, setOrgMembers] = useState<User[]>([])
+  const [isEditing, setIsEditing] = useState(false)
+  const [editForm, setEditForm] = useState<Partial<Candidate>>({})
 
   useEffect(() => {
     async function loadOrganizations() {
@@ -142,7 +144,35 @@ export default function CandidatesPage() {
     if (!confirm('이 후보자를 삭제할까요?')) return
     await fetch(`/api/candidates/${id}`, { method: 'DELETE' })
     setCandidates(prev => prev.filter(c => c.id !== id))
-    if (selected?.id === id) setSelected(null)
+    if (selected?.id === id) closeModal()
+  }
+
+  function closeModal() {
+    closeModal()
+    setIsEditing(false)
+    setEditForm({})
+  }
+
+  async function updateCandidate() {
+    if (!selected) return
+
+    const res = await fetch(`/api/candidates/${selected.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(editForm)
+    })
+
+    if (!res.ok) {
+      alert('업데이트 실패')
+      return
+    }
+
+    // 로컬 state 업데이트
+    const updated = { ...selected, ...editForm }
+    setCandidates(prev => prev.map(c => c.id === selected.id ? updated : c))
+    setSelected(updated)
+    setIsEditing(false)
+    setEditForm({})
   }
 
   async function transferOwnership() {
@@ -165,7 +195,7 @@ export default function CandidatesPage() {
       alert(`✅ 소유권이 이전되었습니다!`)
       setShowTransferModal(false)
       setTransferTarget('')
-      setSelected(null)
+      closeModal()
 
       // 목록 새로고침
       window.location.reload()
@@ -436,14 +466,14 @@ export default function CandidatesPage() {
 
       {/* 상세 모달 */}
       {selected && (
-        <div className="overlay" onClick={() => setSelected(null)}>
+        <div className="overlay" onClick={() => closeModal()}>
           <div className="modal" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
               <div>
                 <div style={{ fontSize: 12, color: 'var(--muted2)', marginBottom: 4 }}>{selected.current_company ?? '프리랜서'} · {selected.current_position}</div>
                 <div className="modal-title">{selected.name}</div>
               </div>
-              <button className="modal-close" onClick={() => setSelected(null)}>✕</button>
+              <button className="modal-close" onClick={() => closeModal()}>✕</button>
             </div>
 
             <div style={{ display: 'flex', gap: 6, marginBottom: 20 }}>
@@ -452,77 +482,151 @@ export default function CandidatesPage() {
               {selected.total_experience_years && <span className="badge badge-일반">{selected.total_experience_years}년 경력</span>}
             </div>
 
-            <div className="form-row" style={{ marginBottom: 16 }}>
-              {selected.email && <div><span className="form-label">이메일</span><div>{selected.email}</div></div>}
-              {selected.phone && <div><span className="form-label">전화</span><div>{selected.phone}</div></div>}
-              {selected.location && <div><span className="form-label">거주지</span><div>{selected.location}</div></div>}
-              {selected.market_value && <div><span className="form-label">시장가치</span><div>{selected.market_value}</div></div>}
-            </div>
-
-            {selected.career_summary && (
-              <div style={{ marginBottom: 16 }}>
-                <div className="form-label">경력 요약</div>
-                <div style={{ fontSize: 13, lineHeight: 1.6 }}>{selected.career_summary}</div>
-              </div>
-            )}
-
-            {(selected.skills?.length > 0 || selected.tech_stack?.length > 0) && (
-              <div style={{ marginBottom: 16 }}>
-                <div className="form-label">스킬 & 기술스택</div>
-                <div className="skills-wrap">
-                  {[...(selected.skills ?? []), ...(selected.tech_stack ?? [])].map((s, i) => <span key={`skill-${i}`} className="skill-chip">{s}</span>)}
+            {!isEditing ? (
+              <>
+                <div className="form-row" style={{ marginBottom: 16 }}>
+                  {selected.email && <div><span className="form-label">이메일</span><div>{selected.email}</div></div>}
+                  {selected.phone && <div><span className="form-label">전화</span><div>{selected.phone}</div></div>}
+                  {selected.location && <div><span className="form-label">거주지</span><div>{selected.location}</div></div>}
+                  {selected.market_value && <div><span className="form-label">시장가치</span><div>{selected.market_value}</div></div>}
                 </div>
-              </div>
-            )}
 
-            <div className="analysis-box" style={{ marginBottom: 16 }}>
-              <div className="analysis-row">
-                <span className="analysis-label">강점 요약</span>
-                <span className="analysis-value">{selected.strength_summary}</span>
-              </div>
-              <div className="analysis-row">
-                <span className="analysis-label">커리어 방향</span>
-                <span className="analysis-value">{selected.career_trajectory}</span>
-              </div>
-            </div>
+                {selected.career_summary && (
+                  <div style={{ marginBottom: 16 }}>
+                    <div className="form-label">경력 요약</div>
+                    <div style={{ fontSize: 13, lineHeight: 1.6 }}>{selected.career_summary}</div>
+                  </div>
+                )}
 
-            {selected.ideal_roles?.length > 0 && (
-              <div style={{ marginBottom: 16 }}>
-                <div className="form-label">적합한 포지션</div>
-                <div className="skills-wrap">
-                  {selected.ideal_roles.map(r => <span key={r} className="skill-chip preferred">{r}</span>)}
+                {(selected.skills?.length > 0 || selected.tech_stack?.length > 0) && (
+                  <div style={{ marginBottom: 16 }}>
+                    <div className="form-label">스킬 & 기술스택</div>
+                    <div className="skills-wrap">
+                      {[...(selected.skills ?? []), ...(selected.tech_stack ?? [])].map((s, i) => <span key={`skill-${i}`} className="skill-chip">{s}</span>)}
+                    </div>
+                  </div>
+                )}
+
+                <div className="analysis-box" style={{ marginBottom: 16 }}>
+                  <div className="analysis-row">
+                    <span className="analysis-label">강점 요약</span>
+                    <span className="analysis-value">{selected.strength_summary}</span>
+                  </div>
+                  <div className="analysis-row">
+                    <span className="analysis-label">커리어 방향</span>
+                    <span className="analysis-value">{selected.career_trajectory}</span>
+                  </div>
                 </div>
-              </div>
-            )}
 
-            {selected.key_highlights?.length > 0 && (
-              <div style={{ marginBottom: 20 }}>
-                <div className="form-label">주요 하이라이트</div>
-                <ul style={{ paddingLeft: 16, display: 'flex', flexDirection: 'column', gap: 4 }}>
-                  {selected.key_highlights.map((h, i) => <li key={i} style={{ fontSize: 13 }}>{h}</li>)}
-                </ul>
-              </div>
+                {selected.ideal_roles?.length > 0 && (
+                  <div style={{ marginBottom: 16 }}>
+                    <div className="form-label">적합한 포지션</div>
+                    <div className="skills-wrap">
+                      {selected.ideal_roles.map(r => <span key={r} className="skill-chip preferred">{r}</span>)}
+                    </div>
+                  </div>
+                )}
+
+                {selected.key_highlights?.length > 0 && (
+                  <div style={{ marginBottom: 20 }}>
+                    <div className="form-label">주요 하이라이트</div>
+                    <ul style={{ paddingLeft: 16, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                      {selected.key_highlights.map((h, i) => <li key={i} style={{ fontSize: 13 }}>{h}</li>)}
+                    </ul>
+                  </div>
+                )}
+              </>
+            ) : (
+              <>
+                <div style={{ marginBottom: 16 }}>
+                  <div className="form-label">이름</div>
+                  <input type="text" className="input" value={editForm.name ?? selected.name} onChange={e => setEditForm(prev => ({ ...prev, name: e.target.value }))} />
+                </div>
+
+                <div className="form-row" style={{ marginBottom: 16, gap: 16 }}>
+                  <div style={{ flex: 1 }}>
+                    <span className="form-label">이메일</span>
+                    <input type="email" className="input" value={editForm.email ?? selected.email ?? ''} onChange={e => setEditForm(prev => ({ ...prev, email: e.target.value }))} />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <span className="form-label">전화</span>
+                    <input type="tel" className="input" value={editForm.phone ?? selected.phone ?? ''} onChange={e => setEditForm(prev => ({ ...prev, phone: e.target.value }))} />
+                  </div>
+                </div>
+
+                <div className="form-row" style={{ marginBottom: 16, gap: 16 }}>
+                  <div style={{ flex: 1 }}>
+                    <span className="form-label">거주지</span>
+                    <input type="text" className="input" value={editForm.location ?? selected.location ?? ''} onChange={e => setEditForm(prev => ({ ...prev, location: e.target.value }))} />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <span className="form-label">현재 회사</span>
+                    <input type="text" className="input" value={editForm.current_company ?? selected.current_company ?? ''} onChange={e => setEditForm(prev => ({ ...prev, current_company: e.target.value }))} />
+                  </div>
+                </div>
+
+                <div className="form-row" style={{ marginBottom: 16, gap: 16 }}>
+                  <div style={{ flex: 1 }}>
+                    <span className="form-label">현재 포지션</span>
+                    <input type="text" className="input" value={editForm.current_position ?? selected.current_position ?? ''} onChange={e => setEditForm(prev => ({ ...prev, current_position: e.target.value }))} />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <span className="form-label">총 경력 (년)</span>
+                    <input type="number" className="input" value={editForm.total_experience_years ?? selected.total_experience_years ?? ''} onChange={e => setEditForm(prev => ({ ...prev, total_experience_years: parseInt(e.target.value) || 0 }))} />
+                  </div>
+                </div>
+
+                <div style={{ marginBottom: 16 }}>
+                  <div className="form-label">시장가치</div>
+                  <input type="text" className="input" value={editForm.market_value ?? selected.market_value ?? ''} onChange={e => setEditForm(prev => ({ ...prev, market_value: e.target.value }))} />
+                </div>
+
+                <div style={{ marginBottom: 16 }}>
+                  <div className="form-label">경력 요약</div>
+                  <textarea className="input" rows={3} value={editForm.career_summary ?? selected.career_summary ?? ''} onChange={e => setEditForm(prev => ({ ...prev, career_summary: e.target.value }))} />
+                </div>
+
+                <div style={{ marginBottom: 16 }}>
+                  <div className="form-label">강점 요약</div>
+                  <textarea className="input" rows={2} value={editForm.strength_summary ?? selected.strength_summary ?? ''} onChange={e => setEditForm(prev => ({ ...prev, strength_summary: e.target.value }))} />
+                </div>
+
+                <div style={{ marginBottom: 16 }}>
+                  <div className="form-label">커리어 방향</div>
+                  <textarea className="input" rows={2} value={editForm.career_trajectory ?? selected.career_trajectory ?? ''} onChange={e => setEditForm(prev => ({ ...prev, career_trajectory: e.target.value }))} />
+                </div>
+              </>
             )}
 
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              {selected.status === '검토중' && (
-                <button className="btn btn-success" onClick={() => updateStatus(selected.id, '활성')}>활성화</button>
+              {!isEditing ? (
+                <>
+                  {selected.status === '검토중' && (
+                    <button className="btn btn-success" onClick={() => updateStatus(selected.id, '활성')}>활성화</button>
+                  )}
+                  {selected.status === '활성' && (
+                    <button className="btn btn-primary" onClick={() => updateStatus(selected.id, '제안중')}>제안</button>
+                  )}
+                  {selected.status === '제안중' && (
+                    <button className="btn btn-success" onClick={() => updateStatus(selected.id, '합격')}>합격</button>
+                  )}
+                  {selected.status !== '검토중' && (
+                    <button className="btn btn-ghost" onClick={() => updateStatus(selected.id, '검토중')}>검토중으로</button>
+                  )}
+                  <button className="btn btn-primary" onClick={() => { setIsEditing(true); setEditForm(selected) }}>✏️ 수정</button>
+                  {isOwner && (
+                    <button className="btn btn-ghost" onClick={() => setShowTransferModal(true)}>
+                      👥 소유권 이전
+                    </button>
+                  )}
+                  <button className="btn btn-danger" onClick={() => { deleteCandidate(selected.id); closeModal() }}>삭제</button>
+                </>
+              ) : (
+                <>
+                  <button className="btn btn-success" onClick={updateCandidate}>💾 저장</button>
+                  <button className="btn btn-ghost" onClick={() => { setIsEditing(false); setEditForm({}) }}>취소</button>
+                </>
               )}
-              {selected.status === '활성' && (
-                <button className="btn btn-primary" onClick={() => updateStatus(selected.id, '제안중')}>제안</button>
-              )}
-              {selected.status === '제안중' && (
-                <button className="btn btn-success" onClick={() => updateStatus(selected.id, '합격')}>합격</button>
-              )}
-              {selected.status !== '검토중' && (
-                <button className="btn btn-ghost" onClick={() => updateStatus(selected.id, '검토중')}>검토중으로</button>
-              )}
-              {isOwner && (
-                <button className="btn btn-ghost" onClick={() => setShowTransferModal(true)}>
-                  👥 소유권 이전
-                </button>
-              )}
-              <button className="btn btn-danger" onClick={() => { deleteCandidate(selected.id); setSelected(null) }}>삭제</button>
             </div>
 
             {/* 소유권 이전 모달 */}
