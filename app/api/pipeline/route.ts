@@ -16,7 +16,8 @@ export async function GET(req: NextRequest) {
       .select(`
         *,
         job_descriptions (id, company, position, priority, created_by),
-        candidates (id, name, email, current_company, current_position, status)
+        candidates (id, name, email, current_company, current_position, status),
+        created_by_user:profiles!pipeline_created_by_fkey(id, full_name, email)
       `)
       .order('created_at', { ascending: false })
 

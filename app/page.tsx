@@ -460,8 +460,22 @@ export default function Dashboard() {
                     <div style={{ fontSize: 11, color: 'var(--muted2)', marginBottom: 4 }}>
                       {pipeline.job_descriptions?.company || '회사명 미상'}
                     </div>
-                    <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>
-                      {pipeline.candidates?.name || '후보자명 미상'}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                      <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>
+                        {pipeline.candidates?.name || '후보자명 미상'}
+                      </div>
+                      {pipeline.created_by_user && (
+                        <span style={{
+                          fontSize: 10,
+                          color: 'var(--muted2)',
+                          background: 'var(--bg)',
+                          padding: '2px 6px',
+                          borderRadius: 4,
+                          border: '1px solid var(--border)'
+                        }}>
+                          추천: {pipeline.created_by_user.full_name || pipeline.created_by_user.email}
+                        </span>
+                      )}
                     </div>
                     <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>
                       {pipeline.job_descriptions?.position || '포지션 미상'}
