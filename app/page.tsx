@@ -11,6 +11,8 @@ interface JD {
   priority: string
   status: string
   created_at: string
+  pipelineCount?: number
+  activePipelineCount?: number
 }
 
 interface Stats {
@@ -131,10 +133,20 @@ export default function Dashboard() {
           activePipelines: pipeline.filter((p: any) => p.is_active).length,
         })
 
-        // 최근 JD: 관심 JD 우선
+        // 최근 JD: 관심 JD 우선 + 파이프라인 현황 추가
         const interestJDs = jds.filter((jd: any) =>
           jd.created_by === profile.email || interestIds.includes(jd.id)
-        )
+        ).map((jd: any) => {
+          // 각 JD별 파이프라인 카운트
+          const jdPipelines = pipeline.filter((p: any) => p.jd_id === jd.id)
+          const activePipelines = jdPipelines.filter((p: any) => p.is_active)
+
+          return {
+            ...jd,
+            pipelineCount: jdPipelines.length,
+            activePipelineCount: activePipelines.length,
+          }
+        })
         setRecentJDs(interestJDs.slice(0, 5))
 
         // Owner/PM인 경우 추가 통계 로드
@@ -255,10 +267,16 @@ export default function Dashboard() {
                     <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', marginBottom: 4 }}>
                       {jd.position}
                     </div>
-                    <div style={{ display: 'flex', gap: 4 }}>
+                    <div style={{ display: 'flex', gap: 4, alignItems: 'center', marginBottom: 4 }}>
                       <span className={`badge badge-${jd.priority}`} style={{ fontSize: 10 }}>{jd.priority}</span>
                       <span className={`badge badge-${jd.status}`} style={{ fontSize: 10 }}>{jd.status}</span>
                     </div>
+                    {(jd.pipelineCount ?? 0) > 0 && (
+                      <div style={{ fontSize: 11, color: 'var(--muted2)', display: 'flex', gap: 8 }}>
+                        <span>🔄 진행 중: <strong style={{ color: 'var(--accent)' }}>{jd.activePipelineCount ?? 0}</strong>명</span>
+                        <span>전체: {jd.pipelineCount ?? 0}명</span>
+                      </div>
+                    )}
                   </div>
                 </Link>
               ))}
