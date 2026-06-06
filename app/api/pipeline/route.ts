@@ -16,8 +16,7 @@ export async function GET(req: NextRequest) {
       .select(`
         *,
         job_descriptions (id, company, position, priority, created_by),
-        candidates (id, name, email, current_company, current_position, status),
-        created_by_user:profiles!pipeline_created_by_fkey(id, full_name, email)
+        candidates (id, name, email, current_company, current_position, status)
       `)
       .order('created_at', { ascending: false })
 
@@ -32,15 +31,21 @@ export async function GET(req: NextRequest) {
         // PM/Owner: 본인 JD에 연결된 모든 파이프라인
         console.log('[pipeline] PM/Owner: Filtering by JD owner:', userEmail)
         // 먼저 본인 JD 목록 조회
-        const { data: myJDs } = await supabaseAdmin
+        const { data: myJDs, error: jdError } = await supabaseAdmin
           .from('job_descriptions')
           .select('id')
           .eq('created_by', userEmail)
+
+        if (jdError) {
+          console.error('[pipeline] Error fetching JDs:', jdError)
+          return NextResponse.json({ error: 'JD 조회 중 오류가 발생했습니다.', details: jdError.message }, { status: 500 })
+        }
 
         if (myJDs && myJDs.length > 0) {
           q = q.in('jd_id', myJDs.map(jd => jd.id))
         } else {
           // 본인 JD가 없으면 빈 배열 반환
+          console.log('[pipeline] No JDs found for user:', userEmail)
           return NextResponse.json({ pipeline: [] })
         }
       }
@@ -56,7 +61,34 @@ export async function GET(req: NextRequest) {
     if (stage) q = q.eq('stage', stage)
 
     const { data, error } = await q
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    if (error) {
+      console.error('[pipeline GET] Query error:', error)
+      return NextResponse.json({ error: error.message }, { status: 500 })
+    }
+
+    // created_by 이메일로 profiles 조회하여 추천자 정보 추가
+    if (data && data.length > 0) {
+      const creatorEmails = [...new Set(data.map((p: any) => p.created_by).filter(Boolean))]
+
+      if (creatorEmails.length > 0) {
+        const { data: profiles } = await supabaseAdmin
+          .from('profiles')
+          .select('id, email, full_name')
+          .in('email', creatorEmails)
+
+        // 각 파이프라인에 추천자 정보 추가
+        const enrichedData = data.map((pipeline: any) => {
+          const creator = profiles?.find((p: any) => p.email === pipeline.created_by)
+          return {
+            ...pipeline,
+            created_by_user: creator || null
+          }
+        })
+
+        return NextResponse.json({ pipeline: enrichedData })
+      }
+    }
+
     return NextResponse.json({ pipeline: data ?? [] })
   } catch (e) {
     console.error('[api/pipeline GET]', e)
