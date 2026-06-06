@@ -27,10 +27,37 @@ export async function GET(req: NextRequest) {
     }
 
     // Admin과 Owner는 모든 JD 조회
-    // 일반 사용자는 본인 JD 또는 활성 상태인 JD만 조회
+    // headhunter는 본인 JD + 관심 JD + 활성 JD
+    // 기타 사용자는 본인 JD 또는 활성 JD
     if (role && role !== 'admin' && role !== 'owner' && userEmail) {
-      // 본인 JD이거나 활성 상태인 JD만 조회
-      q = q.or(`created_by.eq.${userEmail},status.eq.활성`)
+      if (role === 'headhunter') {
+        // headhunter: 관심 등록한 JD도 포함
+        const { data: profile } = await supabaseAdmin
+          .from('profiles')
+          .select('id')
+          .eq('email', userEmail)
+          .single()
+
+        if (profile) {
+          const { data: interests } = await supabaseAdmin
+            .from('jd_interests')
+            .select('jd_id')
+            .eq('user_id', profile.id)
+
+          const interestedJdIds = interests?.map(i => i.jd_id) ?? []
+
+          if (interestedJdIds.length > 0) {
+            // 본인 JD OR 관심 JD OR 활성 JD
+            q = q.or(`created_by.eq.${userEmail},id.in.(${interestedJdIds.join(',')}),status.eq.활성`)
+          } else {
+            // 관심 JD 없으면 본인 JD OR 활성 JD
+            q = q.or(`created_by.eq.${userEmail},status.eq.활성`)
+          }
+        }
+      } else {
+        // 기타 role: 본인 JD OR 활성 JD
+        q = q.or(`created_by.eq.${userEmail},status.eq.활성`)
+      }
     }
 
     if (status) {
