@@ -309,50 +309,6 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Owner 전용: 팀 통계 */}
-      {isOwner && dashboardStats && (
-        <>
-          {/* 멤버별 활동 통계 */}
-          <div className="card" style={{ marginTop: 20 }}>
-            <div className="card-title">팀 멤버 활동 현황</div>
-            <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                <thead>
-                  <tr style={{ borderBottom: '2px solid var(--border)' }}>
-                    <th style={{ padding: '12px 8px', textAlign: 'left', fontSize: 12, color: 'var(--muted2)', fontWeight: 600 }}>멤버</th>
-                    <th style={{ padding: '12px 8px', textAlign: 'left', fontSize: 12, color: 'var(--muted2)', fontWeight: 600 }}>역할</th>
-                    <th style={{ padding: '12px 8px', textAlign: 'center', fontSize: 12, color: 'var(--muted2)', fontWeight: 600 }}>담당 JD</th>
-                    <th style={{ padding: '12px 8px', textAlign: 'center', fontSize: 12, color: 'var(--muted2)', fontWeight: 600 }}>담당 후보자</th>
-                    <th style={{ padding: '12px 8px', textAlign: 'center', fontSize: 12, color: 'var(--muted2)', fontWeight: 600 }}>채용 프로세스</th>
-                    <th style={{ padding: '12px 8px', textAlign: 'center', fontSize: 12, color: 'var(--muted2)', fontWeight: 600 }}>진행 중</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {dashboardStats.memberStats.map(member => (
-                    <tr key={member.id} style={{ borderBottom: '1px solid var(--border)' }}>
-                      <td style={{ padding: '12px 8px' }}>
-                        <div style={{ fontWeight: 600, fontSize: 13 }}>{member.name}</div>
-                        <div style={{ fontSize: 11, color: 'var(--muted2)', marginTop: 2 }}>{member.email}</div>
-                      </td>
-                      <td style={{ padding: '12px 8px' }}>
-                        <span className="badge" style={{ fontSize: 11 }}>
-                          {member.role === 'owner' ? '오너' : member.role === 'headhunter' ? 'PM' : member.role === 'searcher' ? 'Searcher' : member.role}
-                        </span>
-                      </td>
-                      <td style={{ padding: '12px 8px', textAlign: 'center', fontSize: 14, fontWeight: 600 }}>{member.jdCount}</td>
-                      <td style={{ padding: '12px 8px', textAlign: 'center', fontSize: 14, fontWeight: 600 }}>{member.candidateCount}</td>
-                      <td style={{ padding: '12px 8px', textAlign: 'center', fontSize: 14, fontWeight: 600 }}>{member.pipelineCount}</td>
-                      <td style={{ padding: '12px 8px', textAlign: 'center', fontSize: 14, fontWeight: 600, color: 'var(--accent)' }}>{member.activePipelineCount}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-        </>
-      )}
-
       {/* Owner/PM 공통: JD & 채용 프로세스 현황 */}
       {isOwnerOrPM && dashboardStats && (
         <>
@@ -430,6 +386,46 @@ export default function Dashboard() {
             </div>
           </div>
         </>
+      )}
+
+      {/* Owner 전용: 팀 멤버 활동 통계 */}
+      {isOwner && dashboardStats && (
+        <div className="card" style={{ marginTop: 20 }}>
+          <div className="card-title">팀 멤버 활동 현황</div>
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr style={{ borderBottom: '2px solid var(--border)' }}>
+                  <th style={{ padding: '12px 8px', textAlign: 'left', fontSize: 12, color: 'var(--muted2)', fontWeight: 600 }}>멤버</th>
+                  <th style={{ padding: '12px 8px', textAlign: 'left', fontSize: 12, color: 'var(--muted2)', fontWeight: 600 }}>역할</th>
+                  <th style={{ padding: '12px 8px', textAlign: 'center', fontSize: 12, color: 'var(--muted2)', fontWeight: 600 }}>담당 JD</th>
+                  <th style={{ padding: '12px 8px', textAlign: 'center', fontSize: 12, color: 'var(--muted2)', fontWeight: 600 }}>담당 후보자</th>
+                  <th style={{ padding: '12px 8px', textAlign: 'center', fontSize: 12, color: 'var(--muted2)', fontWeight: 600 }}>채용 프로세스</th>
+                  <th style={{ padding: '12px 8px', textAlign: 'center', fontSize: 12, color: 'var(--muted2)', fontWeight: 600 }}>진행 중</th>
+                </tr>
+              </thead>
+              <tbody>
+                {dashboardStats.memberStats.map(member => (
+                  <tr key={member.id} style={{ borderBottom: '1px solid var(--border)' }}>
+                    <td style={{ padding: '12px 8px' }}>
+                      <div style={{ fontWeight: 600, fontSize: 13 }}>{member.name}</div>
+                      <div style={{ fontSize: 11, color: 'var(--muted2)', marginTop: 2 }}>{member.email}</div>
+                    </td>
+                    <td style={{ padding: '12px 8px' }}>
+                      <span className="badge" style={{ fontSize: 11 }}>
+                        {member.role === 'owner' ? '오너' : member.role === 'headhunter' ? 'PM' : member.role === 'searcher' ? 'Searcher' : member.role}
+                      </span>
+                    </td>
+                    <td style={{ padding: '12px 8px', textAlign: 'center', fontSize: 14, fontWeight: 600 }}>{member.jdCount}</td>
+                    <td style={{ padding: '12px 8px', textAlign: 'center', fontSize: 14, fontWeight: 600 }}>{member.candidateCount}</td>
+                    <td style={{ padding: '12px 8px', textAlign: 'center', fontSize: 14, fontWeight: 600 }}>{member.pipelineCount}</td>
+                    <td style={{ padding: '12px 8px', textAlign: 'center', fontSize: 14, fontWeight: 600, color: 'var(--accent)' }}>{member.activePipelineCount}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
       )}
 
       {/* 단계별 상세 모달 */}
