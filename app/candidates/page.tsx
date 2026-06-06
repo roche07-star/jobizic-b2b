@@ -148,7 +148,7 @@ export default function CandidatesPage() {
   }
 
   function closeModal() {
-    closeModal()
+    setSelected(null)
     setIsEditing(false)
     setEditForm({})
   }
@@ -156,10 +156,25 @@ export default function CandidatesPage() {
   async function updateCandidate() {
     if (!selected) return
 
+    // 수정 가능한 필드만 추출
+    const updateData = {
+      name: editForm.name,
+      email: editForm.email,
+      phone: editForm.phone,
+      location: editForm.location,
+      current_company: editForm.current_company,
+      current_position: editForm.current_position,
+      total_experience_years: editForm.total_experience_years,
+      market_value: editForm.market_value,
+      career_summary: editForm.career_summary,
+      strength_summary: editForm.strength_summary,
+      career_trajectory: editForm.career_trajectory,
+    }
+
     const res = await fetch(`/api/candidates/${selected.id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(editForm)
+      body: JSON.stringify(updateData)
     })
 
     if (!res.ok) {
@@ -168,7 +183,7 @@ export default function CandidatesPage() {
     }
 
     // 로컬 state 업데이트
-    const updated = { ...selected, ...editForm }
+    const updated = { ...selected, ...updateData }
     setCandidates(prev => prev.map(c => c.id === selected.id ? updated : c))
     setSelected(updated)
     setIsEditing(false)
@@ -613,7 +628,22 @@ export default function CandidatesPage() {
                   {selected.status !== '검토중' && (
                     <button className="btn btn-ghost" onClick={() => updateStatus(selected.id, '검토중')}>검토중으로</button>
                   )}
-                  <button className="btn btn-primary" onClick={() => { setIsEditing(true); setEditForm(selected) }}>✏️ 수정</button>
+                  <button className="btn btn-primary" onClick={() => {
+                    setIsEditing(true)
+                    setEditForm({
+                      name: selected.name,
+                      email: selected.email,
+                      phone: selected.phone,
+                      location: selected.location,
+                      current_company: selected.current_company,
+                      current_position: selected.current_position,
+                      total_experience_years: selected.total_experience_years,
+                      market_value: selected.market_value,
+                      career_summary: selected.career_summary,
+                      strength_summary: selected.strength_summary,
+                      career_trajectory: selected.career_trajectory,
+                    })
+                  }}>✏️ 수정</button>
                   {isOwner && (
                     <button className="btn btn-ghost" onClick={() => setShowTransferModal(true)}>
                       👥 소유권 이전
