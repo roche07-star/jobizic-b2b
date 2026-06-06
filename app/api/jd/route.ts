@@ -21,14 +21,16 @@ export async function GET(req: NextRequest) {
     // Role 기반 필터링
     console.log('[jd] User:', userEmail, 'Role:', role)
 
-    // Searcher와 client는 같은 조직 JD만 조회
-    if (role && (role === 'searcher' || role.startsWith('client_'))) {
-      if (organizationId) {
-        q = q.eq('organization_id', organizationId)
-      }
-    } else if (organizationId) {
-      // admin, owner, PM은 organization_id가 있으면 필터링
+    // organization_id 필터링
+    if (organizationId) {
       q = q.eq('organization_id', organizationId)
+    }
+
+    // Admin과 Owner는 모든 JD 조회
+    // 일반 사용자는 본인 JD 또는 활성 상태인 JD만 조회
+    if (role && role !== 'admin' && role !== 'owner' && userEmail) {
+      // 본인 JD이거나 활성 상태인 JD만 조회
+      q = q.or(`created_by.eq.${userEmail},status.eq.활성`)
     }
 
     if (status) {
