@@ -276,9 +276,12 @@ export default function JDPage() {
                       background: 'transparent',
                       border: 'none',
                       cursor: 'pointer',
-                      fontSize: 16,
-                      padding: '2px 4px',
+                      fontSize: 18,
+                      padding: 0,
                       lineHeight: 1,
+                      display: 'flex',
+                      alignItems: 'center',
+                      minWidth: 20,
                     }}
                     title={interests.includes(jd.id) ? '관심 해제' : '관심 등록'}
                   >
@@ -338,27 +341,28 @@ export default function JDPage() {
           <div className="modal" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
               <div>
-                <div style={{ fontSize: 12, color: 'var(--muted2)', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 8 }}>
+                <div style={{ fontSize: 12, color: 'var(--muted2)', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
                   {selected.company ?? '회사명 미상'}
-                  {selected.created_by !== userEmail && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        toggleInterest(selected.id)
-                      }}
-                      style={{
-                        background: 'transparent',
-                        border: 'none',
-                        cursor: 'pointer',
-                        fontSize: 18,
-                        padding: '0',
-                        lineHeight: 1,
-                      }}
-                      title={interests.includes(selected.id) ? '관심 해제' : '관심 등록'}
-                    >
-                      {interests.includes(selected.id) ? '⭐' : '☆'}
-                    </button>
-                  )}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      toggleInterest(selected.id)
+                    }}
+                    style={{
+                      background: 'transparent',
+                      border: 'none',
+                      cursor: 'pointer',
+                      fontSize: 18,
+                      padding: 0,
+                      lineHeight: 1,
+                      display: 'flex',
+                      alignItems: 'center',
+                      minWidth: 20,
+                    }}
+                    title={interests.includes(selected.id) ? '관심 해제' : '관심 등록'}
+                  >
+                    {interests.includes(selected.id) ? '⭐' : '☆'}
+                  </button>
                 </div>
                 <div className="modal-title">{selected.position}</div>
               </div>
