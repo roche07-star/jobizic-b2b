@@ -81,7 +81,7 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ id: data.id })
       }
 
-      // 1. JD 담당자(PM)에게 알림 - 본인이 만든 JD인 경우만
+      // 1. JD 담당자(PM)에게 알림 - 본인이 만든 JD 또는 관심 JD인 경우만
       if (jd?.created_by && jd.created_by !== body.created_by) {
         const { data: jdOwner } = await supabaseAdmin
           .from('profiles')
@@ -102,6 +102,34 @@ export async function POST(req: NextRequest) {
             senderId: creator.id,
             senderName: creator.full_name || body.created_by,
           })
+        }
+      }
+
+      // 1-2. 관심 등록한 사용자들에게도 알림 (본인 JD 제외)
+      if (jd?.id) {
+        const { data: interests } = await supabaseAdmin
+          .from('jd_interests')
+          .select('user_id, profiles(id, full_name, email)')
+          .eq('jd_id', jd.id)
+
+        if (interests && interests.length > 0) {
+          for (const interest of interests) {
+            const profile = Array.isArray(interest.profiles) ? interest.profiles[0] : interest.profiles
+            // 본인이거나 이미 위에서 알림 받은 JD 담당자는 제외
+            if (profile && profile.id !== creator.id && profile.email !== jd.created_by) {
+              await createNotification({
+                userId: profile.id,
+                type: 'assignment',
+                title: '관심 JD 새 후보자 매칭',
+                message: `${jd.company || '회사'} - ${jd.position} 포지션에 "${candidate?.name || '후보자'}" 후보자가 매칭되었습니다.`,
+                relatedId: data.id,
+                relatedType: 'pipeline',
+                actionUrl: `/pipeline`,
+                senderId: creator.id,
+                senderName: creator.full_name || body.created_by,
+              })
+            }
+          }
         }
       }
 

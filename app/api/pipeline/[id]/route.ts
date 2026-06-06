@@ -86,6 +86,34 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
           }
         }
 
+        // 1-2. 관심 등록한 사용자들에게도 알림 (본인 제외, JD 담당자 제외)
+        if (jd?.id && profile) {
+          const { data: interests } = await supabaseAdmin
+            .from('jd_interests')
+            .select('user_id, profiles(id, full_name, email)')
+            .eq('jd_id', jd.id)
+
+          if (interests && interests.length > 0) {
+            for (const interest of interests) {
+              const interestProfile = Array.isArray(interest.profiles) ? interest.profiles[0] : interest.profiles
+              // 본인이거나 JD 담당자는 제외
+              if (interestProfile && interestProfile.id !== profile.id && interestProfile.email !== jd.created_by) {
+                await createNotification({
+                  userId: interestProfile.id,
+                  type: 'pipeline_stage',
+                  title: `관심 JD 파이프라인 변경: ${candidate?.name || '후보자'}`,
+                  message: `${jd.position} 포지션의 "${candidate?.name || '후보자'}" 단계가 "${oldPipeline.stage}" → "${stage}"로 변경되었습니다.`,
+                  relatedId: id,
+                  relatedType: 'pipeline',
+                  actionUrl: `/pipeline`,
+                  senderId: profile.id,
+                  senderName: profile.full_name || updated_by,
+                })
+              }
+            }
+          }
+        }
+
         // 2. 후보자 등록자(Searcher)에게 알림 - 자신의 후보자인 경우만
         if (oldPipeline.candidate_created_by && profile) {
           const { data: candidateOwner } = await supabaseAdmin
