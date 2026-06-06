@@ -267,12 +267,12 @@ export default function JDPage() {
               <div className="jd-card-top">
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <div className="jd-company">{jd.company ?? '회사명 미상'}</div>
-                  {jd.created_by === userEmail && (
+                  {jd.created_by && userEmail && jd.created_by === userEmail && (
                     <span style={{ fontSize: 11, background: 'rgba(232,255,71,0.15)', color: 'var(--accent)', padding: '2px 6px', borderRadius: 4 }}>
                       내 JD
                     </span>
                   )}
-                  {jd.created_by !== userEmail && (
+                  {jd.created_by && userEmail && jd.created_by !== userEmail && (
                     <button
                       onClick={(e) => {
                         e.stopPropagation()
