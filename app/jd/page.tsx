@@ -366,8 +366,16 @@ export default function JDPage() {
                       }
                     }}
                     style={{
-                      background: (jd.created_by === userEmail || interests.includes(jd.id)) ? 'rgba(255,215,0,0.15)' : 'rgba(255,255,255,0.05)',
-                      border: '1px solid ' + ((jd.created_by === userEmail || interests.includes(jd.id)) ? '#ffd700' : '#666'),
+                      background: jd.created_by === userEmail
+                        ? 'rgba(255,107,0,0.15)'
+                        : interests.includes(jd.id)
+                          ? 'rgba(255,215,0,0.15)'
+                          : 'rgba(255,255,255,0.05)',
+                      border: '1px solid ' + (jd.created_by === userEmail
+                        ? '#ff6b00'
+                        : interests.includes(jd.id)
+                          ? '#ffd700'
+                          : '#666'),
                       borderRadius: 3,
                       cursor: jd.created_by === userEmail ? 'default' : 'pointer',
                       fontSize: 14,
@@ -378,7 +386,11 @@ export default function JDPage() {
                       justifyContent: 'center',
                       minWidth: 22,
                       flexShrink: 0,
-                      color: (jd.created_by === userEmail || interests.includes(jd.id)) ? '#ffd700' : '#ccc',
+                      color: jd.created_by === userEmail
+                        ? '#ff6b00'
+                        : interests.includes(jd.id)
+                          ? '#ffd700'
+                          : '#ccc',
                     }}
                     title={jd.created_by === userEmail ? '내 JD' : (interests.includes(jd.id) ? '관심 해제' : '관심 등록')}
                   >
@@ -448,8 +460,16 @@ export default function JDPage() {
                       }
                     }}
                     style={{
-                      background: (selected.created_by === userEmail || interests.includes(selected.id)) ? 'rgba(255,215,0,0.15)' : 'rgba(255,255,255,0.05)',
-                      border: '1px solid ' + ((selected.created_by === userEmail || interests.includes(selected.id)) ? '#ffd700' : '#666'),
+                      background: selected.created_by === userEmail
+                        ? 'rgba(255,107,0,0.15)'
+                        : interests.includes(selected.id)
+                          ? 'rgba(255,215,0,0.15)'
+                          : 'rgba(255,255,255,0.05)',
+                      border: '1px solid ' + (selected.created_by === userEmail
+                        ? '#ff6b00'
+                        : interests.includes(selected.id)
+                          ? '#ffd700'
+                          : '#666'),
                       borderRadius: 3,
                       cursor: selected.created_by === userEmail ? 'default' : 'pointer',
                       fontSize: 14,
@@ -459,7 +479,11 @@ export default function JDPage() {
                       alignItems: 'center',
                       justifyContent: 'center',
                       minWidth: 22,
-                      color: (selected.created_by === userEmail || interests.includes(selected.id)) ? '#ffd700' : '#ccc',
+                      color: selected.created_by === userEmail
+                        ? '#ff6b00'
+                        : interests.includes(selected.id)
+                          ? '#ffd700'
+                          : '#ccc',
                     }}
                     title={selected.created_by === userEmail ? '내 JD' : (interests.includes(selected.id) ? '관심 해제' : '관심 등록')}
                   >
