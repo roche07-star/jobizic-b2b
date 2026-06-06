@@ -72,6 +72,8 @@ export default function Dashboard() {
   const [organizations, setOrganizations] = useState<Organization[]>([])
   const [selectedOrgId, setSelectedOrgId] = useState<string>('전체')
   const [dashboardStats, setDashboardStats] = useState<DashboardStats | null>(null)
+  const [selectedStage, setSelectedStage] = useState<string | null>(null)
+  const [stageDetails, setStageDetails] = useState<any[]>([])
 
   useEffect(() => {
     async function loadOrganizations() {
@@ -90,6 +92,23 @@ export default function Dashboard() {
     }
     loadOrganizations()
   }, [])
+
+  async function loadStageDetails(stage: string) {
+    const profile = await getProfile()
+    if (!profile) return
+
+    const params = new URLSearchParams({
+      role: profile.role,
+      user_email: profile.email,
+      stage,
+      ...(profile.role !== 'admin' && profile.organization_id && { organization_id: profile.organization_id })
+    })
+
+    const res = await fetch(`/api/pipeline?${params}`)
+    const data = await res.json()
+    setStageDetails(data.pipeline ?? [])
+    setSelectedStage(stage)
+  }
 
   useEffect(() => {
     async function loadData() {
@@ -378,7 +397,21 @@ export default function Dashboard() {
                   .sort(([, a], [, b]) => (b as number) - (a as number))
                   .slice(0, 5)
                   .map(([stage, count]) => (
-                    <div key={stage} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <div
+                      key={stage}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        padding: '6px 8px',
+                        borderRadius: 6,
+                        cursor: 'pointer',
+                        transition: 'background 0.2s'
+                      }}
+                      onClick={() => loadStageDetails(stage)}
+                      onMouseEnter={e => e.currentTarget.style.background = 'var(--bg3)'}
+                      onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                    >
                       <div style={{ flex: '0 0 80px', fontSize: 12, color: 'var(--muted)' }}>{stage}</div>
                       <div style={{ flex: 1, height: 20, background: 'var(--bg3)', borderRadius: 4, overflow: 'hidden', position: 'relative' }}>
                         <div
@@ -397,6 +430,48 @@ export default function Dashboard() {
             </div>
           </div>
         </>
+      )}
+
+      {/* 단계별 상세 모달 */}
+      {selectedStage && (
+        <div className="overlay" onClick={() => setSelectedStage(null)}>
+          <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 600 }}>
+            <div className="modal-header">
+              <div className="modal-title">{selectedStage} 단계</div>
+              <button className="modal-close" onClick={() => setSelectedStage(null)}>✕</button>
+            </div>
+
+            {stageDetails.length === 0 ? (
+              <div className="empty" style={{ padding: '24px' }}>
+                <div className="empty-sub">진행 중인 후보자가 없습니다</div>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {stageDetails.map((pipeline: any) => (
+                  <div
+                    key={pipeline.id}
+                    style={{
+                      padding: '12px 14px',
+                      borderRadius: 8,
+                      background: 'var(--bg3)',
+                      border: '1px solid var(--border)',
+                    }}
+                  >
+                    <div style={{ fontSize: 11, color: 'var(--muted2)', marginBottom: 4 }}>
+                      {pipeline.job_descriptions?.company || '회사명 미상'}
+                    </div>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>
+                      {pipeline.candidates?.name || '후보자명 미상'}
+                    </div>
+                    <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>
+                      {pipeline.job_descriptions?.position || '포지션 미상'}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
       )}
     </main>
   )
