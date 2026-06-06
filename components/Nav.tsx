@@ -210,7 +210,7 @@ export default function Nav() {
             position: 'absolute',
             top: 'calc(100% + 8px)',
             left: 0,
-            right: 0,
+            width: '200px',
             background: 'var(--bg2)',
             border: '2px solid var(--border)',
             borderRadius: 12,
@@ -226,13 +226,15 @@ export default function Nav() {
                 onClick={() => setShowMobileMenu(false)}
                 style={{
                   display: 'block',
-                  padding: '12px 16px',
+                  padding: '14px 16px',
                   borderBottom: '1px solid var(--border)',
                   color: 'var(--text)',
                   textDecoration: 'none',
                   fontSize: 14,
                   fontWeight: path === l.href || (l.href !== '/' && path.startsWith(l.href)) ? 600 : 400,
                   background: path === l.href || (l.href !== '/' && path.startsWith(l.href)) ? 'rgba(232, 255, 71, 0.1)' : 'transparent',
+                  textAlign: 'left',
+                  whiteSpace: 'nowrap',
                 }}
               >
                 {l.label}
