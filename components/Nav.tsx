@@ -291,46 +291,46 @@ export default function Nav() {
 
             {/* 알림 드롭다운 */}
             {showNotifications && (
-              <div style={{
+              <div className="notification-dropdown" style={{
                 position: 'absolute',
                 top: 'calc(100% + 8px)',
                 right: 0,
-                width: 'min(360px, 90vw)',
-                maxWidth: '90vw',
-                maxHeight: 500,
+                width: 'min(300px, 85vw)',
+                maxWidth: '85vw',
+                maxHeight: 350,
                 background: 'var(--bg2)',
                 border: '2px solid var(--border)',
-                borderRadius: 12,
+                borderRadius: 10,
                 boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
                 zIndex: 1000,
                 overflow: 'hidden',
               }}>
                 <div style={{
-                  padding: '12px 16px',
+                  padding: '10px 14px',
                   borderBottom: '1px solid var(--border)',
                   display: 'flex',
                   justifyContent: 'space-between',
                   alignItems: 'center',
                 }}>
-                  <div style={{ fontWeight: 600, fontSize: 14 }}>알림</div>
+                  <div style={{ fontWeight: 600, fontSize: 13 }}>알림</div>
                   {unreadCount > 0 && (
                     <button
                       className="btn btn-ghost btn-sm"
                       onClick={markAllAsRead}
-                      style={{ fontSize: 11, padding: '2px 8px' }}
+                      style={{ fontSize: 10, padding: '2px 6px' }}
                     >
                       전체 읽음
                     </button>
                   )}
                 </div>
 
-                <div style={{ maxHeight: 400, overflowY: 'auto' }}>
+                <div style={{ maxHeight: 300, overflowY: 'auto' }}>
                   {notifications.length === 0 ? (
                     <div style={{
-                      padding: 40,
+                      padding: 30,
                       textAlign: 'center',
                       color: 'var(--muted2)',
-                      fontSize: 13,
+                      fontSize: 12,
                     }}>
                       알림이 없습니다
                     </div>
@@ -338,8 +338,9 @@ export default function Nav() {
                     notifications.map(notif => (
                       <div
                         key={notif.id}
+                        className="notification-item"
                         style={{
-                          padding: '12px 16px',
+                          padding: '10px 12px',
                           borderBottom: '1px solid var(--border)',
                           background: notif.is_read ? 'transparent' : 'rgba(255,255,255,0.03)',
                           cursor: notif.action_url ? 'pointer' : 'default',
@@ -356,15 +357,15 @@ export default function Nav() {
                           display: 'flex',
                           justifyContent: 'space-between',
                           alignItems: 'flex-start',
-                          marginBottom: 4,
+                          marginBottom: 3,
                         }}>
-                          <div style={{ fontWeight: 600, fontSize: 13 }}>
+                          <div style={{ fontWeight: 600, fontSize: 12 }}>
                             {notif.title}
                           </div>
                           {!notif.is_read && (
                             <div style={{
-                              width: 8,
-                              height: 8,
+                              width: 6,
+                              height: 6,
                               borderRadius: '50%',
                               background: 'var(--accent)',
                               marginTop: 4,
@@ -373,14 +374,14 @@ export default function Nav() {
                         </div>
                         {notif.message && (
                           <div style={{
-                            fontSize: 12,
+                            fontSize: 11,
                             color: 'var(--muted)',
-                            marginBottom: 4,
+                            marginBottom: 3,
                           }}>
                             {notif.message}
                           </div>
                         )}
-                        <div style={{ fontSize: 11, color: 'var(--muted2)' }}>
+                        <div style={{ fontSize: 10, color: 'var(--muted2)' }}>
                           {new Date(notif.created_at).toLocaleString('ko-KR')}
                         </div>
                       </div>
