@@ -15,16 +15,34 @@ export async function GET(req: NextRequest) {
       .from('pipeline')
       .select(`
         *,
-        job_descriptions (id, company, position, priority),
+        job_descriptions (id, company, position, priority, created_by),
         candidates (id, name, email, current_company, current_position, status)
       `)
       .order('created_at', { ascending: false })
 
-    // 본인이 등록한 파이프라인만 조회 (admin 제외)
+    // PM/Owner는 본인 JD에 연결된 파이프라인 조회, Searcher는 본인이 생성한 파이프라인만
     console.log('[pipeline] User:', userEmail, 'Role:', role)
     if (role !== 'admin' && userEmail) {
-      console.log('[pipeline] Filtering by created_by:', userEmail)
-      q = q.eq('created_by', userEmail)
+      if (role === 'searcher') {
+        // Searcher: 본인이 생성한 파이프라인만
+        console.log('[pipeline] Searcher: Filtering by created_by:', userEmail)
+        q = q.eq('created_by', userEmail)
+      } else if (role === 'headhunter' || role === 'owner') {
+        // PM/Owner: 본인 JD에 연결된 모든 파이프라인
+        console.log('[pipeline] PM/Owner: Filtering by JD owner:', userEmail)
+        // 먼저 본인 JD 목록 조회
+        const { data: myJDs } = await supabaseAdmin
+          .from('job_descriptions')
+          .select('id')
+          .eq('created_by', userEmail)
+
+        if (myJDs && myJDs.length > 0) {
+          q = q.in('jd_id', myJDs.map(jd => jd.id))
+        } else {
+          // 본인 JD가 없으면 빈 배열 반환
+          return NextResponse.json({ pipeline: [] })
+        }
+      }
     }
 
     // organization_id가 있으면 필터링 (admin이 특정 조직 선택 시)
