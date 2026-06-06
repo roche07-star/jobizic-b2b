@@ -367,12 +367,12 @@ export default function JDPage() {
                     }}
                     style={{
                       background: jd.created_by === userEmail
-                        ? 'rgba(255,107,0,0.15)'
+                        ? 'rgba(74,158,255,0.15)'
                         : interests.includes(jd.id)
                           ? 'rgba(255,215,0,0.15)'
                           : 'rgba(255,255,255,0.05)',
                       border: '1px solid ' + (jd.created_by === userEmail
-                        ? '#ff6b00'
+                        ? '#4a9eff'
                         : interests.includes(jd.id)
                           ? '#ffd700'
                           : '#666'),
@@ -387,7 +387,7 @@ export default function JDPage() {
                       minWidth: 22,
                       flexShrink: 0,
                       color: jd.created_by === userEmail
-                        ? '#ff6b00'
+                        ? '#4a9eff'
                         : interests.includes(jd.id)
                           ? '#ffd700'
                           : '#ccc',
@@ -461,12 +461,12 @@ export default function JDPage() {
                     }}
                     style={{
                       background: selected.created_by === userEmail
-                        ? 'rgba(255,107,0,0.15)'
+                        ? 'rgba(74,158,255,0.15)'
                         : interests.includes(selected.id)
                           ? 'rgba(255,215,0,0.15)'
                           : 'rgba(255,255,255,0.05)',
                       border: '1px solid ' + (selected.created_by === userEmail
-                        ? '#ff6b00'
+                        ? '#4a9eff'
                         : interests.includes(selected.id)
                           ? '#ffd700'
                           : '#666'),
@@ -480,7 +480,7 @@ export default function JDPage() {
                       justifyContent: 'center',
                       minWidth: 22,
                       color: selected.created_by === userEmail
-                        ? '#ff6b00'
+                        ? '#4a9eff'
                         : interests.includes(selected.id)
                           ? '#ffd700'
                           : '#ccc',
