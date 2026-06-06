@@ -267,12 +267,10 @@ export default function JDPage() {
               <div className="jd-card-top">
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <div className="jd-company">{jd.company ?? '회사명 미상'}</div>
-                  {/* 디버그: 조건 확인 */}
-                  {process.env.NODE_ENV === 'development' && (
-                    <span style={{ fontSize: 9, color: 'red' }}>
-                      [{jd.created_by?.substring(0,5)} vs {userEmail?.substring(0,5)}]
-                    </span>
-                  )}
+                  {/* 디버그: 조건 확인 - 항상 표시 */}
+                  <span style={{ fontSize: 9, color: 'red', background: 'yellow', padding: '2px' }}>
+                    [CB:{jd.created_by?.substring(0,8) || 'NULL'} vs UE:{userEmail?.substring(0,8) || 'NULL'}]
+                  </span>
                   {jd.created_by === userEmail ? (
                     <span style={{ fontSize: 11, background: 'rgba(232,255,71,0.15)', color: 'var(--accent)', padding: '2px 6px', borderRadius: 4 }}>
                       내 JD
