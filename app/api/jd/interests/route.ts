@@ -17,7 +17,13 @@ export async function GET(req: NextRequest) {
 
     if (error) {
       console.error('[jd/interests GET] Error:', error)
-      return NextResponse.json({ error: error.message }, { status: 500 })
+      console.error('[jd/interests GET] Error details:', JSON.stringify(error, null, 2))
+      // 테이블이 없는 경우 빈 배열 반환
+      if (error.code === '42P01') {
+        console.warn('[jd/interests GET] Table does not exist, returning empty array')
+        return NextResponse.json({ jd_ids: [] })
+      }
+      return NextResponse.json({ error: error.message, details: error.code }, { status: 500 })
     }
 
     const jdIds = data?.map(item => item.jd_id) || []
