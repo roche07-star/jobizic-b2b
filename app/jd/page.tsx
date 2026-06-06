@@ -394,7 +394,7 @@ export default function JDPage() {
                     }}
                     title={jd.created_by === userEmail ? '내 JD' : (interests.includes(jd.id) ? '관심 해제' : '관심 등록')}
                   >
-                    {(jd.created_by === userEmail || interests.includes(jd.id)) ? '⭐' : '☆'}
+                    {(jd.created_by === userEmail || interests.includes(jd.id)) ? '★' : '☆'}
                   </button>
                 </div>
                 <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
@@ -487,7 +487,7 @@ export default function JDPage() {
                     }}
                     title={selected.created_by === userEmail ? '내 JD' : (interests.includes(selected.id) ? '관심 해제' : '관심 등록')}
                   >
-                    {(selected.created_by === userEmail || interests.includes(selected.id)) ? '⭐' : '☆'}
+                    {(selected.created_by === userEmail || interests.includes(selected.id)) ? '★' : '☆'}
                   </button>
                 </div>
                 <div className="modal-title">{selected.position}</div>
