@@ -270,26 +270,28 @@ export default function JDPage() {
                   <button
                     onClick={(e) => {
                       e.stopPropagation()
-                      toggleInterest(jd.id)
+                      if (jd.created_by !== userEmail) {
+                        toggleInterest(jd.id)
+                      }
                     }}
                     style={{
-                      background: interests.includes(jd.id) ? 'rgba(255,215,0,0.2)' : 'rgba(255,255,255,0.05)',
-                      border: '1px solid ' + (interests.includes(jd.id) ? '#ffd700' : '#888'),
+                      background: (jd.created_by === userEmail || interests.includes(jd.id)) ? 'rgba(255,215,0,0.15)' : 'rgba(255,255,255,0.05)',
+                      border: '1px solid ' + ((jd.created_by === userEmail || interests.includes(jd.id)) ? '#ffd700' : '#666'),
                       borderRadius: 4,
-                      cursor: 'pointer',
-                      fontSize: 20,
-                      padding: '4px 8px',
+                      cursor: jd.created_by === userEmail ? 'default' : 'pointer',
+                      fontSize: 18,
+                      padding: '3px 6px',
                       lineHeight: 1,
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      minWidth: 32,
+                      minWidth: 28,
                       flexShrink: 0,
-                      color: interests.includes(jd.id) ? '#ffd700' : '#fff',
+                      color: (jd.created_by === userEmail || interests.includes(jd.id)) ? '#ffd700' : '#ccc',
                     }}
-                    title={interests.includes(jd.id) ? '관심 해제' : '관심 등록'}
+                    title={jd.created_by === userEmail ? '내 JD' : (interests.includes(jd.id) ? '관심 해제' : '관심 등록')}
                   >
-                    {interests.includes(jd.id) ? '⭐' : '☆'}
+                    {(jd.created_by === userEmail || interests.includes(jd.id)) ? '⭐' : '☆'}
                   </button>
                 </div>
                 <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
@@ -350,25 +352,27 @@ export default function JDPage() {
                   <button
                     onClick={(e) => {
                       e.stopPropagation()
-                      toggleInterest(selected.id)
+                      if (selected.created_by !== userEmail) {
+                        toggleInterest(selected.id)
+                      }
                     }}
                     style={{
-                      background: interests.includes(selected.id) ? 'rgba(255,215,0,0.2)' : 'rgba(255,255,255,0.05)',
-                      border: '1px solid ' + (interests.includes(selected.id) ? '#ffd700' : '#888'),
+                      background: (selected.created_by === userEmail || interests.includes(selected.id)) ? 'rgba(255,215,0,0.15)' : 'rgba(255,255,255,0.05)',
+                      border: '1px solid ' + ((selected.created_by === userEmail || interests.includes(selected.id)) ? '#ffd700' : '#666'),
                       borderRadius: 4,
-                      cursor: 'pointer',
-                      fontSize: 20,
-                      padding: '4px 8px',
+                      cursor: selected.created_by === userEmail ? 'default' : 'pointer',
+                      fontSize: 18,
+                      padding: '3px 6px',
                       lineHeight: 1,
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      minWidth: 32,
-                      color: interests.includes(selected.id) ? '#ffd700' : '#fff',
+                      minWidth: 28,
+                      color: (selected.created_by === userEmail || interests.includes(selected.id)) ? '#ffd700' : '#ccc',
                     }}
-                    title={interests.includes(selected.id) ? '관심 해제' : '관심 등록'}
+                    title={selected.created_by === userEmail ? '내 JD' : (interests.includes(selected.id) ? '관심 해제' : '관심 등록')}
                   >
-                    {interests.includes(selected.id) ? '⭐' : '☆'}
+                    {(selected.created_by === userEmail || interests.includes(selected.id)) ? '⭐' : '☆'}
                   </button>
                 </div>
                 <div className="modal-title">{selected.position}</div>
