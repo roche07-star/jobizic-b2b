@@ -265,7 +265,7 @@ export default function JDPage() {
           {filtered.map(jd => (
             <div key={jd.id} className="jd-card" onClick={() => setSelected(jd)}>
               <div className="jd-card-top">
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                   <div className="jd-company">{jd.company ?? '회사명 미상'}</div>
                   <button
                     onClick={(e) => {
