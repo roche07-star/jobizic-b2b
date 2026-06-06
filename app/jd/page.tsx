@@ -273,8 +273,8 @@ export default function JDPage() {
                       toggleInterest(jd.id)
                     }}
                     style={{
-                      background: interests.includes(jd.id) ? 'rgba(255,215,0,0.2)' : 'transparent',
-                      border: '1px solid ' + (interests.includes(jd.id) ? '#ffd700' : '#666'),
+                      background: interests.includes(jd.id) ? 'rgba(255,215,0,0.2)' : 'rgba(255,255,255,0.05)',
+                      border: '1px solid ' + (interests.includes(jd.id) ? '#ffd700' : '#888'),
                       borderRadius: 4,
                       cursor: 'pointer',
                       fontSize: 20,
@@ -285,6 +285,7 @@ export default function JDPage() {
                       justifyContent: 'center',
                       minWidth: 32,
                       flexShrink: 0,
+                      color: interests.includes(jd.id) ? '#ffd700' : '#fff',
                     }}
                     title={interests.includes(jd.id) ? '관심 해제' : '관심 등록'}
                   >
@@ -352,15 +353,18 @@ export default function JDPage() {
                       toggleInterest(selected.id)
                     }}
                     style={{
-                      background: 'transparent',
-                      border: 'none',
+                      background: interests.includes(selected.id) ? 'rgba(255,215,0,0.2)' : 'rgba(255,255,255,0.05)',
+                      border: '1px solid ' + (interests.includes(selected.id) ? '#ffd700' : '#888'),
+                      borderRadius: 4,
                       cursor: 'pointer',
-                      fontSize: 18,
-                      padding: 0,
+                      fontSize: 20,
+                      padding: '4px 8px',
                       lineHeight: 1,
                       display: 'flex',
                       alignItems: 'center',
-                      minWidth: 20,
+                      justifyContent: 'center',
+                      minWidth: 32,
+                      color: interests.includes(selected.id) ? '#ffd700' : '#fff',
                     }}
                     title={interests.includes(selected.id) ? '관심 해제' : '관심 등록'}
                   >
