@@ -48,8 +48,11 @@ export default function JDPage() {
   const [isAdmin, setIsAdmin] = useState(false)
   const [userEmail, setUserEmail] = useState<string>('')
   const [userRole, setUserRole] = useState<string>('')
+  const [userId, setUserId] = useState<string>('')
   const [organizations, setOrganizations] = useState<Organization[]>([])
   const [selectedOrgId, setSelectedOrgId] = useState<string>('전체')
+  const [viewMode, setViewMode] = useState<'all' | 'interest'>('all')
+  const [interests, setInterests] = useState<string[]>([])
 
   useEffect(() => {
     async function loadOrganizations() {
@@ -59,12 +62,18 @@ export default function JDPage() {
       setIsAdmin(profile.role === 'admin')
       setUserEmail(profile.email)
       setUserRole(profile.role)
+      setUserId(profile.id)
 
       if (profile.role === 'admin') {
         const res = await fetch('/api/admin/organizations')
         const data = await res.json()
         setOrganizations(data.organizations ?? [])
       }
+
+      // 관심 JD 목록 로드
+      const interestRes = await fetch(`/api/jd/interests?user_id=${profile.id}`)
+      const interestData = await interestRes.json()
+      setInterests(interestData.jd_ids || [])
     }
     loadOrganizations()
   }, [])
@@ -131,8 +140,36 @@ export default function JDPage() {
     setShowRawText(false)
   }
 
-  const statusFiltered = filter === '전체' ? jds : jds.filter(j => j.status === filter)
+  // 관심 JD 필터링
+  const viewFiltered = viewMode === 'all'
+    ? jds
+    : jds.filter(j => j.created_by === userEmail || interests.includes(j.id))
+
+  const statusFiltered = filter === '전체' ? viewFiltered : viewFiltered.filter(j => j.status === filter)
   const filtered = priorityFilter === '전체' ? statusFiltered : statusFiltered.filter(j => j.priority === priorityFilter)
+
+  // 관심 등록/해제
+  async function toggleInterest(jdId: string) {
+    const isInterested = interests.includes(jdId)
+
+    if (isInterested) {
+      // 관심 해제
+      const res = await fetch(`/api/jd/interests?user_id=${userId}&jd_id=${jdId}`, { method: 'DELETE' })
+      if (res.ok) {
+        setInterests(prev => prev.filter(id => id !== jdId))
+      }
+    } else {
+      // 관심 등록
+      const res = await fetch('/api/jd/interests', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: userId, jd_id: jdId })
+      })
+      if (res.ok) {
+        setInterests(prev => [...prev, jdId])
+      }
+    }
+  }
 
   return (
     <main className="page">
@@ -178,10 +215,28 @@ export default function JDPage() {
         </div>
       </div>
 
+      {/* 전체 JD / 관심 JD 탭 */}
+      <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
+        <button
+          className={`btn${viewMode === 'all' ? ' btn-primary' : ' btn-ghost'}`}
+          onClick={() => setViewMode('all')}
+          style={{ fontSize: 13 }}
+        >
+          📋 전체 JD ({jds.length})
+        </button>
+        <button
+          className={`btn${viewMode === 'interest' ? ' btn-primary' : ' btn-ghost'}`}
+          onClick={() => setViewMode('interest')}
+          style={{ fontSize: 13 }}
+        >
+          ⭐ 관심 JD ({jds.filter(j => j.created_by === userEmail || interests.includes(j.id)).length})
+        </button>
+      </div>
+
       <div className="filter-bar">
         {STATUS_FILTERS.map(f => (
           <button key={f} className={`filter-btn${filter === f ? ' active' : ''}`} onClick={() => setFilter(f)}>
-            {f} {f !== '전체' && <span style={{ opacity: 0.6 }}>({jds.filter(j => j.status === f).length})</span>}
+            {f} {f !== '전체' && <span style={{ opacity: 0.6 }}>({viewFiltered.filter(j => j.status === f).length})</span>}
           </button>
         ))}
       </div>
@@ -208,7 +263,33 @@ export default function JDPage() {
           {filtered.map(jd => (
             <div key={jd.id} className="jd-card" onClick={() => setSelected(jd)}>
               <div className="jd-card-top">
-                <div className="jd-company">{jd.company ?? '회사명 미상'}</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <div className="jd-company">{jd.company ?? '회사명 미상'}</div>
+                  {jd.created_by === userEmail && (
+                    <span style={{ fontSize: 11, background: 'rgba(232,255,71,0.15)', color: 'var(--accent)', padding: '2px 6px', borderRadius: 4 }}>
+                      내 JD
+                    </span>
+                  )}
+                  {jd.created_by !== userEmail && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        toggleInterest(jd.id)
+                      }}
+                      style={{
+                        background: 'transparent',
+                        border: 'none',
+                        cursor: 'pointer',
+                        fontSize: 16,
+                        padding: '2px 4px',
+                        lineHeight: 1,
+                      }}
+                      title={interests.includes(jd.id) ? '관심 해제' : '관심 등록'}
+                    >
+                      {interests.includes(jd.id) ? '⭐' : '☆'}
+                    </button>
+                  )}
+                </div>
                 <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
                   {(jd.created_by_user || jd.created_by) && (
                     <span style={{
