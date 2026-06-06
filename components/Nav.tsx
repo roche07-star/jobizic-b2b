@@ -133,6 +133,27 @@ export default function Nav() {
     }
   }
 
+  // 알림 삭제
+  async function deleteNotification(id: string) {
+    try {
+      const supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      )
+
+      await supabase
+        .from('notifications')
+        .delete()
+        .eq('id', id)
+
+      // UI에서 즉시 제거
+      setNotifications(prev => prev.filter(n => n.id !== id))
+      setUnreadCount(prev => Math.max(0, prev - 1))
+    } catch (e) {
+      console.error('[deleteNotification] Error:', e)
+    }
+  }
+
   // 드롭다운 외부 클릭 시 닫기
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -344,6 +365,7 @@ export default function Nav() {
                           borderBottom: '1px solid var(--border)',
                           background: notif.is_read ? 'transparent' : 'rgba(255,255,255,0.03)',
                           cursor: notif.action_url ? 'pointer' : 'default',
+                          position: 'relative',
                         }}
                         onClick={() => {
                           if (!notif.is_read) markAsRead(notif.id)
@@ -359,18 +381,40 @@ export default function Nav() {
                           alignItems: 'flex-start',
                           marginBottom: 3,
                         }}>
-                          <div style={{ fontWeight: 600, fontSize: 12 }}>
+                          <div style={{ fontWeight: 600, fontSize: 12, flex: 1, paddingRight: '20px' }}>
                             {notif.title}
                           </div>
-                          {!notif.is_read && (
-                            <div style={{
-                              width: 6,
-                              height: 6,
-                              borderRadius: '50%',
-                              background: 'var(--accent)',
-                              marginTop: 4,
-                            }} />
-                          )}
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            {!notif.is_read && (
+                              <div style={{
+                                width: 6,
+                                height: 6,
+                                borderRadius: '50%',
+                                background: 'var(--accent)',
+                              }} />
+                            )}
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                deleteNotification(notif.id)
+                              }}
+                              style={{
+                                background: 'transparent',
+                                border: 'none',
+                                color: 'var(--muted)',
+                                cursor: 'pointer',
+                                padding: '2px 4px',
+                                fontSize: '14px',
+                                lineHeight: 1,
+                                transition: 'color 0.2s',
+                              }}
+                              onMouseEnter={(e) => e.currentTarget.style.color = 'var(--danger)'}
+                              onMouseLeave={(e) => e.currentTarget.style.color = 'var(--muted)'}
+                              title="알림 삭제"
+                            >
+                              ✕
+                            </button>
+                          </div>
                         </div>
                         {notif.message && (
                           <div style={{

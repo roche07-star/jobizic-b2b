@@ -49,3 +49,46 @@ export async function PATCH(
     return NextResponse.json({ error: e.message }, { status: 500 })
   }
 }
+
+// 알림 삭제
+export async function DELETE(
+  _req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params
+    const cookieStore = await cookies()
+    const authToken = cookieStore.get('sb-fwmjqfadsrzbzkpwbwue-auth-token')
+
+    if (!authToken) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        global: {
+          headers: {
+            Authorization: `Bearer ${authToken.value}`,
+          },
+        },
+      }
+    )
+
+    const { error } = await supabase
+      .from('notifications')
+      .delete()
+      .eq('id', id)
+
+    if (error) {
+      console.error('[notifications DELETE] Error:', error)
+      return NextResponse.json({ error: error.message }, { status: 500 })
+    }
+
+    return NextResponse.json({ ok: true })
+  } catch (e: any) {
+    console.error('[notifications DELETE] Exception:', e)
+    return NextResponse.json({ error: e.message }, { status: 500 })
+  }
+}
