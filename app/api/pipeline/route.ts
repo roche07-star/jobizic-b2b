@@ -28,8 +28,8 @@ export async function GET(req: NextRequest) {
         console.log('[pipeline] Searcher: Filtering by created_by:', userEmail)
         q = q.eq('created_by', userEmail)
       } else if (role === 'headhunter') {
-        // PM: 본인 JD에 연결된 모든 파이프라인
-        console.log('[pipeline] PM: Filtering by JD owner:', userEmail)
+        // PM: 본인 JD에 연결된 파이프라인 + 본인이 추천한 파이프라인
+        console.log('[pipeline] PM: Filtering by JD owner and recommender:', userEmail)
         const { data: myJDs, error: jdError } = await supabaseAdmin
           .from('job_descriptions')
           .select('id')
@@ -40,11 +40,14 @@ export async function GET(req: NextRequest) {
           return NextResponse.json({ error: 'JD 조회 중 오류가 발생했습니다.', details: jdError.message }, { status: 500 })
         }
 
+        // 본인 JD가 있으면 OR 조건으로 필터링 (본인 JD + 본인이 추천한 파이프라인)
         if (myJDs && myJDs.length > 0) {
-          q = q.in('jd_id', myJDs.map(jd => jd.id))
+          const jdIds = myJDs.map(jd => jd.id).join(',')
+          q = q.or(`jd_id.in.(${jdIds}),created_by.eq.${userEmail}`)
         } else {
-          console.log('[pipeline] No JDs found for user:', userEmail)
-          return NextResponse.json({ pipeline: [] })
+          // 본인 JD가 없으면 본인이 추천한 파이프라인만
+          console.log('[pipeline] No JDs found, showing only recommended by user')
+          q = q.eq('created_by', userEmail)
         }
       }
       // Owner: organization_id 필터만 적용 (아래에서 처리)
