@@ -21,9 +21,26 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
   try {
     const { id } = await context.params
     const body = await req.json()
+    const { user_email, user_role, ...updateData } = body
+
+    // 권한 체크: status 변경은 모두 가능, 그 외 수정은 본인/owner/admin만
+    if (Object.keys(updateData).some(key => key !== 'status')) {
+      if (user_email && user_role) {
+        const { data: jd } = await supabaseAdmin
+          .from('job_descriptions')
+          .select('created_by')
+          .eq('id', id)
+          .single()
+
+        if (jd && jd.created_by !== user_email && user_role !== 'owner' && user_role !== 'admin') {
+          return NextResponse.json({ error: '본인이 작성한 JD만 수정할 수 있습니다.' }, { status: 403 })
+        }
+      }
+    }
+
     const { error } = await supabaseAdmin
       .from('job_descriptions')
-      .update(body)
+      .update(updateData)
       .eq('id', id)
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
     return NextResponse.json({ ok: true })
@@ -33,9 +50,26 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
   }
 }
 
-export async function DELETE(_req: NextRequest, context: { params: Promise<{ id: string }> }) {
+export async function DELETE(req: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await context.params
+    const url = new URL(req.url)
+    const userEmail = url.searchParams.get('user_email')
+    const userRole = url.searchParams.get('user_role')
+
+    // 권한 체크: 본인/owner/admin만 삭제 가능
+    if (userEmail && userRole) {
+      const { data: jd } = await supabaseAdmin
+        .from('job_descriptions')
+        .select('created_by')
+        .eq('id', id)
+        .single()
+
+      if (jd && jd.created_by !== userEmail && userRole !== 'owner' && userRole !== 'admin') {
+        return NextResponse.json({ error: '본인이 작성한 JD만 삭제할 수 있습니다.' }, { status: 403 })
+      }
+    }
+
     const { error } = await supabaseAdmin
       .from('job_descriptions')
       .delete()

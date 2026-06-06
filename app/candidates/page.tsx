@@ -56,6 +56,13 @@ interface Organization {
   name: string
 }
 
+interface User {
+  id: string
+  email: string
+  full_name: string | null
+  role: string
+}
+
 export default function CandidatesPage() {
   const [candidates, setCandidates] = useState<Candidate[]>([])
   const [loading, setLoading] = useState(true)
@@ -67,8 +74,14 @@ export default function CandidatesPage() {
   const [showAdvancedFilter, setShowAdvancedFilter] = useState(false)
   const [selected, setSelected] = useState<Candidate | null>(null)
   const [isAdmin, setIsAdmin] = useState(false)
+  const [isOwner, setIsOwner] = useState(false)
+  const [userOrgId, setUserOrgId] = useState<string>('')
   const [organizations, setOrganizations] = useState<Organization[]>([])
   const [selectedOrgId, setSelectedOrgId] = useState<string>('전체')
+  const [showTransferModal, setShowTransferModal] = useState(false)
+  const [transferTarget, setTransferTarget] = useState('')
+  const [transferring, setTransferring] = useState(false)
+  const [orgMembers, setOrgMembers] = useState<User[]>([])
 
   useEffect(() => {
     async function loadOrganizations() {
@@ -76,11 +89,24 @@ export default function CandidatesPage() {
       if (!profile) return
 
       setIsAdmin(profile.role === 'admin')
+      setIsOwner(profile.role === 'owner')
+      setUserOrgId(profile.organization_id || '')
 
       if (profile.role === 'admin') {
         const res = await fetch('/api/admin/organizations')
         const data = await res.json()
         setOrganizations(data.organizations ?? [])
+      }
+
+      // Owner인 경우 조직 멤버 로드
+      if (profile.role === 'owner' && profile.organization_id) {
+        const params = new URLSearchParams({
+          role: 'owner',
+          organization_id: profile.organization_id,
+        })
+        const res = await fetch(`/api/admin/users?${params}`)
+        const data = await res.json()
+        setOrgMembers(data.users ?? [])
       }
     }
     loadOrganizations()
@@ -117,6 +143,37 @@ export default function CandidatesPage() {
     await fetch(`/api/candidates/${id}`, { method: 'DELETE' })
     setCandidates(prev => prev.filter(c => c.id !== id))
     if (selected?.id === id) setSelected(null)
+  }
+
+  async function transferOwnership() {
+    if (!selected || !transferTarget) return
+
+    setTransferring(true)
+    try {
+      const res = await fetch(`/api/candidates/${selected.id}/transfer`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ target_email: transferTarget }),
+      })
+      const data = await res.json()
+
+      if (!res.ok) {
+        alert(data.error || '이전 실패')
+        return
+      }
+
+      alert(`✅ 소유권이 이전되었습니다!`)
+      setShowTransferModal(false)
+      setTransferTarget('')
+      setSelected(null)
+
+      // 목록 새로고침
+      window.location.reload()
+    } catch (e: any) {
+      alert('오류: ' + e.message)
+    } finally {
+      setTransferring(false)
+    }
   }
 
   // 기본 필터 (상태)
@@ -447,7 +504,7 @@ export default function CandidatesPage() {
               </div>
             )}
 
-            <div style={{ display: 'flex', gap: 8 }}>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               {selected.status === '검토중' && (
                 <button className="btn btn-success" onClick={() => updateStatus(selected.id, '활성')}>활성화</button>
               )}
@@ -460,8 +517,85 @@ export default function CandidatesPage() {
               {selected.status !== '검토중' && (
                 <button className="btn btn-ghost" onClick={() => updateStatus(selected.id, '검토중')}>검토중으로</button>
               )}
+              {isOwner && (
+                <button className="btn btn-ghost" onClick={() => setShowTransferModal(true)}>
+                  👥 소유권 이전
+                </button>
+              )}
               <button className="btn btn-danger" onClick={() => { deleteCandidate(selected.id); setSelected(null) }}>삭제</button>
             </div>
+
+            {/* 소유권 이전 모달 */}
+            {showTransferModal && (
+              <div style={{
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                background: 'rgba(0,0,0,0.7)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                zIndex: 1001,
+              }} onClick={(e) => {
+                if (e.target === e.currentTarget) {
+                  setShowTransferModal(false)
+                  setTransferTarget('')
+                }
+              }}>
+                <div style={{
+                  background: 'var(--bg2)',
+                  borderRadius: 12,
+                  padding: 24,
+                  width: 400,
+                  maxWidth: '90vw',
+                  border: '2px solid var(--border)',
+                }} onClick={e => e.stopPropagation()}>
+                  <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 16 }}>
+                    후보자 소유권 이전
+                  </div>
+                  <div style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 16 }}>
+                    "{selected.name}" 후보자의 소유권을 다른 멤버에게 이전합니다.
+                  </div>
+                  <div className="form-group" style={{ marginBottom: 16 }}>
+                    <label className="form-label">이전받을 멤버</label>
+                    <select
+                      className="form-select"
+                      value={transferTarget}
+                      onChange={e => setTransferTarget(e.target.value)}
+                    >
+                      <option value="">멤버 선택</option>
+                      {orgMembers
+                        .filter(u => u.email !== selected.created_by)
+                        .map(u => (
+                          <option key={u.id} value={u.email}>
+                            {u.full_name || u.email} ({u.role === 'owner' ? '오너' : u.role === 'headhunter' ? 'PM' : u.role})
+                          </option>
+                        ))}
+                    </select>
+                  </div>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button
+                      className="btn btn-primary"
+                      onClick={transferOwnership}
+                      disabled={transferring || !transferTarget}
+                    >
+                      {transferring ? '이전 중...' : '✅ 이전하기'}
+                    </button>
+                    <button
+                      className="btn btn-ghost"
+                      onClick={() => {
+                        setShowTransferModal(false)
+                        setTransferTarget('')
+                      }}
+                    >
+                      취소
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}

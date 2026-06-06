@@ -46,6 +46,8 @@ export default function JDPage() {
   const [priorityFilter, setPriorityFilter] = useState('전체')
   const [selected, setSelected] = useState<JD | null>(null)
   const [isAdmin, setIsAdmin] = useState(false)
+  const [userEmail, setUserEmail] = useState<string>('')
+  const [userRole, setUserRole] = useState<string>('')
   const [organizations, setOrganizations] = useState<Organization[]>([])
   const [selectedOrgId, setSelectedOrgId] = useState<string>('전체')
 
@@ -55,6 +57,8 @@ export default function JDPage() {
       if (!profile) return
 
       setIsAdmin(profile.role === 'admin')
+      setUserEmail(profile.email)
+      setUserRole(profile.role)
 
       if (profile.role === 'admin') {
         const res = await fetch('/api/admin/organizations')
@@ -108,7 +112,16 @@ export default function JDPage() {
 
   async function deleteJD(id: string) {
     if (!confirm('이 JD를 삭제할까요?')) return
-    await fetch(`/api/jd/${id}`, { method: 'DELETE' })
+    const params = new URLSearchParams({
+      user_email: userEmail,
+      user_role: userRole,
+    })
+    const res = await fetch(`/api/jd/${id}?${params}`, { method: 'DELETE' })
+    if (!res.ok) {
+      const data = await res.json()
+      alert(data.error || '삭제 실패')
+      return
+    }
     setJds(prev => prev.filter(j => j.id !== id))
     if (selected?.id === id) closeModal()
   }
@@ -232,7 +245,9 @@ export default function JDPage() {
                 {jd.status !== '보류' && (
                   <button className="btn btn-ghost btn-sm" onClick={() => updateStatus(jd.id, '보류')}>보류</button>
                 )}
-                <button className="btn btn-danger btn-sm" onClick={() => deleteJD(jd.id)}>삭제</button>
+                {(jd.created_by === userEmail || userRole === 'owner' || userRole === 'admin') && (
+                  <button className="btn btn-danger btn-sm" onClick={() => deleteJD(jd.id)}>삭제</button>
+                )}
               </div>
             </div>
           ))}
@@ -333,7 +348,9 @@ export default function JDPage() {
               {selected.status !== '검토중' && (
                 <button className="btn btn-ghost" onClick={() => updateStatus(selected.id, '검토중')}>검토중으로</button>
               )}
-              <button className="btn btn-danger" onClick={() => { deleteJD(selected.id); closeModal() }}>삭제</button>
+              {(selected.created_by === userEmail || userRole === 'owner' || userRole === 'admin') && (
+                <button className="btn btn-danger" onClick={() => { deleteJD(selected.id); closeModal() }}>삭제</button>
+              )}
             </div>
           </div>
         </div>

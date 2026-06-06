@@ -71,6 +71,30 @@ export default function CandidateNewPage() {
         return
       }
 
+      // 중복 후보 체크 (이메일이 있을 경우)
+      if (parsed.email) {
+        const checkParams = new URLSearchParams({
+          email: parsed.email,
+          organization_id: profile.organization_id,
+        })
+        const checkRes = await fetch(`/api/candidates/check-duplicate?${checkParams}`)
+        const checkData = await checkRes.json()
+
+        if (checkData.exists) {
+          const confirmed = confirm(
+            `⚠️ 이미 등록된 후보자입니다:\n\n` +
+            `이름: ${checkData.candidate.name}\n` +
+            `등록자: ${checkData.candidate.created_by}\n` +
+            `등록일: ${new Date(checkData.candidate.created_at).toLocaleDateString('ko-KR')}\n\n` +
+            `그래도 등록하시겠습니까?`
+          )
+          if (!confirmed) {
+            setSaving(false)
+            return
+          }
+        }
+      }
+
       const res = await fetch('/api/candidates', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
