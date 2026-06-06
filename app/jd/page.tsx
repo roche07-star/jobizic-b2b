@@ -489,25 +489,28 @@ export default function JDPage() {
               >
                 📋 상세정보
               </button>
-              <button
-                onClick={() => {
-                  setModalTab('board')
-                  if (boardPosts.length === 0) loadBoardPosts(selected.id)
-                }}
-                style={{
-                  padding: '10px 16px',
-                  background: 'transparent',
-                  border: 'none',
-                  borderBottom: modalTab === 'board' ? '2px solid var(--accent)' : '2px solid transparent',
-                  color: modalTab === 'board' ? 'var(--accent)' : 'var(--muted)',
-                  fontWeight: modalTab === 'board' ? 600 : 400,
-                  fontSize: 14,
-                  cursor: 'pointer',
-                  marginBottom: -2,
-                }}
-              >
-                💬 게시판
-              </button>
+              {/* 게시판 탭: JD 소유주, Owner, 관심 등록자만 표시 */}
+              {(selected.created_by === userEmail || userRole === 'owner' || interests.includes(selected.id)) && (
+                <button
+                  onClick={() => {
+                    setModalTab('board')
+                    if (boardPosts.length === 0) loadBoardPosts(selected.id)
+                  }}
+                  style={{
+                    padding: '10px 16px',
+                    background: 'transparent',
+                    border: 'none',
+                    borderBottom: modalTab === 'board' ? '2px solid var(--accent)' : '2px solid transparent',
+                    color: modalTab === 'board' ? 'var(--accent)' : 'var(--muted)',
+                    fontWeight: modalTab === 'board' ? 600 : 400,
+                    fontSize: 14,
+                    cursor: 'pointer',
+                    marginBottom: -2,
+                  }}
+                >
+                  💬 게시판
+                </button>
+              )}
             </div>
 
             {modalTab === 'overview' && (
@@ -604,7 +607,7 @@ export default function JDPage() {
             )}
 
             {/* 게시판 탭 */}
-            {modalTab === 'board' && (
+            {modalTab === 'board' && (selected.created_by === userEmail || userRole === 'owner' || interests.includes(selected.id)) && (
               <div>
                 {/* 글쓰기 버튼 */}
                 {!showBoardForm && (
