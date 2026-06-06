@@ -322,14 +322,16 @@ export default function JDPage() {
                 </div>
               )}
               <div className="jd-actions" onClick={e => e.stopPropagation()}>
-                {jd.status === '검토중' && (
-                  <button className="btn btn-success btn-sm" onClick={() => updateStatus(jd.id, '활성')}>활성화</button>
-                )}
-                {jd.status !== '보류' && (
-                  <button className="btn btn-ghost btn-sm" onClick={() => updateStatus(jd.id, '보류')}>보류</button>
-                )}
                 {(jd.created_by === userEmail || userRole === 'owner' || userRole === 'admin') && (
-                  <button className="btn btn-danger btn-sm" onClick={() => deleteJD(jd.id)}>삭제</button>
+                  <>
+                    {jd.status === '검토중' && (
+                      <button className="btn btn-success btn-sm" onClick={() => updateStatus(jd.id, '활성')}>활성화</button>
+                    )}
+                    {jd.status !== '보류' && (
+                      <button className="btn btn-ghost btn-sm" onClick={() => updateStatus(jd.id, '보류')}>보류</button>
+                    )}
+                    <button className="btn btn-danger btn-sm" onClick={() => deleteJD(jd.id)}>삭제</button>
+                  </>
                 )}
               </div>
             </div>
@@ -422,17 +424,19 @@ export default function JDPage() {
             )}
 
             <div style={{ display: 'flex', gap: 8 }}>
-              {selected.status === '검토중' && (
-                <button className="btn btn-success" onClick={() => updateStatus(selected.id, '활성')}>활성화</button>
-              )}
-              {selected.status === '활성' && (
-                <button className="btn btn-ghost" onClick={() => updateStatus(selected.id, '마감')}>마감</button>
-              )}
-              {selected.status !== '검토중' && (
-                <button className="btn btn-ghost" onClick={() => updateStatus(selected.id, '검토중')}>검토중으로</button>
-              )}
               {(selected.created_by === userEmail || userRole === 'owner' || userRole === 'admin') && (
-                <button className="btn btn-danger" onClick={() => { deleteJD(selected.id); closeModal() }}>삭제</button>
+                <>
+                  {selected.status === '검토중' && (
+                    <button className="btn btn-success" onClick={() => updateStatus(selected.id, '활성')}>활성화</button>
+                  )}
+                  {selected.status === '활성' && (
+                    <button className="btn btn-ghost" onClick={() => updateStatus(selected.id, '마감')}>마감</button>
+                  )}
+                  {selected.status !== '검토중' && (
+                    <button className="btn btn-ghost" onClick={() => updateStatus(selected.id, '검토중')}>검토중으로</button>
+                  )}
+                  <button className="btn btn-danger" onClick={() => { deleteJD(selected.id); closeModal() }}>삭제</button>
+                </>
               )}
             </div>
           </div>
