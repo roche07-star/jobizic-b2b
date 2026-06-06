@@ -267,33 +267,23 @@ export default function JDPage() {
               <div className="jd-card-top">
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <div className="jd-company">{jd.company ?? '회사명 미상'}</div>
-                  {/* 디버그: 조건 확인 - 항상 표시 */}
-                  <span style={{ fontSize: 9, color: 'red', background: 'yellow', padding: '2px' }}>
-                    [CB:{jd.created_by?.substring(0,8) || 'NULL'} vs UE:{userEmail?.substring(0,8) || 'NULL'}]
-                  </span>
-                  {jd.created_by === userEmail ? (
-                    <span style={{ fontSize: 11, background: 'rgba(232,255,71,0.15)', color: 'var(--accent)', padding: '2px 6px', borderRadius: 4 }}>
-                      내 JD
-                    </span>
-                  ) : userEmail ? (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        toggleInterest(jd.id)
-                      }}
-                      style={{
-                        background: 'transparent',
-                        border: 'none',
-                        cursor: 'pointer',
-                        fontSize: 16,
-                        padding: '2px 4px',
-                        lineHeight: 1,
-                      }}
-                      title={interests.includes(jd.id) ? '관심 해제' : '관심 등록'}
-                    >
-                      {interests.includes(jd.id) ? '⭐' : '☆'}
-                    </button>
-                  ) : null}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      toggleInterest(jd.id)
+                    }}
+                    style={{
+                      background: 'transparent',
+                      border: 'none',
+                      cursor: 'pointer',
+                      fontSize: 16,
+                      padding: '2px 4px',
+                      lineHeight: 1,
+                    }}
+                    title={interests.includes(jd.id) ? '관심 해제' : '관심 등록'}
+                  >
+                    {interests.includes(jd.id) ? '⭐' : '☆'}
+                  </button>
                 </div>
                 <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
                   {(jd.created_by_user || jd.created_by) && (
