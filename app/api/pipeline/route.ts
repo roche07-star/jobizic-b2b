@@ -65,37 +65,63 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
-    // 후보자-JD 매칭 알림 - JD 담당자에게 (본인이 아니면)
+    // 후보자-JD 매칭 알림
     const jd = data.job_descriptions as any
     const candidate = data.candidates as any
 
-    if (jd?.created_by && body.created_by) {
+    if (body.created_by) {
       const { data: creator } = await supabaseAdmin
         .from('profiles')
-        .select('id, full_name')
+        .select('id, full_name, role')
         .eq('email', body.created_by)
         .single()
 
-      // JD 담당자 조회
-      const { data: jdOwner } = await supabaseAdmin
-        .from('profiles')
-        .select('id')
-        .eq('email', jd.created_by)
-        .single()
+      // 1. JD 담당자(PM)에게 알림 - 본인이 만든 JD인 경우만
+      if (jd?.created_by && creator && jd.created_by !== body.created_by) {
+        const { data: jdOwner } = await supabaseAdmin
+          .from('profiles')
+          .select('id, role')
+          .eq('email', jd.created_by)
+          .single()
 
-      // JD 담당자가 본인이 아니면 알림
-      if (jdOwner && creator && jdOwner.id !== creator.id) {
-        await createNotification({
-          userId: jdOwner.id,
-          type: 'assignment',
-          title: '새 후보자 매칭',
-          message: `${jd.company || '회사'} - ${jd.position} 포지션에 "${candidate?.name || '후보자'}" 후보자가 매칭되었습니다.`,
-          relatedId: data.id,
-          relatedType: 'pipeline',
-          actionUrl: `/pipeline`,
-          senderId: creator.id,
-          senderName: creator.full_name || body.created_by,
-        })
+        // PM/Owner가 자신의 JD에 매칭된 경우만 알림
+        if (jdOwner && (jdOwner.role === 'headhunter' || jdOwner.role === 'owner')) {
+          await createNotification({
+            userId: jdOwner.id,
+            type: 'assignment',
+            title: '새 후보자 매칭',
+            message: `${jd.company || '회사'} - ${jd.position} 포지션에 "${candidate?.name || '후보자'}" 후보자가 매칭되었습니다.`,
+            relatedId: data.id,
+            relatedType: 'pipeline',
+            actionUrl: `/pipeline`,
+            senderId: creator.id,
+            senderName: creator.full_name || body.created_by,
+          })
+        }
+      }
+
+      // 2. 후보자 등록자(Searcher)에게 알림 - 본인이 등록한 후보자인 경우만
+      if (candidate && body.candidate_created_by && body.candidate_created_by !== body.created_by) {
+        const { data: candidateOwner } = await supabaseAdmin
+          .from('profiles')
+          .select('id, role')
+          .eq('email', body.candidate_created_by)
+          .single()
+
+        // Searcher가 자신의 후보자가 매칭된 경우만 알림
+        if (candidateOwner && candidateOwner.role === 'searcher') {
+          await createNotification({
+            userId: candidateOwner.id,
+            type: 'assignment',
+            title: '후보자 매칭 완료',
+            message: `"${candidate.name || '후보자'}" 후보자가 ${jd?.company || '회사'} - ${jd?.position || '포지션'}에 매칭되었습니다.`,
+            relatedId: data.id,
+            relatedType: 'pipeline',
+            actionUrl: `/pipeline`,
+            senderId: creator.id,
+            senderName: creator.full_name || body.created_by,
+          })
+        }
       }
     }
 

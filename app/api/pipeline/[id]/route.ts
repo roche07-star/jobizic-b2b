@@ -62,15 +62,16 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
         const jd = oldPipeline.job_descriptions as any
         const candidate = oldPipeline.candidates as any
 
-        // JD 담당자에게 알림
-        if (jd?.created_by) {
+        // 1. JD 담당자(PM)에게 알림 - 자신의 JD인 경우만
+        if (jd?.created_by && profile) {
           const { data: jdOwner } = await supabaseAdmin
             .from('profiles')
-            .select('id')
+            .select('id, role')
             .eq('email', jd.created_by)
             .single()
 
-          if (jdOwner && jdOwner.id !== profile?.id) {
+          // PM/Owner가 자신의 JD이고, 본인이 변경한 것이 아니면 알림
+          if (jdOwner && jdOwner.id !== profile.id && (jdOwner.role === 'headhunter' || jdOwner.role === 'owner')) {
             await createNotification({
               userId: jdOwner.id,
               type: 'pipeline_stage',
@@ -79,8 +80,32 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
               relatedId: id,
               relatedType: 'pipeline',
               actionUrl: `/pipeline`,
-              senderId: profile?.id,
-              senderName: profile?.full_name || updated_by,
+              senderId: profile.id,
+              senderName: profile.full_name || updated_by,
+            })
+          }
+        }
+
+        // 2. 후보자 등록자(Searcher)에게 알림 - 자신의 후보자인 경우만
+        if (oldPipeline.candidate_created_by && profile) {
+          const { data: candidateOwner } = await supabaseAdmin
+            .from('profiles')
+            .select('id, role')
+            .eq('email', oldPipeline.candidate_created_by)
+            .single()
+
+          // Searcher가 자신의 후보자이고, 본인이 변경한 것이 아니면 알림
+          if (candidateOwner && candidateOwner.id !== profile.id && candidateOwner.role === 'searcher') {
+            await createNotification({
+              userId: candidateOwner.id,
+              type: 'pipeline_stage',
+              title: `후보자 진행 단계 변경: ${candidate?.name || '후보자'}`,
+              message: `"${candidate?.name || '후보자'}" 후보자의 단계가 "${oldPipeline.stage}" → "${stage}"로 변경되었습니다.`,
+              relatedId: id,
+              relatedType: 'pipeline',
+              actionUrl: `/pipeline`,
+              senderId: profile.id,
+              senderName: profile.full_name || updated_by,
             })
           }
         }
