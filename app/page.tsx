@@ -15,6 +15,7 @@ interface JD {
 
 interface Stats {
   totalJDs: number
+  interestJDs: number
   totalCandidates: number
   thisMonthMatches: number
   activePipelines: number
@@ -56,6 +57,7 @@ interface DashboardStats {
 export default function Dashboard() {
   const [stats, setStats] = useState<Stats>({
     totalJDs: 0,
+    interestJDs: 0,
     totalCandidates: 0,
     thisMonthMatches: 0,
     activePipelines: 0,
@@ -103,10 +105,12 @@ export default function Dashboard() {
         fetch(`/api/jd?${params}`).then(r => r.json()),
         fetch(`/api/candidates?${params}`).then(r => r.json()),
         fetch(`/api/pipeline?${params}`).then(r => r.json()),
-      ]).then(([jdData, candidateData, pipelineData]) => {
+        fetch(`/api/jd/interests?user_id=${profile.id}`).then(r => r.json()),
+      ]).then(([jdData, candidateData, pipelineData, interestData]) => {
         const jds = jdData.jds ?? []
         const candidates = candidateData.candidates ?? []
         const pipeline = pipelineData.pipeline ?? []
+        const interestIds = interestData.jd_ids ?? []
 
         // 이번 달 매칭 계산
         const now = new Date()
@@ -115,14 +119,23 @@ export default function Dashboard() {
           return created.getMonth() === now.getMonth() && created.getFullYear() === now.getFullYear()
         }).length
 
+        // 관심 JD 계산: 내 JD + 관심 등록한 JD
+        const myJDs = jds.filter((jd: any) => jd.created_by === profile.email).length
+        const interestCount = myJDs + interestIds.length
+
         setStats({
           totalJDs: jds.length,
+          interestJDs: interestCount,
           totalCandidates: candidates.length,
           thisMonthMatches: thisMonth,
           activePipelines: pipeline.filter((p: any) => p.is_active).length,
         })
 
-        setRecentJDs(jds.slice(0, 5))
+        // 최근 JD: 관심 JD 우선
+        const interestJDs = jds.filter((jd: any) =>
+          jd.created_by === profile.email || interestIds.includes(jd.id)
+        )
+        setRecentJDs(interestJDs.slice(0, 5))
 
         // Owner/PM인 경우 추가 통계 로드
         if (profile.role === 'owner' || profile.role === 'headhunter') {
@@ -142,7 +155,7 @@ export default function Dashboard() {
   }, [selectedOrgId])
 
   const statsData = [
-    { label: '등록된 JD', value: loading ? '—' : stats.totalJDs.toString() },
+    { label: '⭐ 관심 JD', value: loading ? '—' : stats.interestJDs.toString() },
     { label: '후보자 DB', value: loading ? '—' : stats.totalCandidates.toString() },
     { label: '이번 달 매칭', value: loading ? '—' : stats.thisMonthMatches.toString() },
     { label: '진행 중', value: loading ? '—' : stats.activePipelines.toString() },
@@ -210,16 +223,16 @@ export default function Dashboard() {
         </div>
 
         <div className="card">
-          <div className="card-title">최근 JD</div>
+          <div className="card-title">⭐ 관심 JD</div>
           {loading ? (
             <div style={{ padding: '24px', textAlign: 'center' }}>
               <div className="spinner" style={{ margin: '0 auto' }} />
             </div>
           ) : recentJDs.length === 0 ? (
             <div className="empty" style={{ padding: '24px' }}>
-              <div className="empty-sub">아직 등록된 JD가 없습니다</div>
-              <Link href="/jd/new">
-                <button className="btn btn-ghost btn-sm" style={{ marginTop: 10 }}>JD 등록하기 →</button>
+              <div className="empty-sub">아직 관심 JD가 없습니다</div>
+              <Link href="/jd">
+                <button className="btn btn-ghost btn-sm" style={{ marginTop: 10 }}>JD 둘러보기 →</button>
               </Link>
             </div>
           ) : (
