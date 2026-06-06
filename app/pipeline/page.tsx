@@ -284,6 +284,11 @@ export default function PipelinePage() {
                     </div>
                     <div style={{ fontSize: 12, color: 'var(--text)', marginBottom: 8 }}>
                       👤 {item.candidates.name}
+                      {item.created_by_user && (
+                        <span style={{ fontSize: 10, color: 'var(--muted)', marginLeft: 4 }}>
+                          (추천: {item.created_by_user.full_name || item.created_by_user.email.split('@')[0]})
+                        </span>
+                      )}
                     </div>
                     {item.match_score !== null && (
                       <div style={{
@@ -327,10 +332,22 @@ export default function PipelinePage() {
               <button className="modal-close" onClick={() => setSelected(null)}>✕</button>
             </div>
 
-            <div style={{ display: 'flex', gap: 6, marginBottom: 20 }}>
+            <div style={{ display: 'flex', gap: 6, marginBottom: 20, flexWrap: 'wrap' }}>
               <span className={`badge badge-${selected.stage}`}>{selected.stage}</span>
               {selected.match_score !== null && (
                 <span className="badge badge-일반">매칭 {selected.match_score}점</span>
+              )}
+              {selected.created_by_user && (
+                <span style={{
+                  fontSize: 11,
+                  padding: '2px 6px',
+                  borderRadius: 3,
+                  background: 'rgba(136, 136, 128, 0.15)',
+                  color: 'var(--muted)',
+                  fontWeight: 500
+                }}>
+                  👤 추천: {selected.created_by_user.full_name || selected.created_by_user.email.split('@')[0]}
+                </span>
               )}
             </div>
 
