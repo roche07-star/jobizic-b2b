@@ -156,20 +156,19 @@ export default function CandidatesPage() {
   async function updateCandidate() {
     if (!selected) return
 
-    // 수정 가능한 필드만 추출
-    const updateData = {
-      name: editForm.name,
-      email: editForm.email,
-      phone: editForm.phone,
-      location: editForm.location,
-      current_company: editForm.current_company,
-      current_position: editForm.current_position,
-      total_experience_years: editForm.total_experience_years,
-      market_value: editForm.market_value,
-      career_summary: editForm.career_summary,
-      strength_summary: editForm.strength_summary,
-      career_trajectory: editForm.career_trajectory,
-    }
+    // 수정 가능한 필드만 추출 (undefined 제거)
+    const updateData: Partial<Candidate> = {}
+    if (editForm.name !== undefined) updateData.name = editForm.name
+    if (editForm.email !== undefined) updateData.email = editForm.email
+    if (editForm.phone !== undefined) updateData.phone = editForm.phone
+    if (editForm.location !== undefined) updateData.location = editForm.location
+    if (editForm.current_company !== undefined) updateData.current_company = editForm.current_company
+    if (editForm.current_position !== undefined) updateData.current_position = editForm.current_position
+    if (editForm.total_experience_years !== undefined) updateData.total_experience_years = editForm.total_experience_years
+    if (editForm.market_value !== undefined) updateData.market_value = editForm.market_value
+    if (editForm.career_summary !== undefined) updateData.career_summary = editForm.career_summary
+    if (editForm.strength_summary !== undefined) updateData.strength_summary = editForm.strength_summary
+    if (editForm.career_trajectory !== undefined) updateData.career_trajectory = editForm.career_trajectory
 
     const res = await fetch(`/api/candidates/${selected.id}`, {
       method: 'PATCH',
@@ -183,7 +182,7 @@ export default function CandidatesPage() {
     }
 
     // 로컬 state 업데이트
-    const updated = { ...selected, ...updateData }
+    const updated: Candidate = { ...selected, ...updateData }
     setCandidates(prev => prev.map(c => c.id === selected.id ? updated : c))
     setSelected(updated)
     setIsEditing(false)
