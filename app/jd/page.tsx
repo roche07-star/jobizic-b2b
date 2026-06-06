@@ -167,6 +167,8 @@ export default function JDPage() {
       })
       if (res.ok) {
         setInterests(prev => [...prev, jdId])
+        // 관심 등록 후 자동으로 관심 JD 탭으로 전환
+        setViewMode('interest')
       }
     }
   }
