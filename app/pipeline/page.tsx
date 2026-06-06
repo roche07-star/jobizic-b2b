@@ -41,6 +41,16 @@ interface PipelineItem {
   job_descriptions: JD
   candidates: Candidate
   created_at: string
+  created_by_user?: {
+    id: string
+    full_name: string | null
+    email: string
+  }
+  jd_owner_user?: {
+    id: string
+    full_name: string | null
+    email: string
+  }
 }
 
 const STAGES = ['신규', '서류검토', '1차면접', '2차면접', '최종면접', '처우협의', '합격', '불합격']
@@ -261,8 +271,13 @@ export default function PipelinePage() {
                     style={{ padding: 14, cursor: 'pointer' }}
                     onClick={() => setSelected(item)}
                   >
-                    <div style={{ fontSize: 10, color: 'var(--muted2)', marginBottom: 4 }}>
-                      {item.job_descriptions.company ?? '회사명 미상'}
+                    <div style={{ fontSize: 10, color: 'var(--muted2)', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <span>{item.job_descriptions.company ?? '회사명 미상'}</span>
+                      {item.jd_owner_user && (
+                        <span style={{ color: 'var(--muted)' }}>
+                          (담당: {item.jd_owner_user.full_name || item.jd_owner_user.email.split('@')[0]})
+                        </span>
+                      )}
                     </div>
                     <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 6 }}>
                       {item.job_descriptions.position}
@@ -299,7 +314,13 @@ export default function PipelinePage() {
             <div className="modal-header">
               <div>
                 <div style={{ fontSize: 12, color: 'var(--muted2)', marginBottom: 4 }}>
-                  {selected.job_descriptions.company ?? '회사명 미상'} / {selected.job_descriptions.position}
+                  {selected.job_descriptions.company ?? '회사명 미상'}
+                  {selected.jd_owner_user && (
+                    <span style={{ marginLeft: 4 }}>
+                      (담당: {selected.jd_owner_user.full_name || selected.jd_owner_user.email.split('@')[0]})
+                    </span>
+                  )}
+                  {' / '}{selected.job_descriptions.position}
                 </div>
                 <div className="modal-title">{selected.candidates.name}</div>
               </div>
