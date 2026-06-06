@@ -11,7 +11,9 @@ export async function POST(req: NextRequest) {
     const message = await client.messages.create({
       model: 'claude-haiku-4-5-20251001',
       max_tokens: 2000,
-      system: `당신은 10년 경력의 전문 헤드헌터입니다. 주어진 이력서를 분석하여 아래 JSON 형식으로만 응답하세요. 설명 없이 JSON만 출력하세요.
+      system: [{
+        type: 'text',
+        text: `당신은 10년 경력의 전문 헤드헌터입니다. 주어진 이력서를 분석하여 아래 JSON 형식으로만 응답하세요. 설명 없이 JSON만 출력하세요.
 {
   "name": "이름",
   "email": "이메일 (없으면 null)",
@@ -37,6 +39,8 @@ export async function POST(req: NextRequest) {
   "key_highlights": ["하이라이트1", "하이라이트2", "하이라이트3"],
   "tags": ["태그1", "태그2", "태그3"]
 }`,
+        cache_control: { type: 'ephemeral' }
+      }],
       messages: [{ role: 'user', content: `다음 이력서를 분석해주세요:\n\n${text}` }],
     })
 

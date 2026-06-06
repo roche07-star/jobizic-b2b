@@ -13,7 +13,9 @@ export async function POST(req: NextRequest) {
     const message = await client.messages.create({
       model: 'claude-haiku-4-5-20251001',
       max_tokens: 1500,
-      system: `당신은 10년 경력의 전문 헤드헌터입니다. 주어진 JD와 후보자 정보를 분석하여 매칭 점수와 근거를 제공하세요. 아래 JSON 형식으로만 응답하세요. 설명 없이 JSON만 출력하세요.
+      system: [{
+        type: 'text',
+        text: `당신은 10년 경력의 전문 헤드헌터입니다. 주어진 JD와 후보자 정보를 분석하여 매칭 점수와 근거를 제공하세요. 아래 JSON 형식으로만 응답하세요. 설명 없이 JSON만 출력하세요.
 
 {
   "match_score": 0-100점수,
@@ -25,6 +27,8 @@ export async function POST(req: NextRequest) {
   "recommendation": "추천|보류|부적합",
   "next_steps": "다음 단계 제안 (예: 1차 면접 추천, 추가 검토 필요 등)"
 }`,
+        cache_control: { type: 'ephemeral' }
+      }],
       messages: [{
         role: 'user',
         content: `다음 JD와 후보자의 적합도를 분석해주세요:

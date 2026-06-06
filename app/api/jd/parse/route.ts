@@ -11,7 +11,9 @@ export async function POST(req: NextRequest) {
     const message = await client.messages.create({
       model: 'claude-sonnet-4-20250514',
       max_tokens: 4000,
-      system: `당신은 10년 경력의 전문 헤드헌터입니다. JD를 4단계 프로세스로 분석하여 JSON 형식으로 응답하세요.
+      system: [{
+        type: 'text',
+        text: `당신은 10년 경력의 전문 헤드헌터입니다. JD를 4단계 프로세스로 분석하여 JSON 형식으로 응답하세요.
 
 ## 분석 프로세스 4단계
 
@@ -81,6 +83,8 @@ export async function POST(req: NextRequest) {
 }
 
 **중요**: 설명 없이 JSON만 출력하세요.`,
+        cache_control: { type: 'ephemeral' }
+      }],
       messages: [{
         role: 'user',
         content: client_comment
