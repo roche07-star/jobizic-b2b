@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { supabaseAdmin } from '@/lib/supabase-admin'
 import { setWebhook, setMyCommands, getMe } from '@/lib/telegram'
 
 /**
@@ -40,13 +41,14 @@ export async function POST(req: NextRequest) {
       }, { status: 401 })
     }
 
-    // 프로필 조회
-    const { data: profiles, error: profileError } = await supabase
+    // 프로필 조회 (supabaseAdmin 사용 - RLS 우회)
+    const { data: profile, error: profileError } = await supabaseAdmin
       .from('profiles')
       .select('*')
       .eq('id', user.id)
+      .single()
 
-    console.log('[Telegram Setup] Profiles:', profiles)
+    console.log('[Telegram Setup] Profile:', profile, 'User ID:', user.id)
 
     if (profileError) {
       console.log('[Telegram Setup] Profile error:', profileError)
@@ -56,7 +58,6 @@ export async function POST(req: NextRequest) {
       }, { status: 500 })
     }
 
-    const profile = profiles?.[0]
     if (!profile) {
       return NextResponse.json({
         error: '프로필을 찾을 수 없습니다.',
@@ -146,13 +147,13 @@ export async function GET(req: NextRequest) {
       }, { status: 401 })
     }
 
-    // 프로필 조회
-    const { data: profiles } = await supabase
+    // 프로필 조회 (supabaseAdmin 사용 - RLS 우회)
+    const { data: profile } = await supabaseAdmin
       .from('profiles')
       .select('*')
       .eq('id', user.id)
+      .single()
 
-    const profile = profiles?.[0]
     if (!profile || profile.role !== 'admin') {
       return NextResponse.json({ error: '권한이 없습니다.' }, { status: 403 })
     }
