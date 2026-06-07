@@ -391,6 +391,22 @@ export default function AdminPage() {
         </div>
       )}
 
+      {/* 시스템 설정 */}
+      {profile.role === 'admin' && (
+        <div className="card" style={{ marginBottom: 20 }}>
+          <div className="card-title">시스템 설정</div>
+          <div style={{ display: 'flex', gap: 12 }}>
+            <button
+              className="btn btn-primary"
+              onClick={() => router.push('/admin/telegram')}
+              style={{ display: 'flex', alignItems: 'center', gap: 8 }}
+            >
+              🤖 텔레그램 봇 설정
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* 조직 관리 */}
       <div className="card" style={{ marginBottom: 20 }}>
         <div className="card-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
