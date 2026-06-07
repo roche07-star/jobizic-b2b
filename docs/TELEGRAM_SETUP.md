@@ -57,13 +57,32 @@ TELEGRAM_SECRET_TOKEN=your_random_secret_here
 - 랜덤 문자열 (32자 이상 권장)
 - 생성 방법: `openssl rand -hex 32` 또는 UUID 사용
 
-### 2-2. Vercel 환경 변수 등록
+### 2-2. Vercel 환경 변수 등록 ⚠️ 필수!
+
+**Vercel Dashboard에서 설정**:
+
+```
+1. https://vercel.com → 프로젝트 선택
+2. Settings → Environment Variables
+3. 다음 3개 추가:
+
+   TELEGRAM_BOT_TOKEN=123456789:ABCdefGHIjklMNOpqrsTUVwxyz
+   TELEGRAM_BOT_USERNAME=jobizic_recruiter_bot
+   TELEGRAM_SECRET_TOKEN=로컬과_동일한_값
+
+4. Environment: Production, Preview, Development 모두 선택
+5. Save → 재배포 (git push 또는 Redeploy)
+```
+
+**또는 CLI 사용**:
 
 ```bash
 vercel env add TELEGRAM_BOT_TOKEN
 vercel env add TELEGRAM_BOT_USERNAME
 vercel env add TELEGRAM_SECRET_TOKEN
 ```
+
+⚠️ **환경 변수 추가 후 반드시 재배포해야 적용됩니다!**
 
 ---
 
