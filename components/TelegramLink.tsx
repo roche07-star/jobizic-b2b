@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { getProfile } from '@/lib/auth'
+import { supabase } from '@/lib/supabase'
 
 export default function TelegramLink() {
   const [profile, setProfile] = useState<any>(null)
@@ -35,8 +36,19 @@ export default function TelegramLink() {
     setError('')
 
     try {
+      // Supabase 세션에서 access token 가져오기
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) {
+        setError('세션이 만료되었습니다. 다시 로그인해주세요.')
+        setLoading(false)
+        return
+      }
+
       const res = await fetch('/api/telegram/link/create', {
         method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`
+        }
       })
 
       const data = await res.json()
@@ -47,7 +59,11 @@ export default function TelegramLink() {
           // 페이지 새로고침하여 연동 상태 업데이트
           setTimeout(() => window.location.reload(), 2000)
         } else {
-          setError(data.error || '코드 생성에 실패했습니다.')
+          let errorMsg = data.error || '코드 생성에 실패했습니다.'
+          if (data.details) {
+            errorMsg += `\n${data.details}`
+          }
+          setError(errorMsg)
         }
         return
       }
