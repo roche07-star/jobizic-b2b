@@ -26,8 +26,8 @@ export async function GET(_req: NextRequest, context: { params: Promise<{ id: st
 export async function PATCH(req: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await context.params
-    const body = await req.json()
-    const { stage, updated_by } = body
+    const rawBody = await req.json()
+    const { stage, updated_by, ...body } = rawBody  // updated_by는 알림용, DB 저장 안 함
 
     // 기존 파이프라인 데이터 조회
     const { data: oldPipeline } = await supabaseAdmin
