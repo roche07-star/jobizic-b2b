@@ -41,6 +41,13 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
       .single()
 
     // Stage Gate: Searcher는 "제안" 단계까지만 변경 가능
+    console.log('[Pipeline PATCH] Stage change check:', {
+      hasStage: !!stage,
+      hasUpdatedBy: !!updated_by,
+      oldStage: oldPipeline?.stage,
+      newStage: stage
+    })
+
     if (stage && updated_by) {
       const { data: profile } = await supabaseAdmin
         .from('profiles')
@@ -60,6 +67,13 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
 
       // 단계 변경 시 알림 생성
       if (oldPipeline && stage && stage !== oldPipeline.stage) {
+        console.log('[Pipeline PATCH] Stage changed:', {
+          oldStage: oldPipeline.stage,
+          newStage: stage,
+          updatedBy: updated_by,
+          recommender: oldPipeline.created_by
+        })
+
         const jd = oldPipeline.job_descriptions as any
         const candidate = oldPipeline.candidates as any
 
