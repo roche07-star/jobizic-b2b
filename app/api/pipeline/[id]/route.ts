@@ -154,12 +154,26 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
         }
 
         // 3. 텔레그램 알림 - 추천자에게 (본인이 변경한 것이 아닌 경우)
+        console.log('[Pipeline PATCH] Recommender check:', {
+          recommender: oldPipeline.created_by,
+          updatedBy: updated_by,
+          isSamePerson: oldPipeline.created_by === updated_by,
+          hasProfile: !!profile
+        })
+
         if (oldPipeline.created_by && profile && oldPipeline.created_by !== updated_by) {
           const { data: recommender } = await supabaseAdmin
             .from('profiles')
             .select('id, full_name, telegram_chat_id')
             .eq('email', oldPipeline.created_by)
             .single()
+
+          console.log('[Pipeline PATCH] Recommender profile:', {
+            email: recommender?.email,
+            fullName: recommender?.full_name,
+            hasTelegramChatId: !!recommender?.telegram_chat_id,
+            chatId: recommender?.telegram_chat_id
+          })
 
           if (recommender?.telegram_chat_id) {
             try {
