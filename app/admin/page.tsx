@@ -580,7 +580,7 @@ export default function AdminPage() {
                   {user.telegram_chat_id && (
                     <span style={{
                       fontSize: 11,
-                      padding: '2px 6px',
+                      padding: '2px 8px',
                       borderRadius: 3,
                       background: 'rgba(41, 171, 226, 0.15)',
                       color: '#29abe2',
@@ -589,7 +589,7 @@ export default function AdminPage() {
                       alignItems: 'center',
                       gap: 4
                     }} title={`텔레그램: ${user.telegram_username || '연동됨'}`}>
-                      📱 TG
+                      📱 Telegram
                     </span>
                   )}
                 </div>
