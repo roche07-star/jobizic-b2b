@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { notifyOrganizationMembers } from '@/lib/notifications'
+import { sendTelegramMessage } from '@/lib/telegram'
 
 export async function GET(req: NextRequest) {
   try {
@@ -143,12 +144,14 @@ export async function POST(req: NextRequest) {
       console.log('[JD POST] Sending notifications to organization:', data.organization_id)
       const { data: creator } = await supabaseAdmin
         .from('profiles')
-        .select('id, full_name')
+        .select('id, full_name, email')
         .eq('email', created_by)
         .single()
 
       if (creator) {
         console.log('[JD POST] Creator found:', { id: creator.id, name: creator.full_name })
+
+        // 1. 웹 알림 (기존)
         const notifications = await notifyOrganizationMembers(
           data.organization_id,
           {
@@ -164,6 +167,49 @@ export async function POST(req: NextRequest) {
           creator.id // 본인 제외
         )
         console.log('[JD POST] Notifications sent:', notifications.length)
+
+        // 2. 텔레그램 알림 (신규)
+        // 조직 내 텔레그램 연동된 멤버 조회 (본인 제외)
+        const { data: telegramMembers } = await supabaseAdmin
+          .from('profiles')
+          .select('id, full_name, email, telegram_chat_id')
+          .eq('organization_id', data.organization_id)
+          .not('telegram_chat_id', 'is', null)
+          .neq('id', creator.id)
+
+        if (telegramMembers && telegramMembers.length > 0) {
+          console.log('[JD POST] Sending Telegram notifications to', telegramMembers.length, 'members')
+
+          const creatorName = creator.full_name || creator.email.split('@')[0]
+          const telegramMessage = `🆕 <b>[신규 JD]</b>
+
+👤 등록자: ${creatorName}
+🏢 회사: ${data.company || '회사명 미상'}
+💼 포지션: ${data.position}
+
+자세한 내용은 웹에서 확인하세요!`
+
+          // 모든 멤버에게 텔레그램 메시지 전송
+          for (const member of telegramMembers) {
+            try {
+              await sendTelegramMessage({
+                chatId: member.telegram_chat_id!,
+                text: telegramMessage,
+                parseMode: 'HTML',
+                replyMarkup: {
+                  inline_keyboard: [[
+                    { text: '🌐 JD 보러가기', url: `${process.env.NEXT_PUBLIC_APP_URL || 'https://jobizic-biz.vercel.app'}/jd` }
+                  ]]
+                }
+              })
+              console.log('[JD POST] Telegram sent to:', member.email)
+            } catch (err) {
+              console.error('[JD POST] Telegram send failed for', member.email, err)
+            }
+          }
+        } else {
+          console.log('[JD POST] No Telegram members found')
+        }
       } else {
         console.log('[JD POST] Creator not found for email:', created_by)
       }
