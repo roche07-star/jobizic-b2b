@@ -271,7 +271,7 @@ async function handleTodayCommand(chatId: number) {
     parseMode: 'HTML',
     replyMarkup: {
       inline_keyboard: [[
-        { text: '🌐 웹에서 보기', url: 'https://jobizic-b2b.vercel.app' }
+        { text: '🌐 웹에서 보기', url: process.env.NEXT_PUBLIC_APP_URL || 'https://jobizic-biz.vercel.app' }
       ]]
     }
   })
@@ -320,13 +320,15 @@ async function handlePipelineCommand(chatId: number) {
 
   message += '\n자세한 내용은 웹에서 확인하세요!'
 
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://jobizic-biz.vercel.app'
+
   await sendTelegramMessage({
     chatId,
     text: message,
     parseMode: 'HTML',
     replyMarkup: {
       inline_keyboard: [[
-        { text: '🌐 웹에서 보기', url: 'https://jobizic-b2b.vercel.app/pipeline' }
+        { text: '🌐 웹에서 보기', url: `${baseUrl}/pipeline` }
       ]]
     }
   })
