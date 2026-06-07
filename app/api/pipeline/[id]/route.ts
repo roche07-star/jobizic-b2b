@@ -164,7 +164,7 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
         if (oldPipeline.created_by && profile && oldPipeline.created_by !== updated_by) {
           const { data: recommender } = await supabaseAdmin
             .from('profiles')
-            .select('id, full_name, telegram_chat_id')
+            .select('id, full_name, email, telegram_chat_id')
             .eq('email', oldPipeline.created_by)
             .single()
 
