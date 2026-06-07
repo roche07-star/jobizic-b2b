@@ -271,7 +271,7 @@ async function handleTodayCommand(chatId: number) {
     parseMode: 'HTML',
     replyMarkup: {
       inline_keyboard: [[
-        { text: '🌐 웹에서 보기', url: 'https://jobizic-biz.vercel.app' }
+        { text: '🌐 웹에서 보기', url: process.env.NEXT_PUBLIC_APP_URL || 'https://jobizic-biz.vercel.app/' }
       ]]
     }
   })
@@ -326,7 +326,7 @@ async function handlePipelineCommand(chatId: number) {
     parseMode: 'HTML',
     replyMarkup: {
       inline_keyboard: [[
-        { text: '🌐 웹에서 보기', url: 'https://jobizic-biz.vercel.app/pipeline' }
+        { text: '🌐 웹에서 보기', url: `${process.env.NEXT_PUBLIC_APP_URL || 'https://jobizic-biz.vercel.app'}/pipeline` }
       ]]
     }
   })
