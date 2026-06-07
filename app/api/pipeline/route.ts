@@ -111,6 +111,7 @@ export async function POST(req: NextRequest) {
       .insert(body)
       .select(`
         id,
+        match_score,
         job_descriptions (id, position, company, created_by),
         candidates (id, name)
       `)
