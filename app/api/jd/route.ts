@@ -14,7 +14,13 @@ export async function GET(req: NextRequest) {
       .from('job_descriptions')
       .select(`
         *,
-        created_by_user:profiles!fk_jd_created_by_profile(id, full_name, email)
+        created_by_user:profiles!fk_jd_created_by_profile(id, full_name, email),
+        pipeline!pipeline_jd_id_fkey(
+          id,
+          stage,
+          candidate_id,
+          candidates(id, name, email, current_company, current_position)
+        )
       `)
       .order('created_at', { ascending: false })
 
@@ -76,7 +82,19 @@ export async function GET(req: NextRequest) {
       console.log('[jd] Sample created_by values:', data.slice(0, 3).map(j => j.created_by))
     }
 
-    return NextResponse.json({ jds: data ?? [] })
+    // 각 JD에 진행 중인 후보자 수 추가 (합격/불합격/포기 제외)
+    const enrichedData = data?.map((jd: any) => {
+      const activeCandidates = jd.pipeline?.filter((p: any) =>
+        p.stage && !['합격', '불합격', '포기'].includes(p.stage)
+      ) ?? []
+
+      return {
+        ...jd,
+        active_candidates: activeCandidates
+      }
+    })
+
+    return NextResponse.json({ jds: enrichedData ?? [] })
   } catch (e: any) {
     console.error('[api/jd GET]', e)
     return NextResponse.json({ error: e.message }, { status: 500 })

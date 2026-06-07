@@ -28,6 +28,18 @@ interface JD {
     full_name: string | null
     email: string
   }
+  active_candidates?: Array<{
+    id: string
+    stage: string
+    candidate_id: string
+    candidates: {
+      id: string
+      name: string
+      email: string | null
+      current_company: string | null
+      current_position: string | null
+    }
+  }>
 }
 
 interface BoardPost {
@@ -426,6 +438,42 @@ export default function JDPage() {
                   {jd.required_skills.length > 4 && <span className="skill-chip" style={{ opacity: 0.5 }}>+{jd.required_skills.length - 4}</span>}
                 </div>
               )}
+              {/* 진행 중인 후보자 표시 (JD Owner인 경우만) */}
+              {jd.created_by === userEmail && jd.active_candidates && jd.active_candidates.length > 0 && (
+                <div style={{
+                  marginTop: 12,
+                  padding: '8px 10px',
+                  background: 'rgba(74, 158, 255, 0.08)',
+                  borderRadius: 6,
+                  border: '1px solid rgba(74, 158, 255, 0.2)'
+                }}>
+                  <div style={{ fontSize: 11, color: '#4a9eff', fontWeight: 600, marginBottom: 6 }}>
+                    👥 진행 중인 후보자 ({jd.active_candidates.length}명)
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                    {jd.active_candidates.slice(0, 3).map((ac) => (
+                      <div key={ac.id} style={{ fontSize: 12, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <span style={{
+                          display: 'inline-block',
+                          width: 4,
+                          height: 4,
+                          borderRadius: '50%',
+                          background: '#4a9eff'
+                        }} />
+                        <span style={{ fontWeight: 500 }}>{ac.candidates.name}</span>
+                        <span style={{ fontSize: 10, color: 'var(--muted)', padding: '1px 4px', background: 'rgba(255,255,255,0.05)', borderRadius: 3 }}>
+                          {ac.stage}
+                        </span>
+                      </div>
+                    ))}
+                    {jd.active_candidates.length > 3 && (
+                      <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 2 }}>
+                        + {jd.active_candidates.length - 3}명 더
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
               <div className="jd-actions" onClick={e => e.stopPropagation()}>
                 {(jd.created_by === userEmail || userRole === 'owner' || userRole === 'admin') && (
                   <>
@@ -580,6 +628,56 @@ export default function JDPage() {
                 <ul style={{ paddingLeft: 16, display: 'flex', flexDirection: 'column', gap: 4 }}>
                   {selected.key_points.map((p, i) => <li key={i} style={{ fontSize: 13 }}>{p}</li>)}
                 </ul>
+              </div>
+            )}
+
+            {/* 진행 중인 후보자 목록 (JD Owner인 경우만) */}
+            {selected.created_by === userEmail && selected.active_candidates && selected.active_candidates.length > 0 && (
+              <div style={{ marginBottom: 20 }}>
+                <div className="form-label">👥 진행 중인 후보자 ({selected.active_candidates.length}명)</div>
+                <div style={{
+                  padding: 12,
+                  background: 'var(--bg-2)',
+                  borderRadius: 8,
+                  border: '1px solid var(--border)',
+                  maxHeight: 200,
+                  overflowY: 'auto'
+                }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {selected.active_candidates.map((ac) => (
+                      <div key={ac.id} style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        padding: '8px 10px',
+                        background: 'var(--bg)',
+                        borderRadius: 6,
+                        border: '1px solid var(--border)'
+                      }}>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 2 }}>
+                            {ac.candidates.name}
+                          </div>
+                          {ac.candidates.current_company && (
+                            <div style={{ fontSize: 11, color: 'var(--muted)' }}>
+                              {ac.candidates.current_company} {ac.candidates.current_position && `· ${ac.candidates.current_position}`}
+                            </div>
+                          )}
+                        </div>
+                        <span style={{
+                          fontSize: 11,
+                          padding: '4px 8px',
+                          background: 'rgba(74, 158, 255, 0.15)',
+                          color: '#4a9eff',
+                          borderRadius: 4,
+                          fontWeight: 500
+                        }}>
+                          {ac.stage}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
             )}
 
