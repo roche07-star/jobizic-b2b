@@ -41,19 +41,26 @@ export async function POST(req: NextRequest) {
     }
 
     // 프로필 조회
-    const { data: profile, error: profileError } = await supabase
+    const { data: profiles, error: profileError } = await supabase
       .from('profiles')
       .select('*')
       .eq('id', user.id)
-      .single()
 
-    console.log('[Telegram Setup] Profile:', profile)
+    console.log('[Telegram Setup] Profiles:', profiles)
 
-    if (profileError || !profile) {
+    if (profileError) {
       console.log('[Telegram Setup] Profile error:', profileError)
       return NextResponse.json({
+        error: '프로필 조회 중 오류가 발생했습니다.',
+        details: profileError.message
+      }, { status: 500 })
+    }
+
+    const profile = profiles?.[0]
+    if (!profile) {
+      return NextResponse.json({
         error: '프로필을 찾을 수 없습니다.',
-        details: profileError?.message
+        details: '사용자 프로필이 존재하지 않습니다.'
       }, { status: 404 })
     }
 
@@ -140,12 +147,12 @@ export async function GET(req: NextRequest) {
     }
 
     // 프로필 조회
-    const { data: profile } = await supabase
+    const { data: profiles } = await supabase
       .from('profiles')
       .select('*')
       .eq('id', user.id)
-      .single()
 
+    const profile = profiles?.[0]
     if (!profile || profile.role !== 'admin') {
       return NextResponse.json({ error: '권한이 없습니다.' }, { status: 403 })
     }
