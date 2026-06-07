@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
+import { sendTelegramMessage } from '@/lib/telegram'
 import { createNotification } from '@/lib/notifications'
 
 export async function GET(_req: NextRequest, context: { params: Promise<{ id: string }> }) {
@@ -33,7 +34,7 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
       .from('pipeline')
       .select(`
         *,
-        job_descriptions (id, position, created_by, organization_id),
+        job_descriptions (id, position, company, created_by, organization_id),
         candidates (id, name)
       `)
       .eq('id', id)
@@ -137,7 +138,62 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
             })
           }
         }
+
+        // 3. 텔레그램 알림 - 추천자에게 (본인이 변경한 것이 아닌 경우)
+        if (oldPipeline.created_by && profile && oldPipeline.created_by !== updated_by) {
+          const { data: recommender } = await supabaseAdmin
+            .from('profiles')
+            .select('id, full_name, telegram_chat_id')
+            .eq('email', oldPipeline.created_by)
+            .single()
+
+          if (recommender?.telegram_chat_id) {
+            try {
+              const stageEmoji = getStageEmoji(stage)
+              const recommenderName = recommender.full_name || oldPipeline.created_by.split('@')[0]
+
+              const telegramMessage = `${stageEmoji} <b>[${stage}]</b>
+
+🏢 회사: ${jd?.company || '회사명 미상'}
+💼 포지션: ${jd?.position || '포지션명 미상'}
+👤 후보자: ${candidate?.name || '후보자명 미상'}
+✍️ 추천자: ${recommenderName}
+
+단계가 변경되었습니다! 🎉`
+
+              await sendTelegramMessage({
+                chatId: recommender.telegram_chat_id,
+                text: telegramMessage,
+                parseMode: 'HTML',
+                replyMarkup: {
+                  inline_keyboard: [[
+                    { text: '🌐 파이프라인 보기', url: `${process.env.NEXT_PUBLIC_APP_URL || 'https://jobizic-biz.vercel.app'}/pipeline` }
+                  ]]
+                }
+              })
+              console.log('[Pipeline PATCH] Telegram sent to recommender:', oldPipeline.created_by)
+            } catch (err) {
+              console.error('[Pipeline PATCH] Telegram send failed:', err)
+            }
+          }
+        }
       }
+    }
+
+    // 단계별 이모지 헬퍼
+    function getStageEmoji(stage: string): string {
+      const emojiMap: Record<string, string> = {
+        '신규': '🆕',
+        '서류검토': '📄',
+        '1차면접': '👤',
+        '2차면접': '👥',
+        '최종면접': '🎯',
+        '처우협의': '💰',
+        '합격': '✅',
+        '불합격': '❌',
+        '포기': '⏸️',
+      }
+      return emojiMap[stage] || '📌'
     }
 
     // last_activity_at 자동 업데이트
