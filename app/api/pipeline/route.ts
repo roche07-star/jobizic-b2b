@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { createNotification } from '@/lib/notifications'
+import { sendTelegramMessage } from '@/lib/telegram'
 
 export async function GET(req: NextRequest) {
   try {
@@ -142,12 +143,13 @@ export async function POST(req: NextRequest) {
       if (jd?.created_by && jd.created_by !== body.created_by) {
         const { data: jdOwner } = await supabaseAdmin
           .from('profiles')
-          .select('id, role')
+          .select('id, full_name, role, telegram_chat_id')
           .eq('email', jd.created_by)
           .single()
 
         // PM/Owner가 자신의 JD에 매칭된 경우만 알림
         if (jdOwner && (jdOwner.role === 'headhunter' || jdOwner.role === 'owner')) {
+          // 웹 알림
           await createNotification({
             userId: jdOwner.id,
             type: 'assignment',
@@ -159,6 +161,35 @@ export async function POST(req: NextRequest) {
             senderId: creator.id,
             senderName: creator.full_name || body.created_by,
           })
+
+          // 텔레그램 알림
+          if (jdOwner.telegram_chat_id) {
+            try {
+              const recommenderName = creator.full_name || body.created_by.split('@')[0]
+              const telegramMessage = `👤 <b>[후보자 추천]</b>
+
+🏢 회사: ${jd.company || '회사명 미상'}
+💼 포지션: ${jd.position}
+👤 후보자: ${candidate?.name || '후보자명 미상'}
+✍️ 추천자: ${recommenderName}
+
+자세한 내용은 웹에서 확인하세요!`
+
+              await sendTelegramMessage({
+                chatId: jdOwner.telegram_chat_id,
+                text: telegramMessage,
+                parseMode: 'HTML',
+                replyMarkup: {
+                  inline_keyboard: [[
+                    { text: '🌐 파이프라인 보기', url: `${process.env.NEXT_PUBLIC_APP_URL || 'https://jobizic-biz.vercel.app'}/pipeline` }
+                  ]]
+                }
+              })
+              console.log('[Pipeline POST] Telegram sent to JD owner:', jd.created_by)
+            } catch (err) {
+              console.error('[Pipeline POST] Telegram send failed:', err)
+            }
+          }
         }
       }
 
