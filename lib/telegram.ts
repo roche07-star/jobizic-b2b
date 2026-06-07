@@ -148,6 +148,7 @@ export async function setMyCommands(): Promise<boolean> {
           { command: 'start', description: '계정 연동 시작' },
           { command: 'today', description: '오늘 할 일 보기' },
           { command: 'pipeline', description: '채용 프로세스 현황' },
+          { command: 'jd', description: '내 관심 JD 보기' },
           { command: 'help', description: '도움말' },
         ],
       }),

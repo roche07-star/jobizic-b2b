@@ -87,6 +87,12 @@ async function handleMessage(message: any) {
     return
   }
 
+  // /jd 명령어
+  if (text === '/jd') {
+    await handleJDCommand(chatId)
+    return
+  }
+
   // /help 명령어
   if (text === '/help') {
     await sendTelegramMessage({
@@ -95,6 +101,7 @@ async function handleMessage(message: any) {
 
 /today - 오늘 할 일 보기
 /pipeline - 채용 프로세스 현황
+/jd - 내 관심 JD 보기
 /help - 도움말
 
 궁금한 점이 있으시면 웹앱을 확인해주세요!`,
@@ -272,6 +279,90 @@ async function handleTodayCommand(chatId: number) {
     replyMarkup: {
       inline_keyboard: [[
         { text: '🌐 웹에서 보기', url: process.env.NEXT_PUBLIC_APP_URL || 'https://jobizic-biz.vercel.app/' }
+      ]]
+    }
+  })
+}
+
+/**
+ * /jd 명령어 처리 - 관심 JD 목록
+ */
+async function handleJDCommand(chatId: number) {
+  // 사용자 확인
+  const { data: profile } = await supabaseAdmin
+    .from('profiles')
+    .select('id, email, full_name, role, organization_id')
+    .eq('telegram_chat_id', chatId)
+    .single()
+
+  if (!profile) {
+    await sendTelegramMessage({
+      chatId,
+      text: '❌ 연동되지 않은 계정입니다.\n\n/start 명령어로 계정을 연동해주세요.',
+    })
+    return
+  }
+
+  // 1. 본인이 등록한 JD 조회
+  const { data: myJDs } = await supabaseAdmin
+    .from('job_descriptions')
+    .select('id, company, position, status, priority, created_at')
+    .eq('created_by', profile.email)
+    .eq('organization_id', profile.organization_id)
+    .order('created_at', { ascending: false })
+    .limit(5)
+
+  // 2. 관심 등록한 JD 조회
+  const { data: interests } = await supabaseAdmin
+    .from('jd_interests')
+    .select(`
+      jd_id,
+      job_descriptions(id, company, position, status, priority, created_at)
+    `)
+    .eq('user_id', profile.id)
+    .order('created_at', { ascending: false })
+    .limit(5)
+
+  let message = `📋 <b>${profile.full_name || profile.email.split('@')[0]}님의 JD</b>\n\n`
+
+  // 내 JD
+  if (myJDs && myJDs.length > 0) {
+    message += `<b>📝 내가 등록한 JD (${myJDs.length}건)</b>\n`
+    myJDs.forEach((jd: any) => {
+      const statusEmoji = jd.status === '활성' ? '✅' : jd.status === '검토중' ? '⏳' : '⏸️'
+      const priorityEmoji = jd.priority === '긴급' ? '🔴' : jd.priority === '높음' ? '🟠' : '🟢'
+      message += `${statusEmoji} ${priorityEmoji} ${jd.company || '회사명 미상'} - ${jd.position}\n`
+    })
+    message += '\n'
+  }
+
+  // 관심 JD
+  if (interests && interests.length > 0) {
+    message += `<b>⭐ 관심 등록한 JD (${interests.length}건)</b>\n`
+    interests.forEach((item: any) => {
+      const jd = item.job_descriptions
+      if (jd) {
+        const statusEmoji = jd.status === '활성' ? '✅' : jd.status === '검토중' ? '⏳' : '⏸️'
+        const priorityEmoji = jd.priority === '긴급' ? '🔴' : jd.priority === '높음' ? '🟠' : '🟢'
+        message += `${statusEmoji} ${priorityEmoji} ${jd.company || '회사명 미상'} - ${jd.position}\n`
+      }
+    })
+    message += '\n'
+  }
+
+  if ((!myJDs || myJDs.length === 0) && (!interests || interests.length === 0)) {
+    message += '등록된 JD가 없습니다.\n\n'
+  }
+
+  message += '자세한 내용은 웹에서 확인하세요! 💻'
+
+  await sendTelegramMessage({
+    chatId,
+    text: message,
+    parseMode: 'HTML',
+    replyMarkup: {
+      inline_keyboard: [[
+        { text: '🌐 웹에서 보기', url: `${process.env.NEXT_PUBLIC_APP_URL || 'https://jobizic-biz.vercel.app'}/jd` }
       ]]
     }
   })
