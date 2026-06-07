@@ -22,6 +22,7 @@ const links = [
   { href: '/jd', label: 'JD 관리' },
   { href: '/candidates', label: '후보자' },
   { href: '/pipeline', label: '채용 프로세스' },
+  { href: '/settings', label: '⚙️ 설정' },
 ]
 
 const adminLinks = [
