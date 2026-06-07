@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
       .order('created_at', { ascending: false })
 
     // Role별 필터링: Owner는 조직 전체, PM은 본인 JD만, Searcher는 본인이 생성한 파이프라인만
-    console.log('[pipeline] User:', userEmail, 'Role:', role)
+    console.log('[pipeline DEBUG] User:', userEmail, 'Role:', role, 'OrgId:', organizationId)
     if (role !== 'admin' && userEmail) {
       if (role === 'searcher') {
         // Searcher: 본인이 생성한 파이프라인만
@@ -33,8 +33,10 @@ export async function GET(req: NextRequest) {
         console.log('[pipeline] PM: Filtering by JD owner and recommender:', userEmail)
         const { data: myJDs, error: jdError } = await supabaseAdmin
           .from('job_descriptions')
-          .select('id')
+          .select('id, company, position')
           .eq('created_by', userEmail)
+
+        console.log('[pipeline DEBUG] My JDs:', myJDs)
 
         if (jdError) {
           console.error('[pipeline] Error fetching JDs:', jdError)
@@ -44,7 +46,9 @@ export async function GET(req: NextRequest) {
         // 본인 JD가 있으면 OR 조건으로 필터링 (본인 JD + 본인이 추천한 파이프라인)
         if (myJDs && myJDs.length > 0) {
           const jdIds = myJDs.map(jd => jd.id).join(',')
-          q = q.or(`jd_id.in.(${jdIds}),created_by.eq.${userEmail}`)
+          const orFilter = `jd_id.in.(${jdIds}),created_by.eq.${userEmail}`
+          console.log('[pipeline DEBUG] OR filter:', orFilter)
+          q = q.or(orFilter)
         } else {
           // 본인 JD가 없으면 본인이 추천한 파이프라인만
           console.log('[pipeline] No JDs found, showing only recommended by user')
@@ -52,6 +56,10 @@ export async function GET(req: NextRequest) {
         }
       }
       // Owner: organization_id 필터만 적용 (아래에서 처리)
+    } else if (role === 'admin') {
+      console.log('[pipeline DEBUG] Admin user - no role filter applied')
+    } else {
+      console.log('[pipeline DEBUG] No role or userEmail - showing all (organization filter may apply)')
     }
 
     // organization_id가 있으면 필터링 (admin이 특정 조직 선택 시)
@@ -68,6 +76,8 @@ export async function GET(req: NextRequest) {
       console.error('[pipeline GET] Query error:', error)
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
+
+    console.log('[pipeline DEBUG] Query returned', data?.length, 'results for role:', role, 'user:', userEmail)
 
     // created_by와 JD created_by 이메일로 profiles 조회하여 추천자/JD오너 정보 추가
     if (data && data.length > 0) {
