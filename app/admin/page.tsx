@@ -23,6 +23,9 @@ interface User {
   is_active: boolean
   organizations: { id: string; name: string; type: string } | null
   created_at: string
+  telegram_chat_id: string | null
+  telegram_username: string | null
+  telegram_verified_at: string | null
 }
 
 export default function AdminPage() {
@@ -572,10 +575,28 @@ export default function AdminPage() {
           {users.map(user => (
             <div key={user.id} style={{ padding: 12, background: 'var(--bg3)', borderRadius: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div style={{ flex: 1 }}>
-                <div style={{ fontWeight: 600 }}>{user.email}</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <div style={{ fontWeight: 600 }}>{user.email}</div>
+                  {user.telegram_chat_id && (
+                    <span style={{
+                      fontSize: 11,
+                      padding: '2px 6px',
+                      borderRadius: 3,
+                      background: 'rgba(41, 171, 226, 0.15)',
+                      color: '#29abe2',
+                      fontWeight: 500,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 4
+                    }} title={`텔레그램: ${user.telegram_username || '연동됨'}`}>
+                      📱 TG
+                    </span>
+                  )}
+                </div>
                 <div style={{ fontSize: 12, color: 'var(--muted2)', marginTop: 2 }}>
                   {user.full_name || '이름 없음'} · {user.role}
                   {user.organizations && ` · ${user.organizations.name}`}
+                  {user.telegram_username && ` · @${user.telegram_username}`}
                 </div>
               </div>
               <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
