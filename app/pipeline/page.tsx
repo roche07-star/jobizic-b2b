@@ -194,7 +194,24 @@ export default function PipelinePage() {
 
   async function deletePipeline(id: string) {
     if (!confirm('프로세스에서 제거할까요?')) return
-    await fetch(`/api/pipeline/${id}`, { method: 'DELETE' })
+
+    const profile = await getProfile()
+    if (!profile) {
+      alert('로그인이 필요합니다.')
+      return
+    }
+
+    const params = new URLSearchParams({
+      user_email: profile.email
+    })
+
+    const res = await fetch(`/api/pipeline/${id}?${params}`, { method: 'DELETE' })
+    if (!res.ok) {
+      const data = await res.json()
+      alert(data.error || '삭제 실패')
+      return
+    }
+
     setPipeline(prev => prev.filter(p => p.id !== id))
     if (selected?.id === id) setSelected(null)
   }
