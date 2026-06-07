@@ -166,14 +166,22 @@ export async function POST(req: NextRequest) {
           if (jdOwner.telegram_chat_id) {
             try {
               const recommenderName = creator.full_name || body.created_by.split('@')[0]
-              const telegramMessage = `👤 <b>[후보자 추천]</b>
+              const matchScore = body.match_score || data.match_score
+
+              let telegramMessage = `👤 <b>[후보자 추천]</b>
 
 🏢 회사: ${jd.company || '회사명 미상'}
 💼 포지션: ${jd.position}
 👤 후보자: ${candidate?.name || '후보자명 미상'}
-✍️ 추천자: ${recommenderName}
+✍️ 추천자: ${recommenderName}`
 
-자세한 내용은 웹에서 확인하세요!`
+              // 매칭 점수 추가 (있는 경우만)
+              if (matchScore !== null && matchScore !== undefined) {
+                const scoreEmoji = matchScore >= 80 ? '🟢' : matchScore >= 60 ? '🟡' : '🔴'
+                telegramMessage += `\n${scoreEmoji} 매칭 점수: ${matchScore}점`
+              }
+
+              telegramMessage += '\n\n자세한 내용은 웹에서 확인하세요!'
 
               await sendTelegramMessage({
                 chatId: jdOwner.telegram_chat_id,
