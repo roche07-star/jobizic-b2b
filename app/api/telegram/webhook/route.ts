@@ -296,29 +296,52 @@ async function handlePipelineCommand(chatId: number) {
     return
   }
 
-  // 단계별 현황 조회
+  // 단계별 상세 현황 조회 (회사명, 후보자 이름 포함)
   const stages = ['신규', '서류검토', '1차면접', '2차면접', '최종면접', '처우협의']
-  const counts: Record<string, number> = {}
-
-  for (const stage of stages) {
-    const { count } = await supabaseAdmin
-      .from('pipeline')
-      .select('*', { count: 'exact', head: true })
-      .eq('organization_id', profile.organization_id)
-      .eq('stage', stage)
-      .eq('is_active', true)
-
-    counts[stage] = count || 0
-  }
 
   let message = `📊 <b>채용 프로세스 현황</b>\n\n`
 
-  stages.forEach((stage) => {
-    const emoji = getStageEmoji(stage)
-    message += `${emoji} ${stage}: ${counts[stage]}건\n`
-  })
+  for (const stage of stages) {
+    const { data: pipelines } = await supabaseAdmin
+      .from('pipeline')
+      .select(`
+        id,
+        job_descriptions(company, position),
+        candidates(name)
+      `)
+      .eq('organization_id', profile.organization_id)
+      .eq('stage', stage)
+      .eq('is_active', true)
+      .limit(5)
 
-  message += '\n자세한 내용은 웹에서 확인하세요!'
+    const count = pipelines?.length || 0
+    const emoji = getStageEmoji(stage)
+
+    message += `${emoji} <b>${stage} (${count}건)</b>\n`
+
+    if (pipelines && pipelines.length > 0) {
+      pipelines.forEach((p: any) => {
+        const company = p.job_descriptions?.company || '회사명 미상'
+        const candidate = p.candidates?.name || '후보자'
+        message += `  • ${candidate} - ${company}\n`
+      })
+
+      // 5건 초과 시
+      const { count: totalCount } = await supabaseAdmin
+        .from('pipeline')
+        .select('*', { count: 'exact', head: true })
+        .eq('organization_id', profile.organization_id)
+        .eq('stage', stage)
+        .eq('is_active', true)
+
+      if (totalCount && totalCount > 5) {
+        message += `  ... 외 ${totalCount - 5}건\n`
+      }
+    }
+    message += '\n'
+  }
+
+  message += '자세한 내용은 웹에서 확인하세요! 💻'
 
   await sendTelegramMessage({
     chatId,
