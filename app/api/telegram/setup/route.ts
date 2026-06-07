@@ -13,8 +13,14 @@ import { setWebhook, setMyCommands, getMe } from '@/lib/telegram'
 export async function POST(req: NextRequest) {
   try {
     const profile = await getProfile()
+    console.log('[Telegram Setup] Profile:', profile)
+
     if (!profile || profile.role !== 'admin') {
-      return NextResponse.json({ error: '권한이 없습니다.' }, { status: 403 })
+      console.log('[Telegram Setup] Auth failed - profile:', profile, 'role:', profile?.role)
+      return NextResponse.json({
+        error: '권한이 없습니다.',
+        details: `현재 role: ${profile?.role || '없음'}. admin 권한이 필요합니다.`
+      }, { status: 403 })
     }
 
     if (!process.env.TELEGRAM_BOT_TOKEN) {
