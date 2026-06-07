@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { getProfile } from '@/lib/auth'
+import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 
 export default function TelegramAdminPage() {
@@ -28,7 +29,18 @@ export default function TelegramAdminPage() {
 
   async function checkStatus() {
     try {
-      const res = await fetch('/api/telegram/setup')
+      // Supabase 세션에서 access token 가져오기
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) {
+        setError('세션이 만료되었습니다. 다시 로그인해주세요.')
+        return
+      }
+
+      const res = await fetch('/api/telegram/setup', {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`
+        }
+      })
       const data = await res.json()
       setStatus(data)
     } catch (err) {
@@ -42,8 +54,19 @@ export default function TelegramAdminPage() {
     setResult(null)
 
     try {
+      // Supabase 세션에서 access token 가져오기
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) {
+        setError('세션이 만료되었습니다. 다시 로그인해주세요.')
+        setLoading(false)
+        return
+      }
+
       const res = await fetch('/api/telegram/setup', {
         method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`
+        }
       })
 
       const data = await res.json()

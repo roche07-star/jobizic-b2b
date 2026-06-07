@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { cookies } from 'next/headers'
-import { createServerClient } from '@supabase/ssr'
+import { createClient } from '@supabase/supabase-js'
 import { setWebhook, setMyCommands, getMe } from '@/lib/telegram'
 
 /**
@@ -13,34 +12,31 @@ import { setWebhook, setMyCommands, getMe } from '@/lib/telegram'
  */
 export async function POST(req: NextRequest) {
   try {
-    // 서버 사이드 Supabase 클라이언트 생성
-    const cookieStore = await cookies()
-    const supabase = createServerClient(
+    // Authorization 헤더에서 토큰 추출
+    const authHeader = req.headers.get('authorization')
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return NextResponse.json({
+        error: '인증이 필요합니다.',
+        details: 'Authorization 헤더가 없습니다.'
+      }, { status: 401 })
+    }
+
+    const token = authHeader.replace('Bearer ', '')
+
+    // Supabase 클라이언트로 토큰 검증
+    const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll() {
-            return cookieStore.getAll()
-          },
-          setAll(cookiesToSet) {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
-            )
-          },
-        },
-      }
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     )
 
-    // 세션 확인
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession()
-    console.log('[Telegram Setup] Session:', session?.user?.email)
+    const { data: { user }, error: userError } = await supabase.auth.getUser(token)
+    console.log('[Telegram Setup] User:', user?.email)
 
-    if (sessionError || !session) {
-      console.log('[Telegram Setup] No session:', sessionError)
+    if (userError || !user) {
+      console.log('[Telegram Setup] Token verification failed:', userError)
       return NextResponse.json({
-        error: '로그인이 필요합니다.',
-        details: '세션이 만료되었거나 로그인하지 않았습니다.'
+        error: '유효하지 않은 토큰입니다.',
+        details: userError?.message
       }, { status: 401 })
     }
 
@@ -48,7 +44,7 @@ export async function POST(req: NextRequest) {
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('*')
-      .eq('id', session.user.id)
+      .eq('id', user.id)
       .single()
 
     console.log('[Telegram Setup] Profile:', profile)
@@ -87,7 +83,7 @@ export async function POST(req: NextRequest) {
     results.botInfo = botInfo
 
     // 2. Webhook 설정
-    const webhookUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'https://jobizic-b2b.vercel.app'}/api/telegram/webhook`
+    const webhookUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'https://jobizic-biz.vercel.app'}/api/telegram/webhook`
     const secretToken = process.env.TELEGRAM_SECRET_TOKEN || crypto.randomUUID()
 
     const webhookSet = await setWebhook(webhookUrl, secretToken)
@@ -118,36 +114,36 @@ export async function POST(req: NextRequest) {
  */
 export async function GET(req: NextRequest) {
   try {
-    // 서버 사이드 Supabase 클라이언트 생성
-    const cookieStore = await cookies()
-    const supabase = createServerClient(
+    // Authorization 헤더에서 토큰 추출
+    const authHeader = req.headers.get('authorization')
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return NextResponse.json({
+        error: '인증이 필요합니다.',
+        details: 'Authorization 헤더가 없습니다.'
+      }, { status: 401 })
+    }
+
+    const token = authHeader.replace('Bearer ', '')
+
+    // Supabase 클라이언트로 토큰 검증
+    const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll() {
-            return cookieStore.getAll()
-          },
-          setAll(cookiesToSet) {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
-            )
-          },
-        },
-      }
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     )
 
-    // 세션 확인
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session) {
-      return NextResponse.json({ error: '로그인이 필요합니다.' }, { status: 401 })
+    const { data: { user }, error: userError } = await supabase.auth.getUser(token)
+
+    if (userError || !user) {
+      return NextResponse.json({
+        error: '유효하지 않은 토큰입니다.'
+      }, { status: 401 })
     }
 
     // 프로필 조회
     const { data: profile } = await supabase
       .from('profiles')
       .select('*')
-      .eq('id', session.user.id)
+      .eq('id', user.id)
       .single()
 
     if (!profile || profile.role !== 'admin') {
@@ -166,7 +162,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({
       configured: !!botInfo,
       botInfo,
-      webhookUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'https://jobizic-b2b.vercel.app'}/api/telegram/webhook`,
+      webhookUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'https://jobizic-biz.vercel.app'}/api/telegram/webhook`,
       hasSecretToken: !!process.env.TELEGRAM_SECRET_TOKEN,
     })
   } catch (error) {
