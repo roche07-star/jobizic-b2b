@@ -211,14 +211,62 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
   }
 }
 
-export async function DELETE(_req: NextRequest, context: { params: Promise<{ id: string }> }) {
+export async function DELETE(req: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await context.params
+
+    // 권한 확인: JD Owner만 제거 가능
+    const userEmail = req.nextUrl.searchParams.get('user_email')
+
+    if (!userEmail) {
+      return NextResponse.json({
+        error: '인증 정보가 필요합니다.'
+      }, { status: 401 })
+    }
+
+    // 파이프라인 정보 조회 (JD owner 확인용)
+    const { data: pipeline } = await supabaseAdmin
+      .from('pipeline')
+      .select(`
+        id,
+        job_descriptions (created_by)
+      `)
+      .eq('id', id)
+      .single()
+
+    if (!pipeline) {
+      return NextResponse.json({
+        error: '파이프라인을 찾을 수 없습니다.'
+      }, { status: 404 })
+    }
+
+    const jd = pipeline.job_descriptions as any
+
+    // JD Owner 또는 Admin만 삭제 가능
+    const { data: userProfile } = await supabaseAdmin
+      .from('profiles')
+      .select('role')
+      .eq('email', userEmail)
+      .single()
+
+    const isJDOwner = jd?.created_by === userEmail
+    const isAdmin = userProfile?.role === 'admin'
+
+    if (!isJDOwner && !isAdmin) {
+      return NextResponse.json({
+        error: '권한이 없습니다. JD Owner만 프로세스에서 제거할 수 있습니다.'
+      }, { status: 403 })
+    }
+
+    // 삭제 실행
     const { error } = await supabaseAdmin
       .from('pipeline')
       .delete()
       .eq('id', id)
+
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+    console.log('[pipeline DELETE] Removed by:', userEmail, 'JD Owner:', jd?.created_by)
     return NextResponse.json({ ok: true })
   } catch (e) {
     console.error('[api/pipeline/[id] DELETE]', e)
