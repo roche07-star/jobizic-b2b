@@ -14,6 +14,10 @@ export interface Profile {
     id: string
     name: string
   } | null
+  // Telegram Integration
+  telegram_chat_id?: number | null
+  telegram_username?: string | null
+  telegram_verified_at?: string | null
 }
 
 export async function signIn(email: string, password: string) {
