@@ -102,10 +102,19 @@ export default function PipelinePage() {
         ...(profile.role !== 'admin' && profile.organization_id && { organization_id: profile.organization_id })
       })
 
+      // Cache 방지 옵션 (간헐적 권한 버그 방지)
+      const fetchOptions: RequestInit = {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache'
+        }
+      }
+
       Promise.all([
-        fetch(`/api/pipeline?${params}`).then(r => r.json()).then(d => setPipeline(d.pipeline ?? [])),
-        fetch(`/api/jd?${params}`).then(r => r.json()).then(d => setJds(d.jds ?? [])),
-        fetch(`/api/candidates?${params}`).then(r => r.json()).then(d => setCandidates(d.candidates ?? []))
+        fetch(`/api/pipeline?${params}`, fetchOptions).then(r => r.json()).then(d => setPipeline(d.pipeline ?? [])),
+        fetch(`/api/jd?${params}`, fetchOptions).then(r => r.json()).then(d => setJds(d.jds ?? [])),
+        fetch(`/api/candidates?${params}`, fetchOptions).then(r => r.json()).then(d => setCandidates(d.candidates ?? []))
       ]).finally(() => setLoading(false))
     }
     loadData()

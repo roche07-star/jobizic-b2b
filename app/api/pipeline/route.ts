@@ -12,6 +12,20 @@ export async function GET(req: NextRequest) {
     const candidateId = req.nextUrl.searchParams.get('candidate_id')
     const stage = req.nextUrl.searchParams.get('stage')
 
+    // 필수 파라미터 검증 (보안)
+    if (!role || !userEmail) {
+      console.error('[pipeline] ⚠️ Missing required params - role:', role, 'userEmail:', userEmail)
+      return NextResponse.json({
+        error: '인증 정보가 누락되었습니다. 다시 로그인해주세요.',
+        pipeline: []
+      }, {
+        status: 400,
+        headers: {
+          'Cache-Control': 'no-store, max-age=0',
+        }
+      })
+    }
+
     let q = supabaseAdmin
       .from('pipeline')
       .select(`
@@ -102,11 +116,23 @@ export async function GET(req: NextRequest) {
           }
         })
 
-        return NextResponse.json({ pipeline: enrichedData })
+        return NextResponse.json({ pipeline: enrichedData }, {
+          headers: {
+            'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+            'Pragma': 'no-cache',
+            'Expires': '0'
+          }
+        })
       }
     }
 
-    return NextResponse.json({ pipeline: data ?? [] })
+    return NextResponse.json({ pipeline: data ?? [] }, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      }
+    })
   } catch (e) {
     console.error('[api/pipeline GET]', e)
     return NextResponse.json({ error: '조회 중 오류가 발생했습니다.' }, { status: 500 })
