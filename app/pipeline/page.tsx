@@ -183,10 +183,19 @@ export default function PipelinePage() {
   }
 
   async function updateStage(id: string, stage: string) {
+    const profile = await getProfile()
+    if (!profile) {
+      alert('로그인이 필요합니다.')
+      return
+    }
+
     await fetch(`/api/pipeline/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ stage }),
+      body: JSON.stringify({
+        stage,
+        updated_by: profile.email  // ✅ Critical: Backend 알림 조건에 필수!
+      }),
     })
     setPipeline(prev => prev.map(p => p.id === id ? { ...p, stage } : p))
     if (selected?.id === id) setSelected(prev => prev ? { ...prev, stage } : prev)
