@@ -189,16 +189,31 @@ export default function PipelinePage() {
       return
     }
 
-    await fetch(`/api/pipeline/${id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        stage,
-        updated_by: profile.email  // ✅ Critical: Backend 알림 조건에 필수!
-      }),
-    })
-    setPipeline(prev => prev.map(p => p.id === id ? { ...p, stage } : p))
-    if (selected?.id === id) setSelected(prev => prev ? { ...prev, stage } : prev)
+    try {
+      const res = await fetch(`/api/pipeline/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          stage,
+          updated_by: profile.email
+        }),
+      })
+
+      if (!res.ok) {
+        const error = await res.json()
+        console.error('[updateStage] Failed:', error)
+        alert(`단계 변경 실패: ${error.error || '서버 오류'}`)
+        return
+      }
+
+      // ✅ API 성공 시에만 state 업데이트
+      console.log('[updateStage] Success:', { id, stage })
+      setPipeline(prev => prev.map(p => p.id === id ? { ...p, stage } : p))
+      if (selected?.id === id) setSelected(prev => prev ? { ...prev, stage } : prev)
+    } catch (error) {
+      console.error('[updateStage] Error:', error)
+      alert('단계 변경 중 오류가 발생했습니다.')
+    }
   }
 
   async function deletePipeline(id: string) {
