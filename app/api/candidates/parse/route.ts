@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
     console.log('[candidates/parse] Calling Claude API...')
     const message = await client.messages.create({
       model: 'claude-haiku-4-5-20251001',
-      max_tokens: 2000,
+      max_tokens: 4096,  // 증가: 2000 → 4096 (긴 이력서 대응)
       system: [{
         type: 'text',
         text: `당신은 10년 경력의 전문 헤드헌터입니다. 주어진 이력서를 분석하여 아래 JSON 형식으로만 응답하세요. 설명 없이 JSON만 출력하세요.
@@ -63,9 +63,22 @@ export async function POST(req: NextRequest) {
     }
 
     const raw = firstContent.text
-    console.log('[candidates/parse] Raw response:', raw.substring(0, 100) + '...')
+    console.log('[candidates/parse] Raw response length:', raw.length)
+    console.log('[candidates/parse] Raw response preview:', raw.substring(0, 200) + '...')
 
-    const match = raw.match(/\{[\s\S]*\}/)
+    // JSON 추출 개선: 첫 번째 { 부터 마지막 } 까지 (greedy → non-greedy)
+    const jsonStart = raw.indexOf('{')
+    const jsonEnd = raw.lastIndexOf('}')
+
+    if (jsonStart === -1 || jsonEnd === -1) {
+      console.error('[candidates/parse] No JSON braces found in response')
+      return NextResponse.json({ error: '파싱 실패. 다시 시도해 주세요.' }, { status: 500 })
+    }
+
+    const jsonStr = raw.substring(jsonStart, jsonEnd + 1)
+    console.log('[candidates/parse] Extracted JSON length:', jsonStr.length)
+
+    const match = jsonStr.match(/\{[\s\S]*\}/)
     if (!match) {
       console.error('[candidates/parse] JSON not found in response:', raw)
       return NextResponse.json({ error: '파싱 실패. 다시 시도해 주세요.' }, { status: 500 })
