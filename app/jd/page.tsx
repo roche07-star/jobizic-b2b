@@ -298,19 +298,9 @@ export default function JDPage() {
       setEditMode(false)
       alert('JD가 수정되었습니다!')
 
-      // 추천된 후보자가 있으면 재분석
+      // 추천된 후보자가 있으면 자동으로 재분석 (백그라운드)
       if (selected.active_candidates && selected.active_candidates.length > 0) {
-        const confirmReanalyze = confirm(
-          `추천된 후보자 ${selected.active_candidates.length}명이 있습니다.\n` +
-          'JD가 변경되었으므로 매칭 점수를 다시 계산할까요?\n\n' +
-          '(백그라운드에서 재분석되므로 모달을 닫아도 됩니다)'
-        )
-
-        if (confirmReanalyze) {
-          // 백그라운드에서 실행 (await 제거)
-          reanalyzeCandidates(updatedJD as JD)
-          alert('재분석을 시작했습니다.\n백그라운드에서 처리되며, 완료 시 자동으로 업데이트됩니다.')
-        }
+        reanalyzeCandidates(updatedJD as JD)
       }
     } catch (error) {
       console.error('[updateJD] Error:', error)
@@ -396,28 +386,21 @@ export default function JDPage() {
         }
       }
 
-      // 결과 알림 (백그라운드 완료)
+      // 결과 로깅 (백그라운드 완료)
       console.log(`[Reanalyze] 백그라운드 재분석 완료: 성공 ${successCount}명, 실패 ${failCount}명`)
 
-      let message = `🎉 백그라운드 재분석 완료!\n\n✅ 성공: ${successCount}명\n`
-      if (failCount > 0) {
-        message += `❌ 실패: ${failCount}명\n`
-        if (errors.length > 0) {
-          message += `\n실패 원인:\n${errors.slice(0, 3).join('\n')}`
-          if (errors.length > 3) {
-            message += `\n... 외 ${errors.length - 3}건 (콘솔 확인)`
-          }
-        }
-      } else {
-        message += `\n매칭 점수가 업데이트되었습니다.`
+      // 실패가 있으면 콘솔에 상세 출력
+      if (failCount > 0 && errors.length > 0) {
+        console.error('[Reanalyze] 실패 목록:', errors)
       }
 
-      // 완료 알림 후 자동 새로고침
+      // 성공 시 자동 새로고침 (알림 없이)
       if (successCount > 0) {
-        alert(message + '\n\n페이지를 새로고침합니다.')
+        console.log('[Reanalyze] 페이지 새로고침...')
         window.location.reload()
-      } else {
-        alert(message)
+      } else if (failCount > 0) {
+        // 모두 실패한 경우만 알림
+        alert(`재분석 실패 (${failCount}명)\n\n실패 원인:\n${errors.slice(0, 3).join('\n')}`)
       }
     } catch (error: any) {
       console.error('[Reanalyze] Error:', error)
