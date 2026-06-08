@@ -265,7 +265,8 @@ export default function JDPage() {
       status: jd.status,
       target_profile: jd.target_profile,
       search_strategy: jd.search_strategy,
-      difficulty_reason: jd.difficulty_reason
+      difficulty_reason: jd.difficulty_reason,
+      raw_text: jd.raw_text
     })
     setEditMode(true)
   }
@@ -837,6 +838,21 @@ export default function JDPage() {
                         value={editForm.difficulty_reason ?? ''}
                         onChange={e => setEditForm({ ...editForm, difficulty_reason: e.target.value })}
                         placeholder="예) 전기차 모터 설계 경력자 수가 제한적이고 대부분 안정적인 대기업 근무 중"
+                      />
+                    </div>
+                    <div style={{ marginBottom: 16 }}>
+                      <span className="form-label">JD 원문</span>
+                      <textarea
+                        className="form-textarea"
+                        rows={10}
+                        value={editForm.raw_text ?? ''}
+                        onChange={e => setEditForm({ ...editForm, raw_text: e.target.value })}
+                        placeholder="JD 전체 원문을 입력하세요. Claude AI가 분석하여 타깃 프로파일, 서칭 전략 등을 자동으로 생성합니다."
+                        style={{
+                          fontFamily: 'monospace',
+                          fontSize: '13px',
+                          lineHeight: '1.8'
+                        }}
                       />
                     </div>
                   </div>
