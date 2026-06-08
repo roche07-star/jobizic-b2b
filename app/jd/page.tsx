@@ -811,18 +811,33 @@ export default function JDPage() {
                     </div>
                     <div style={{ marginBottom: 16 }}>
                       <span className="form-label">타깃 프로파일</span>
-                      <textarea className="input" rows={3} value={editForm.target_profile ?? ''}
-                        onChange={e => setEditForm({ ...editForm, target_profile: e.target.value })} />
+                      <textarea
+                        className="form-textarea"
+                        rows={6}
+                        value={editForm.target_profile ?? ''}
+                        onChange={e => setEditForm({ ...editForm, target_profile: e.target.value })}
+                        placeholder="예) 현대모비스, 한국델파이, LG이노텍 등에서 전기차 모터 설계 5년 이상 경력자"
+                      />
                     </div>
                     <div style={{ marginBottom: 16 }}>
                       <span className="form-label">서칭 전략</span>
-                      <textarea className="input" rows={3} value={editForm.search_strategy ?? ''}
-                        onChange={e => setEditForm({ ...editForm, search_strategy: e.target.value })} />
+                      <textarea
+                        className="form-textarea"
+                        rows={6}
+                        value={editForm.search_strategy ?? ''}
+                        onChange={e => setEditForm({ ...editForm, search_strategy: e.target.value })}
+                        placeholder="예) 현대모비스, LG이노텍, 한온시스템 등 Tier1 업체의 전기차 모터 설계 엔지니어 타겟"
+                      />
                     </div>
                     <div style={{ marginBottom: 16 }}>
                       <span className="form-label">난이도 사유</span>
-                      <textarea className="input" rows={2} value={editForm.difficulty_reason ?? ''}
-                        onChange={e => setEditForm({ ...editForm, difficulty_reason: e.target.value })} />
+                      <textarea
+                        className="form-textarea"
+                        rows={3}
+                        value={editForm.difficulty_reason ?? ''}
+                        onChange={e => setEditForm({ ...editForm, difficulty_reason: e.target.value })}
+                        placeholder="예) 전기차 모터 설계 경력자 수가 제한적이고 대부분 안정적인 대기업 근무 중"
+                      />
                     </div>
                   </div>
                 ) : (
