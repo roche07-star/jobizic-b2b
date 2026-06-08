@@ -180,7 +180,7 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
               const stageEmoji = getStageEmoji(stage)
               const recommenderName = recommender.full_name || oldPipeline.created_by.split('@')[0]
 
-              const telegramMessage = `${stageEmoji} <b>[${stage}]</b>
+              let telegramMessage = `${stageEmoji} <b>[${stage}]</b>
 
 🏢 회사: ${jd?.company || '회사명 미상'}
 💼 포지션: ${jd?.position || '포지션명 미상'}
@@ -188,6 +188,11 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
 ✍️ 추천자: ${recommenderName}
 
 단계가 변경되었습니다! 🎉`
+
+              // 불합격 사유가 있으면 추가
+              if (stage === '불합격' && rawBody.rejection_reason) {
+                telegramMessage += `\n\n❌ <b>불합격 사유:</b>\n${rawBody.rejection_reason}`
+              }
 
               await sendTelegramMessage({
                 chatId: recommender.telegram_chat_id,
