@@ -270,6 +270,21 @@ export default function PipelinePage() {
         <div>
           <div className="page-title">채용 프로세스</div>
           <div className="page-sub">총 {pipeline.length}건 진행 중</div>
+
+          {/* 안내 문구 */}
+          <div style={{
+            marginTop: 12,
+            padding: '10px 14px',
+            background: 'rgba(232, 255, 71, 0.1)',
+            border: '1px solid rgba(232, 255, 71, 0.3)',
+            borderRadius: 8,
+            fontSize: 12,
+            lineHeight: 1.5,
+            color: 'var(--accent)',
+            fontWeight: 500
+          }}>
+            ℹ️ 채용 프로세스 단계는 PM이 변경하여야 하며, 불합격의 경우 사유를 적어야 합니다!
+          </div>
         </div>
         <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
           {isAdmin && organizations.length > 0 && (
