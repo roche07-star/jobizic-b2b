@@ -189,9 +189,9 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
 
 단계가 변경되었습니다! 🎉`
 
-              // 불합격 사유가 있으면 추가
+              // 불합격 사유가 있으면 추가 (부드럽게)
               if (stage === '불합격' && rawBody.rejection_reason) {
-                telegramMessage += `\n\n❌ <b>불합격 사유:</b>\n${rawBody.rejection_reason}`
+                telegramMessage += `\n\n📋 <b>전달사항:</b>\n${rawBody.rejection_reason}`
               }
 
               await sendTelegramMessage({
