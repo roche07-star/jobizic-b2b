@@ -296,7 +296,7 @@ export default function JDPage() {
       setJds(prev => prev.map(j => j.id === selected.id ? updatedJD as JD : j))
       setSelected(updatedJD as JD)
       setEditMode(false)
-      // 조용히 처리 (alert 제거)
+      alert('JD가 수정되었습니다!')
 
       // 추천된 후보자가 있으면 자동으로 재분석 (백그라운드)
       if (selected.active_candidates && selected.active_candidates.length > 0) {
