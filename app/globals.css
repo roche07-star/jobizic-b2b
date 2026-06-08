@@ -118,10 +118,37 @@ body {
 .skill-chip.preferred { background: rgba(232,255,71,0.06); border-color: rgba(232,255,71,0.15); color: rgba(232,255,71,0.7); }
 
 .analysis-box { background: var(--bg3); border: 1px solid var(--border); border-radius: 10px; padding: 16px; }
-.analysis-row { display: flex; gap: 8px; margin-bottom: 8px; font-size: 13px; line-height: 1.6; }
+.analysis-row {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 10px;
+  font-size: 13px;
+  line-height: 1.6;
+  padding: 10px 12px;
+  background: var(--bg);
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  transition: all 0.2s;
+}
+.analysis-row:hover {
+  background: var(--bg2);
+  border-color: var(--accent);
+}
 .analysis-row:last-child { margin-bottom: 0; }
-.analysis-label { color: var(--muted2); flex-shrink: 0; width: 80px; font-size: 12px; padding-top: 1px; }
-.analysis-value { color: var(--text); }
+.analysis-label {
+  color: var(--muted2);
+  flex-shrink: 0;
+  width: 110px;
+  font-size: 12px;
+  font-weight: 600;
+  padding-top: 2px;
+}
+.analysis-value {
+  color: var(--text);
+  flex: 1;
+  word-break: keep-all;
+  line-height: 1.7;
+}
 
 .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 200; display: flex; align-items: center; justify-content: center; padding: 24px; }
 .modal { background: var(--bg2); border: 1px solid var(--border); border-radius: 16px; padding: 28px; width: 700px; max-width: 100%; max-height: 88vh; overflow-y: auto; }
