@@ -81,6 +81,8 @@ export default function JDPage() {
   const [boardLoading, setBoardLoading] = useState(false)
   const [boardForm, setBoardForm] = useState({ title: '', content: '' })
   const [showBoardForm, setShowBoardForm] = useState(false)
+  const [editMode, setEditMode] = useState(false)
+  const [editForm, setEditForm] = useState<Partial<JD>>({})
 
   useEffect(() => {
     async function loadOrganizations() {
@@ -250,6 +252,55 @@ export default function JDPage() {
 
   const statusFiltered = filter === '전체' ? viewFiltered : viewFiltered.filter(j => j.status === filter)
   const filtered = priorityFilter === '전체' ? statusFiltered : statusFiltered.filter(j => j.priority === priorityFilter)
+
+  // JD 수정
+  async function startEditJD(jd: JD) {
+    setEditForm({
+      company: jd.company,
+      position: jd.position,
+      location: jd.location,
+      salary_estimate: jd.salary_estimate,
+      priority: jd.priority,
+      difficulty: jd.difficulty,
+      status: jd.status,
+      target_profile: jd.target_profile,
+      search_strategy: jd.search_strategy,
+      difficulty_reason: jd.difficulty_reason
+    })
+    setEditMode(true)
+  }
+
+  async function saveJD() {
+    if (!selected) return
+
+    try {
+      const res = await fetch(`/api/jd/${selected.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...editForm,
+          user_email: userEmail,
+          user_role: userRole
+        })
+      })
+
+      if (!res.ok) {
+        const error = await res.json()
+        alert(`수정 실패: ${error.error || '서버 오류'}`)
+        return
+      }
+
+      // 성공 시 JD 목록 갱신
+      const updatedJD = { ...selected, ...editForm }
+      setJds(prev => prev.map(j => j.id === selected.id ? updatedJD as JD : j))
+      setSelected(updatedJD as JD)
+      setEditMode(false)
+      alert('JD가 수정되었습니다!')
+    } catch (error) {
+      console.error('[updateJD] Error:', error)
+      alert('수정 중 오류가 발생했습니다.')
+    }
+  }
 
   // 관심 등록/해제
   async function toggleInterest(jdId: string) {
@@ -497,7 +548,7 @@ export default function JDPage() {
         <div className="overlay" onClick={() => closeModal()}>
           <div className="modal" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
-              <div>
+              <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 12, color: 'var(--muted2)', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
                   {selected.company ?? '회사명 미상'}
                   <button
@@ -540,7 +591,36 @@ export default function JDPage() {
                 </div>
                 <div className="modal-title">{selected.position}</div>
               </div>
-              <button className="modal-close" onClick={() => closeModal()}>✕</button>
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                {(selected.created_by === userEmail || userRole === 'owner' || userRole === 'admin') && !editMode && (
+                  <button
+                    className="btn btn-primary btn-sm"
+                    onClick={() => startEditJD(selected)}
+                    style={{ fontSize: 13, padding: '6px 12px' }}
+                  >
+                    ✏️ 수정
+                  </button>
+                )}
+                {editMode && (
+                  <>
+                    <button
+                      className="btn btn-success btn-sm"
+                      onClick={saveJD}
+                      style={{ fontSize: 13, padding: '6px 12px' }}
+                    >
+                      ✓ 저장
+                    </button>
+                    <button
+                      className="btn btn-ghost btn-sm"
+                      onClick={() => setEditMode(false)}
+                      style={{ fontSize: 13, padding: '6px 12px' }}
+                    >
+                      취소
+                    </button>
+                  </>
+                )}
+                <button className="modal-close" onClick={() => { setEditMode(false); closeModal(); }}>✕</button>
+              </div>
             </div>
 
             {/* 탭 버튼 */}
@@ -587,16 +667,88 @@ export default function JDPage() {
 
             {modalTab === 'overview' && (
               <>
-                <div style={{ display: 'flex', gap: 6, marginBottom: 20 }}>
-                  <span className={`badge badge-${selected.priority}`}>{selected.priority}</span>
-                  <span className={`badge badge-${selected.status}`}>{selected.status}</span>
-                  <span className={`badge badge-${selected.difficulty}`}>난이도 {selected.difficulty}</span>
-                </div>
+                {editMode ? (
+                  <div style={{ marginBottom: 20 }}>
+                    <div className="form-row" style={{ marginBottom: 16 }}>
+                      <div><span className="form-label">회사</span>
+                        <input type="text" className="input" value={editForm.company ?? ''}
+                          onChange={e => setEditForm({ ...editForm, company: e.target.value })} />
+                      </div>
+                      <div><span className="form-label">포지션</span>
+                        <input type="text" className="input" value={editForm.position ?? ''}
+                          onChange={e => setEditForm({ ...editForm, position: e.target.value })} />
+                      </div>
+                    </div>
+                    <div className="form-row" style={{ marginBottom: 16 }}>
+                      <div><span className="form-label">근무지</span>
+                        <input type="text" className="input" value={editForm.location ?? ''}
+                          onChange={e => setEditForm({ ...editForm, location: e.target.value })} />
+                      </div>
+                      <div><span className="form-label">예상 연봉</span>
+                        <input type="text" className="input" value={editForm.salary_estimate ?? ''}
+                          onChange={e => setEditForm({ ...editForm, salary_estimate: e.target.value })} />
+                      </div>
+                    </div>
+                    <div className="form-row" style={{ marginBottom: 16 }}>
+                      <div><span className="form-label">우선순위</span>
+                        <select className="input" value={editForm.priority ?? '보통'}
+                          onChange={e => setEditForm({ ...editForm, priority: e.target.value })}>
+                          <option value="긴급">긴급</option>
+                          <option value="높음">높음</option>
+                          <option value="보통">보통</option>
+                          <option value="낮음">낮음</option>
+                        </select>
+                      </div>
+                      <div><span className="form-label">난이도</span>
+                        <select className="input" value={editForm.difficulty ?? '보통'}
+                          onChange={e => setEditForm({ ...editForm, difficulty: e.target.value })}>
+                          <option value="매우 어려움">매우 어려움</option>
+                          <option value="어려움">어려움</option>
+                          <option value="보통">보통</option>
+                          <option value="쉬움">쉬움</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div style={{ marginBottom: 16 }}>
+                      <span className="form-label">상태</span>
+                      <select className="input" value={editForm.status ?? '검토중'}
+                        onChange={e => setEditForm({ ...editForm, status: e.target.value })}>
+                        <option value="검토중">검토중</option>
+                        <option value="활성">활성</option>
+                        <option value="마감">마감</option>
+                        <option value="보류">보류</option>
+                      </select>
+                    </div>
+                    <div style={{ marginBottom: 16 }}>
+                      <span className="form-label">타깃 프로파일</span>
+                      <textarea className="input" rows={3} value={editForm.target_profile ?? ''}
+                        onChange={e => setEditForm({ ...editForm, target_profile: e.target.value })} />
+                    </div>
+                    <div style={{ marginBottom: 16 }}>
+                      <span className="form-label">서칭 전략</span>
+                      <textarea className="input" rows={3} value={editForm.search_strategy ?? ''}
+                        onChange={e => setEditForm({ ...editForm, search_strategy: e.target.value })} />
+                    </div>
+                    <div style={{ marginBottom: 16 }}>
+                      <span className="form-label">난이도 사유</span>
+                      <textarea className="input" rows={2} value={editForm.difficulty_reason ?? ''}
+                        onChange={e => setEditForm({ ...editForm, difficulty_reason: e.target.value })} />
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <div style={{ display: 'flex', gap: 6, marginBottom: 20 }}>
+                      <span className={`badge badge-${selected.priority}`}>{selected.priority}</span>
+                      <span className={`badge badge-${selected.status}`}>{selected.status}</span>
+                      <span className={`badge badge-${selected.difficulty}`}>난이도 {selected.difficulty}</span>
+                    </div>
 
-            <div className="form-row" style={{ marginBottom: 16 }}>
-              {selected.location && <div><span className="form-label">근무지</span><div>{selected.location}</div></div>}
-              {selected.salary_estimate && <div><span className="form-label">예상 연봉</span><div>{selected.salary_estimate}</div></div>}
-            </div>
+                    <div className="form-row" style={{ marginBottom: 16 }}>
+                      {selected.location && <div><span className="form-label">근무지</span><div>{selected.location}</div></div>}
+                      {selected.salary_estimate && <div><span className="form-label">예상 연봉</span><div>{selected.salary_estimate}</div></div>}
+                    </div>
+                  </>
+                )}
 
             {selected.required_skills?.length > 0 && (
               <div style={{ marginBottom: 16 }}>
