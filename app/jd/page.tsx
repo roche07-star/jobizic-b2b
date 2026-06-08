@@ -325,19 +325,25 @@ export default function JDPage() {
 
       let successCount = 0
       let failCount = 0
+      const errors: string[] = []
 
       for (const ac of jd.active_candidates) {
         try {
           // 후보자 정보 조회
+          console.log(`[Reanalyze] Step 1: Fetching candidate ${ac.candidate_id}...`)
           const candidateRes = await fetch(`/api/candidates/${ac.candidate_id}`)
           if (!candidateRes.ok) {
-            console.error(`[Reanalyze] Candidate ${ac.candidate_id} not found`)
+            const errorMsg = `후보자 조회 실패 (${ac.candidate_id}): ${candidateRes.status}`
+            console.error(`[Reanalyze] ${errorMsg}`)
+            errors.push(errorMsg)
             failCount++
             continue
           }
           const candidate = await candidateRes.json()
+          console.log(`[Reanalyze] ✓ Candidate loaded: ${candidate.name}`)
 
           // 매칭 점수 재계산
+          console.log(`[Reanalyze] Step 2: Calculating match score...`)
           const matchRes = await fetch('/api/pipeline/match', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -345,15 +351,20 @@ export default function JDPage() {
           })
 
           if (!matchRes.ok) {
-            console.error(`[Reanalyze] Match failed for ${ac.candidate_id}`)
+            const errorText = await matchRes.text()
+            const errorMsg = `매칭 분석 실패 (${candidate.name}): ${matchRes.status} - ${errorText}`
+            console.error(`[Reanalyze] ${errorMsg}`)
+            errors.push(errorMsg)
             failCount++
             continue
           }
 
           const matchResult = await matchRes.json()
           const newScore = matchResult.match_score
+          console.log(`[Reanalyze] ✓ Match score: ${newScore}`)
 
           // Pipeline 업데이트
+          console.log(`[Reanalyze] Step 3: Updating pipeline...`)
           const updateRes = await fetch(`/api/pipeline/${ac.id}`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
@@ -365,31 +376,46 @@ export default function JDPage() {
           })
 
           if (updateRes.ok) {
-            console.log(`[Reanalyze] ${candidate.name}: ${newScore}점`)
+            console.log(`[Reanalyze] ✅ ${candidate.name}: ${newScore}점`)
             successCount++
           } else {
+            const errorText = await updateRes.text()
+            const errorMsg = `점수 업데이트 실패 (${candidate.name}): ${updateRes.status} - ${errorText}`
+            console.error(`[Reanalyze] ${errorMsg}`)
+            errors.push(errorMsg)
             failCount++
           }
 
-        } catch (err) {
-          console.error(`[Reanalyze] Error for candidate ${ac.candidate_id}:`, err)
+        } catch (err: any) {
+          const errorMsg = `예외 발생 (${ac.candidate_id}): ${err.message}`
+          console.error(`[Reanalyze] ${errorMsg}`, err)
+          errors.push(errorMsg)
           failCount++
         }
       }
 
       // 결과 알림
-      alert(
-        `재분석 완료!\n\n` +
-        `✅ 성공: ${successCount}명\n` +
-        `${failCount > 0 ? `❌ 실패: ${failCount}명\n` : ''}` +
-        `\n매칭 점수가 업데이트되었습니다.`
-      )
+      let message = `재분석 완료!\n\n✅ 성공: ${successCount}명\n`
+      if (failCount > 0) {
+        message += `❌ 실패: ${failCount}명\n`
+        if (errors.length > 0) {
+          message += `\n실패 원인:\n${errors.slice(0, 3).join('\n')}`
+          if (errors.length > 3) {
+            message += `\n... 외 ${errors.length - 3}건 (콘솔 확인)`
+          }
+        }
+      } else {
+        message += `\n매칭 점수가 업데이트되었습니다.`
+      }
+      alert(message)
 
       // JD 목록 새로고침 (업데이트된 점수 반영)
-      window.location.reload()
-    } catch (error) {
+      if (successCount > 0) {
+        window.location.reload()
+      }
+    } catch (error: any) {
       console.error('[Reanalyze] Error:', error)
-      alert('재분석 중 오류가 발생했습니다.')
+      alert(`재분석 중 오류가 발생했습니다.\n${error.message}`)
     }
   }
 
