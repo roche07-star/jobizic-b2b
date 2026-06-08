@@ -431,6 +431,23 @@ export default function PipelinePage() {
               </select>
             </div>
 
+            {selected.stage === '불합격' && (selected as any).rejection_reason && (
+              <div style={{ marginBottom: 16 }}>
+                <div className="form-label">불합격 사유</div>
+                <div style={{
+                  padding: '10px 14px',
+                  background: 'rgba(255, 107, 107, 0.1)',
+                  border: '1px solid rgba(255, 107, 107, 0.3)',
+                  borderRadius: '8px',
+                  fontSize: '13px',
+                  lineHeight: '1.6',
+                  color: 'var(--text)'
+                }}>
+                  {(selected as any).rejection_reason}
+                </div>
+              </div>
+            )}
+
             {selected.match_reason && (
               <div style={{ marginBottom: 16 }}>
                 <div className="form-label">AI 매칭 분석</div>
