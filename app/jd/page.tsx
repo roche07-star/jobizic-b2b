@@ -386,7 +386,7 @@ export default function JDPage() {
         }
       }
 
-      // 결과 로깅 (백그라운드 완료)
+      // 결과 로깅만 (완전히 조용히)
       console.log(`[Reanalyze] 백그라운드 재분석 완료: 성공 ${successCount}명, 실패 ${failCount}명`)
 
       // 실패가 있으면 콘솔에 상세 출력
@@ -398,13 +398,10 @@ export default function JDPage() {
       if (successCount > 0) {
         console.log('[Reanalyze] 페이지 새로고침...')
         window.location.reload()
-      } else if (failCount > 0) {
-        // 모두 실패한 경우만 알림
-        alert(`재분석 실패 (${failCount}명)\n\n실패 원인:\n${errors.slice(0, 3).join('\n')}`)
       }
     } catch (error: any) {
-      console.error('[Reanalyze] Error:', error)
-      alert(`재분석 중 오류가 발생했습니다.\n${error.message}`)
+      console.error('[Reanalyze] 치명적 오류:', error)
+      // 알림 없이 콘솔에만 로그
     }
   }
 
