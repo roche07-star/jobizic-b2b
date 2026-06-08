@@ -303,11 +303,13 @@ export default function JDPage() {
         const confirmReanalyze = confirm(
           `추천된 후보자 ${selected.active_candidates.length}명이 있습니다.\n` +
           'JD가 변경되었으므로 매칭 점수를 다시 계산할까요?\n\n' +
-          '(Claude AI로 재분석하므로 시간이 걸릴 수 있습니다)'
+          '(백그라운드에서 재분석되므로 모달을 닫아도 됩니다)'
         )
 
         if (confirmReanalyze) {
-          await reanalyzeCandidates(updatedJD as JD)
+          // 백그라운드에서 실행 (await 제거)
+          reanalyzeCandidates(updatedJD as JD)
+          alert('재분석을 시작했습니다.\n백그라운드에서 처리되며, 완료 시 자동으로 업데이트됩니다.')
         }
       }
     } catch (error) {
@@ -316,12 +318,12 @@ export default function JDPage() {
     }
   }
 
-  // 후보자 재분석
+  // 후보자 재분석 (백그라운드)
   async function reanalyzeCandidates(jd: JD) {
     if (!jd.active_candidates || jd.active_candidates.length === 0) return
 
     try {
-      alert(`${jd.active_candidates.length}명의 후보자를 재분석합니다. 잠시만 기다려주세요...`)
+      console.log(`[Reanalyze] 백그라운드 재분석 시작: ${jd.active_candidates.length}명`)
 
       let successCount = 0
       let failCount = 0
@@ -394,8 +396,10 @@ export default function JDPage() {
         }
       }
 
-      // 결과 알림
-      let message = `재분석 완료!\n\n✅ 성공: ${successCount}명\n`
+      // 결과 알림 (백그라운드 완료)
+      console.log(`[Reanalyze] 백그라운드 재분석 완료: 성공 ${successCount}명, 실패 ${failCount}명`)
+
+      let message = `🎉 백그라운드 재분석 완료!\n\n✅ 성공: ${successCount}명\n`
       if (failCount > 0) {
         message += `❌ 실패: ${failCount}명\n`
         if (errors.length > 0) {
@@ -407,11 +411,13 @@ export default function JDPage() {
       } else {
         message += `\n매칭 점수가 업데이트되었습니다.`
       }
-      alert(message)
 
-      // JD 목록 새로고침 (업데이트된 점수 반영)
+      // 완료 알림 후 자동 새로고침
       if (successCount > 0) {
+        alert(message + '\n\n페이지를 새로고침합니다.')
         window.location.reload()
+      } else {
+        alert(message)
       }
     } catch (error: any) {
       console.error('[Reanalyze] Error:', error)
