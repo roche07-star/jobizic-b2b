@@ -385,7 +385,7 @@ export default function JDPage() {
       )
 
       // JD 목록 새로고침 (업데이트된 점수 반영)
-      await loadData()
+      window.location.reload()
     } catch (error) {
       console.error('[Reanalyze] Error:', error)
       alert('재분석 중 오류가 발생했습니다.')
