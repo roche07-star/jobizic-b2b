@@ -209,7 +209,11 @@ export default function PipelinePage() {
       // ✅ API 성공 시에만 state 업데이트
       console.log('[updateStage] Success:', { id, stage })
       setPipeline(prev => prev.map(p => p.id === id ? { ...p, stage } : p))
-      if (selected?.id === id) setSelected(prev => prev ? { ...prev, stage } : prev)
+
+      // 단계 변경 성공 시 모달 자동 닫기
+      if (selected?.id === id) {
+        setSelected(null)
+      }
     } catch (error) {
       console.error('[updateStage] Error:', error)
       alert('단계 변경 중 오류가 발생했습니다.')
