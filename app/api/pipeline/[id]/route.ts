@@ -224,15 +224,31 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
       return emojiMap[stage] || '📌'
     }
 
-    // last_activity_at 자동 업데이트
-    body.last_activity_at = new Date().toISOString()
+    // DB 업데이트 데이터 준비
+    const updateData: any = {
+      ...body,
+      last_activity_at: new Date().toISOString()
+    }
+
+    // stage가 있으면 포함 (중요!)
+    if (stage) {
+      updateData.stage = stage
+    }
+
+    console.log('[Pipeline PATCH] Updating DB:', { id, stage, fieldsCount: Object.keys(updateData).length })
 
     const { error } = await supabaseAdmin
       .from('pipeline')
-      .update(body)
+      .update(updateData)
       .eq('id', id)
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-    return NextResponse.json({ ok: true })
+
+    if (error) {
+      console.error('[Pipeline PATCH] DB update failed:', error)
+      return NextResponse.json({ error: error.message }, { status: 500 })
+    }
+
+    console.log('[Pipeline PATCH] DB update success:', { id, stage })
+    return NextResponse.json({ ok: true, stage })
   } catch (e) {
     console.error('[api/pipeline/[id] PATCH]', e)
     return NextResponse.json({ error: '업데이트 중 오류가 발생했습니다.' }, { status: 500 })
