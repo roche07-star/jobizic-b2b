@@ -189,14 +189,29 @@ export default function PipelinePage() {
       return
     }
 
+    // 불합격 단계일 경우 사유 필수 입력
+    let rejectionReason: string | null = null
+    if (stage === '불합격') {
+      rejectionReason = prompt('불합격 사유를 입력해주세요:')
+      if (!rejectionReason || rejectionReason.trim() === '') {
+        alert('불합격 사유를 입력해야 합니다.')
+        return
+      }
+    }
+
     try {
+      const body: any = {
+        stage,
+        updated_by: profile.email
+      }
+      if (rejectionReason) {
+        body.rejection_reason = rejectionReason
+      }
+
       const res = await fetch(`/api/pipeline/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          stage,
-          updated_by: profile.email
-        }),
+        body: JSON.stringify(body),
       })
 
       if (!res.ok) {
@@ -207,7 +222,7 @@ export default function PipelinePage() {
       }
 
       // ✅ API 성공 시에만 state 업데이트
-      console.log('[updateStage] Success:', { id, stage })
+      console.log('[updateStage] Success:', { id, stage, rejectionReason })
       setPipeline(prev => prev.map(p => p.id === id ? { ...p, stage } : p))
 
       // 단계 변경 성공 시 모달 자동 닫기
