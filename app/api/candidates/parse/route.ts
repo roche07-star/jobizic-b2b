@@ -6,8 +6,12 @@ const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 export async function POST(req: NextRequest) {
   try {
     const { text } = await req.json()
-    if (!text?.trim()) return NextResponse.json({ error: '이력서 내용을 입력해 주세요.' }, { status: 400 })
+    if (!text?.trim()) {
+      console.error('[candidates/parse] Empty text received')
+      return NextResponse.json({ error: '이력서 내용을 입력해 주세요.' }, { status: 400 })
+    }
 
+    console.log('[candidates/parse] Calling Claude API...')
     const message = await client.messages.create({
       model: 'claude-haiku-4-5-20251001',
       max_tokens: 2000,
@@ -44,14 +48,47 @@ export async function POST(req: NextRequest) {
       messages: [{ role: 'user', content: `다음 이력서를 분석해주세요:\n\n${text}` }],
     })
 
-    const raw = (message.content[0] as { type: string; text: string }).text
+    console.log('[candidates/parse] Claude API response received')
+
+    // Content 검증
+    if (!message.content || message.content.length === 0) {
+      console.error('[candidates/parse] Empty content from Claude')
+      return NextResponse.json({ error: 'AI 응답이 비어있습니다.' }, { status: 500 })
+    }
+
+    const firstContent = message.content[0]
+    if (firstContent.type !== 'text') {
+      console.error('[candidates/parse] Unexpected content type:', firstContent.type)
+      return NextResponse.json({ error: 'AI 응답 형식 오류.' }, { status: 500 })
+    }
+
+    const raw = firstContent.text
+    console.log('[candidates/parse] Raw response:', raw.substring(0, 100) + '...')
+
     const match = raw.match(/\{[\s\S]*\}/)
-    if (!match) return NextResponse.json({ error: '파싱 실패. 다시 시도해 주세요.' }, { status: 500 })
+    if (!match) {
+      console.error('[candidates/parse] JSON not found in response:', raw)
+      return NextResponse.json({ error: '파싱 실패. 다시 시도해 주세요.' }, { status: 500 })
+    }
 
     const parsed = JSON.parse(match[0])
+    console.log('[candidates/parse] Successfully parsed:', Object.keys(parsed))
     return NextResponse.json(parsed)
-  } catch (e) {
-    console.error('[candidates/parse]', e)
-    return NextResponse.json({ error: '서버 오류가 발생했습니다.' }, { status: 500 })
+  } catch (e: any) {
+    console.error('[candidates/parse] Error:', e)
+    console.error('[candidates/parse] Error name:', e.name)
+    console.error('[candidates/parse] Error message:', e.message)
+    console.error('[candidates/parse] Error stack:', e.stack)
+
+    // Anthropic API 에러 상세 정보
+    if (e.status) {
+      console.error('[candidates/parse] API status:', e.status)
+      console.error('[candidates/parse] API error:', e.error)
+    }
+
+    return NextResponse.json({
+      error: '서버 오류가 발생했습니다.',
+      details: process.env.NODE_ENV === 'development' ? e.message : undefined
+    }, { status: 500 })
   }
 }
