@@ -296,9 +296,99 @@ export default function JDPage() {
       setSelected(updatedJD as JD)
       setEditMode(false)
       alert('JD가 수정되었습니다!')
+
+      // 추천된 후보자가 있으면 재분석
+      if (selected.active_candidates && selected.active_candidates.length > 0) {
+        const confirmReanalyze = confirm(
+          `추천된 후보자 ${selected.active_candidates.length}명이 있습니다.\n` +
+          'JD가 변경되었으므로 매칭 점수를 다시 계산할까요?\n\n' +
+          '(Claude AI로 재분석하므로 시간이 걸릴 수 있습니다)'
+        )
+
+        if (confirmReanalyze) {
+          await reanalyzeCandidates(updatedJD as JD)
+        }
+      }
     } catch (error) {
       console.error('[updateJD] Error:', error)
       alert('수정 중 오류가 발생했습니다.')
+    }
+  }
+
+  // 후보자 재분석
+  async function reanalyzeCandidates(jd: JD) {
+    if (!jd.active_candidates || jd.active_candidates.length === 0) return
+
+    try {
+      alert(`${jd.active_candidates.length}명의 후보자를 재분석합니다. 잠시만 기다려주세요...`)
+
+      let successCount = 0
+      let failCount = 0
+
+      for (const ac of jd.active_candidates) {
+        try {
+          // 후보자 정보 조회
+          const candidateRes = await fetch(`/api/candidates/${ac.candidate_id}`)
+          if (!candidateRes.ok) {
+            console.error(`[Reanalyze] Candidate ${ac.candidate_id} not found`)
+            failCount++
+            continue
+          }
+          const candidate = await candidateRes.json()
+
+          // 매칭 점수 재계산
+          const matchRes = await fetch('/api/pipeline/match', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ jd, candidate })
+          })
+
+          if (!matchRes.ok) {
+            console.error(`[Reanalyze] Match failed for ${ac.candidate_id}`)
+            failCount++
+            continue
+          }
+
+          const matchResult = await matchRes.json()
+          const newScore = matchResult.match_score
+
+          // Pipeline 업데이트
+          const updateRes = await fetch(`/api/pipeline/${ac.id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              match_score: newScore,
+              user_email: userEmail,
+              user_role: userRole
+            })
+          })
+
+          if (updateRes.ok) {
+            console.log(`[Reanalyze] ${candidate.name}: ${newScore}점`)
+            successCount++
+          } else {
+            failCount++
+          }
+
+        } catch (err) {
+          console.error(`[Reanalyze] Error for candidate ${ac.candidate_id}:`, err)
+          failCount++
+        }
+      }
+
+      // 결과 알림
+      alert(
+        `재분석 완료!\n\n` +
+        `✅ 성공: ${successCount}명\n` +
+        `${failCount > 0 ? `❌ 실패: ${failCount}명\n` : ''}` +
+        `\n매칭 점수가 업데이트되었습니다.`
+      )
+
+      // JD 목록 새로고침 (업데이트된 점수 반영)
+      await loadData()
+    } catch (error) {
+      console.error('[Reanalyze] Error:', error)
+      alert('재분석 중 오류가 발생했습니다.')
     }
   }
 
