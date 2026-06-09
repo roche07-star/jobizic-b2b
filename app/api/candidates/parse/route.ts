@@ -87,6 +87,7 @@ export async function POST(req: NextRequest) {
   "desired_location": "희망 근무지 (없으면 null)",
   "job_search_status": "적극적|관심있음|잠재적",
   "strength_summary": "강점 요약 2~3문장",
+  "weakness_summary": "약점 또는 보완 필요 영역 2~3문장",
   "career_trajectory": "커리어 방향성 및 성장 궤적 2~3문장",
   "ideal_roles": ["적합한포지션1", "적합한포지션2", "적합한포지션3"],
   "market_value": "시장가치 예상 연봉대",

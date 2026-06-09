@@ -30,6 +30,7 @@ interface Candidate {
   ideal_roles: string[]
   market_value: string
   strength_summary: string
+  weakness_summary: string
   career_trajectory: string
   key_highlights: string[]
   tags: string[]
@@ -168,6 +169,7 @@ export default function CandidatesPage() {
     if (editForm.market_value !== undefined) updateData.market_value = editForm.market_value
     if (editForm.career_summary !== undefined) updateData.career_summary = editForm.career_summary
     if (editForm.strength_summary !== undefined) updateData.strength_summary = editForm.strength_summary
+    if (editForm.weakness_summary !== undefined) updateData.weakness_summary = editForm.weakness_summary
     if (editForm.career_trajectory !== undefined) updateData.career_trajectory = editForm.career_trajectory
 
     const res = await fetch(`/api/candidates/${selected.id}`, {
@@ -533,6 +535,10 @@ export default function CandidatesPage() {
                     <span className="analysis-value">{selected.strength_summary}</span>
                   </div>
                   <div className="analysis-row">
+                    <span className="analysis-label">약점 분석</span>
+                    <span className="analysis-value">{selected.weakness_summary}</span>
+                  </div>
+                  <div className="analysis-row">
                     <span className="analysis-label">커리어 방향</span>
                     <span className="analysis-value">{selected.career_trajectory}</span>
                   </div>
@@ -612,6 +618,11 @@ export default function CandidatesPage() {
                 </div>
 
                 <div style={{ marginBottom: 16 }}>
+                  <div className="form-label">약점 분석</div>
+                  <textarea className="input" rows={2} value={editForm.weakness_summary ?? selected.weakness_summary ?? ''} onChange={e => setEditForm(prev => ({ ...prev, weakness_summary: e.target.value }))} />
+                </div>
+
+                <div style={{ marginBottom: 16 }}>
                   <div className="form-label">커리어 방향</div>
                   <textarea className="input" rows={2} value={editForm.career_trajectory ?? selected.career_trajectory ?? ''} onChange={e => setEditForm(prev => ({ ...prev, career_trajectory: e.target.value }))} />
                 </div>
@@ -646,6 +657,7 @@ export default function CandidatesPage() {
                       market_value: selected.market_value,
                       career_summary: selected.career_summary,
                       strength_summary: selected.strength_summary,
+                      weakness_summary: selected.weakness_summary,
                       career_trajectory: selected.career_trajectory,
                     })
                   }}>✏️ 수정</button>
