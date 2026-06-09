@@ -114,6 +114,7 @@ export default function JDPage() {
 
       const params = new URLSearchParams({
         role: profile.role,
+        user_email: profile.email, // 🔥 필수! API 필터링에 필요
         ...(profile.role === 'admin' && selectedOrgId !== '전체' && { organization_id: selectedOrgId }),
         ...(profile.role !== 'admin' && profile.organization_id && { organization_id: profile.organization_id })
       })
