@@ -6,6 +6,7 @@ export type NotificationType =
   | 'new_jd'
   | 'mention'
   | 'assignment'
+  | 'board_reply'
 
 interface CreateNotificationParams {
   userId: string // 알림 받을 사용자 ID
@@ -13,7 +14,7 @@ interface CreateNotificationParams {
   title: string
   message?: string
   relatedId?: string
-  relatedType?: 'jd' | 'candidate' | 'pipeline'
+  relatedType?: 'jd' | 'candidate' | 'pipeline' | 'board'
   actionUrl?: string
   senderId?: string
   senderName?: string
