@@ -5,23 +5,33 @@ import { createNotification } from '@/lib/notifications'
 // GET /api/boards - 게시판 목록 조회
 export async function GET(req: NextRequest) {
   try {
+    console.log('[boards GET] Start')
     const userEmail = req.nextUrl.searchParams.get('user_email')
     const organizationId = req.nextUrl.searchParams.get('organization_id') // Admin용
+    console.log('[boards GET] userEmail:', userEmail, 'organizationId:', organizationId)
 
     if (!userEmail) {
       return NextResponse.json({ error: '인증 정보가 필요합니다.' }, { status: 401 })
     }
 
     // 사용자 프로필 조회
-    const { data: profile } = await supabaseAdmin
+    console.log('[boards GET] Fetching profile...')
+    const { data: profile, error: profileError } = await supabaseAdmin
       .from('profiles')
       .select('id, role, organization_id')
       .eq('email', userEmail)
       .single()
 
+    if (profileError) {
+      console.error('[boards GET] Profile error:', profileError)
+      return NextResponse.json({ error: 'Profile 조회 오류: ' + profileError.message }, { status: 500 })
+    }
+
     if (!profile) {
       return NextResponse.json({ error: '사용자를 찾을 수 없습니다.' }, { status: 404 })
     }
+
+    console.log('[boards GET] Profile:', { id: profile.id, role: profile.role, organization_id: profile.organization_id })
 
     // 쿼리 빌더
     let query = supabaseAdmin
