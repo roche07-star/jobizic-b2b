@@ -12,6 +12,11 @@ interface Organization {
   contact_phone?: string
   status: string
   created_at: string
+  members?: Array<{
+    id: string
+    full_name: string | null
+    email: string
+  }>
 }
 
 interface User {
@@ -488,6 +493,11 @@ export default function AdminPage() {
                 <div style={{ fontSize: 12, color: 'var(--muted2)', marginTop: 2 }}>
                   {org.type} · {org.contact_email || '이메일 없음'}
                 </div>
+                {org.members && org.members.length > 0 && (
+                  <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>
+                    👥 {org.members.map(m => m.full_name || m.email.split('@')[0]).join(', ')}
+                  </div>
+                )}
               </div>
               <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                 <span className={`badge badge-${org.status}`}>{org.status}</span>

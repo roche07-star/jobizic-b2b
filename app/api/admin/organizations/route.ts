@@ -20,7 +20,25 @@ export async function GET(req: NextRequest) {
     const { data, error } = await q
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-    return NextResponse.json({ organizations: data })
+
+    // 각 조직의 구성원 목록 추가
+    const organizationsWithMembers = await Promise.all(
+      (data || []).map(async (org) => {
+        const { data: members } = await supabaseAdmin
+          .from('profiles')
+          .select('id, full_name, email')
+          .eq('organization_id', org.id)
+          .eq('is_active', true)
+          .order('full_name')
+
+        return {
+          ...org,
+          members: members || []
+        }
+      })
+    )
+
+    return NextResponse.json({ organizations: organizationsWithMembers })
   } catch (e: any) {
     console.error('[admin/organizations GET]', e)
     return NextResponse.json({ error: e.message || '조회 중 오류가 발생했습니다.' }, { status: 500 })
