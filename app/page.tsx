@@ -166,7 +166,7 @@ export default function Dashboard() {
             activePipelineCount: activePipelines.length,
           }
         })
-        setRecentJDs(interestJDs.slice(0, 5))
+        setRecentJDs(interestJDs)
 
         // Admin/Owner/PM인 경우 추가 통계 로드
         if (profile.role === 'admin' || profile.role === 'owner' || profile.role === 'headhunter') {
@@ -274,7 +274,7 @@ export default function Dashboard() {
               </Link>
             </div>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: '260px', overflowY: 'auto' }}>
               {recentJDs.map(jd => (
                 <Link key={jd.id} href={`/jd`}>
                   <div style={{
