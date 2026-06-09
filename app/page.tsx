@@ -168,17 +168,24 @@ export default function Dashboard() {
         })
         setRecentJDs(interestJDs.slice(0, 5))
 
-        // Owner/PM인 경우 추가 통계 로드
-        if (profile.role === 'owner' || profile.role === 'headhunter') {
-          const statsParams = new URLSearchParams({
-            role: profile.role,
-            organization_id: profile.organization_id || '',
-            user_email: profile.email, // PM은 본인 데이터만
-          })
-          fetch(`/api/dashboard/stats?${statsParams}`)
-            .then(r => r.json())
-            .then(data => setDashboardStats(data))
-            .catch(err => console.error('Failed to load dashboard stats:', err))
+        // Admin/Owner/PM인 경우 추가 통계 로드
+        if (profile.role === 'admin' || profile.role === 'owner' || profile.role === 'headhunter') {
+          // Admin: 선택한 조직, Owner/PM: 자신의 조직
+          const orgId = profile.role === 'admin'
+            ? selectedOrgId !== '전체' ? selectedOrgId : ''
+            : profile.organization_id || ''
+
+          if (orgId) {
+            const statsParams = new URLSearchParams({
+              role: profile.role,
+              organization_id: orgId,
+              user_email: profile.email, // PM은 본인 데이터만
+            })
+            fetch(`/api/dashboard/stats?${statsParams}`)
+              .then(r => r.json())
+              .then(data => setDashboardStats(data))
+              .catch(err => console.error('Failed to load dashboard stats:', err))
+          }
         }
       }).finally(() => setLoading(false))
     }
@@ -309,14 +316,14 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Owner/PM 공통: JD & 채용 프로세스 현황 */}
-      {isOwnerOrPM && dashboardStats && (
+      {/* Admin/Owner/PM 공통: JD & 채용 프로세스 현황 */}
+      {(isAdmin || isOwnerOrPM) && dashboardStats && (
         <>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginTop: 20 }}>
             {/* JD 상태별 */}
             <div className="card">
               <div className="card-title">
-                {isOwner ? 'JD 현황' : '내 JD 현황'}
+                {isAdmin || isOwner ? 'JD 현황' : '내 JD 현황'}
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 12 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -346,7 +353,7 @@ export default function Dashboard() {
             {/* 채용 프로세스 단계별 */}
             <div className="card">
               <div className="card-title">
-                {isOwner ? '채용 프로세스 단계별' : '내 채용 프로세스 단계별'}
+                {isAdmin || isOwner ? '채용 프로세스 단계별' : '내 채용 프로세스 단계별'}
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 12 }}>
                 {Object.entries(dashboardStats.pipelineByStage)
@@ -388,8 +395,8 @@ export default function Dashboard() {
         </>
       )}
 
-      {/* Owner 전용: 팀 멤버 활동 통계 */}
-      {isOwner && dashboardStats && (
+      {/* Admin/Owner 전용: 팀 멤버 활동 통계 */}
+      {(isAdmin || isOwner) && dashboardStats && (
         <div className="card" style={{ marginTop: 20 }}>
           <div className="card-title">팀 멤버 활동 현황</div>
           <div style={{ overflowX: 'auto' }}>
