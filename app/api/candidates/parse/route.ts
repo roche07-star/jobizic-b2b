@@ -46,9 +46,18 @@ function extractPersonalInfo(text: string): {
     }
   }
 
-  // 주소 추출 (첫 번째 것만)
-  const locationMatch = text.match(/(서울|부산|대구|인천|광주|대전|울산|세종|경기|강원|충북|충남|전북|전남|경북|경남|제주)(특별시|광역시|특별자치시|도|특별자치도)?[가-힣0-9\s-]+/)
-  const location = locationMatch ? locationMatch[0].trim() : null
+  // 주소 추출 (시/도 + 구/군 정도만, 최대 20자)
+  const locationMatch = text.match(/(서울|부산|대구|인천|광주|대전|울산|세종|경기|강원|충북|충남|전북|전남|경북|경남|제주)(특별시|광역시|특별자치시|도|특별자치도)?\s*[가-힣]{1,10}[구군시]?/)
+  let location = locationMatch ? locationMatch[0].trim() : null
+
+  // 불필요한 단어 제거 (기본정보, 학력 등)
+  if (location) {
+    location = location.replace(/(기본정보|학력|자격증|경력).*$/, '').trim()
+    // 너무 길면 자르기 (20자 제한)
+    if (location.length > 20) {
+      location = location.substring(0, 20)
+    }
+  }
 
   return { name, email, phone, birth_year, location }
 }
@@ -64,8 +73,8 @@ function maskPersonalInfo(text: string): string {
   text = text.replace(/(생년월일|생일|DOB|Birth)[\s:：]*\d{4}[-./]?\d{1,2}[-./]?\d{1,2}/gi, '[BIRTHDATE]')
   text = text.replace(/\d{4}년생/g, '[BIRTHYEAR]')
   text = text.replace(/만\s*\d{1,2}세/g, '[AGE]')
-  // 주소 마스킹 (시/도, 시/군/구 포함)
-  text = text.replace(/(서울|부산|대구|인천|광주|대전|울산|세종|경기|강원|충북|충남|전북|전남|경북|경남|제주)(특별시|광역시|특별자치시|도|특별자치도)?\s*[가-힣0-9\s-]+/g, '[ADDRESS]')
+  // 주소 마스킹 (시/도 + 구/군 정도만)
+  text = text.replace(/(서울|부산|대구|인천|광주|대전|울산|세종|경기|강원|충북|충남|전북|전남|경북|경남|제주)(특별시|광역시|특별자치시|도|특별자치도)?\s*[가-힣]{1,10}[구군시]?/g, '[ADDRESS]')
   return text
 }
 
