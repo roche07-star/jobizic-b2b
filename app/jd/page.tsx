@@ -877,7 +877,7 @@ export default function JDPage() {
                     {/* 좌우 분할 레이아웃 */}
                     <div style={{
                       display: 'grid',
-                      gridTemplateColumns: selected.raw_text ? '1fr 1fr' : '1fr',
+                      gridTemplateColumns: selected.raw_text ? '2fr 1fr' : '1fr',
                       gap: 20,
                       marginBottom: 20
                     }}>
@@ -890,7 +890,7 @@ export default function JDPage() {
                             background: 'var(--bg-2)',
                             borderRadius: 8,
                             border: '1px solid var(--border)',
-                            maxHeight: 600,
+                            maxHeight: 700,
                             overflowY: 'auto',
                             whiteSpace: 'pre-wrap',
                             fontSize: 12,
