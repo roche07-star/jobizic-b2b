@@ -68,24 +68,44 @@ export function downloadJDsAsCSV(jds: any[]) {
  * 후보자 목록을 CSV로 다운로드
  */
 export function downloadCandidatesAsCSV(candidates: any[]) {
-  const data = candidates.map(c => ({
-    이름: c.name,
-    이메일: c.email || '',
-    전화번호: c.phone || '',
-    현재회사: c.current_company || '',
-    현재직무: c.current_position || '',
-    경력년수: c.total_experience_years || 0,
-    상태: c.status,
-    스킬: Array.isArray(c.skills) ? c.skills : [],
-    기술스택: Array.isArray(c.tech_stack) ? c.tech_stack : [],
-    희망포지션: c.desired_position || '',
-    희망연봉: c.desired_salary || '',
-    등록일: new Date(c.created_at).toLocaleDateString('ko-KR'),
-  }))
+  const currentYear = new Date().getFullYear()
+
+  const data = candidates.map(c => {
+    // 출생년도와 연령 계산
+    let birthYearText = ''
+    if (c.birth_year) {
+      const age = currentYear - c.birth_year
+      birthYearText = `${c.birth_year}년 (${age}세)`
+    }
+
+    // 최종학력 추출 (education 배열의 마지막 항목)
+    let finalEducation = ''
+    if (Array.isArray(c.education) && c.education.length > 0) {
+      finalEducation = c.education[c.education.length - 1]
+    }
+
+    return {
+      이름: c.name,
+      '출생년도(연령)': birthYearText,
+      이메일: c.email || '',
+      전화번호: c.phone || '',
+      최종학력: finalEducation,
+      현재회사: c.current_company || '',
+      현재직무: c.current_position || '',
+      경력년수: c.total_experience_years || 0,
+      상태: c.status,
+      스킬: Array.isArray(c.skills) ? c.skills : [],
+      기술스택: Array.isArray(c.tech_stack) ? c.tech_stack : [],
+      희망포지션: c.desired_position || '',
+      희망연봉: c.desired_salary || '',
+      등록일: new Date(c.created_at).toLocaleDateString('ko-KR'),
+    }
+  })
 
   downloadCSV('후보자목록', data, [
-    '이름', '이메일', '전화번호', '현재회사', '현재직무', '경력년수',
-    '상태', '스킬', '기술스택', '희망포지션', '희망연봉', '등록일'
+    '이름', '출생년도(연령)', '이메일', '전화번호', '최종학력',
+    '현재회사', '현재직무', '경력년수', '상태', '스킬', '기술스택',
+    '희망포지션', '희망연봉', '등록일'
   ])
 }
 
