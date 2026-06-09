@@ -11,6 +11,14 @@ export async function POST(req: NextRequest) {
     }
 
     console.log('[pipeline/match] Starting analysis for JD:', jd.position)
+    console.log('[pipeline/match] Candidate data:', {
+      id: candidate.id,
+      current_position: candidate.current_position,
+      hasSkills: !!candidate.skills,
+      hasTechStack: !!candidate.tech_stack,
+      hasEducation: !!candidate.education,
+      hasCertifications: !!candidate.certifications
+    })
 
     // 안전한 배열 처리 헬퍼 함수
     const safeJoin = (arr: any, separator: string = ', '): string => {
@@ -20,6 +28,7 @@ export async function POST(req: NextRequest) {
       return '없음'
     }
 
+    console.log('[pipeline/match] Calling Claude API...')
     const message = await client.messages.create({
       model: 'claude-haiku-4-5-20251001',
       max_tokens: 1500,
@@ -79,16 +88,25 @@ JD-후보자 매칭을 분석하는 목적은 하나입니다: "이 후보자를
       }],
     })
 
+    console.log('[pipeline/match] Claude API response received')
     const raw = (message.content[0] as { type: string; text: string }).text
     console.log('[pipeline/match] Claude response preview:', raw.substring(0, 200))
 
     const match = raw.match(/\{[\s\S]*\}/)
     if (!match) {
-      console.error('[pipeline/match] No JSON found in response:', raw)
+      console.error('[pipeline/match] No JSON found in response. Full response:', raw)
       return NextResponse.json({ error: '매칭 분석 실패. 다시 시도해 주세요.' }, { status: 500 })
     }
 
-    const result = JSON.parse(match[0])
+    let result
+    try {
+      result = JSON.parse(match[0])
+    } catch (parseError: any) {
+      console.error('[pipeline/match] JSON parse error:', parseError.message)
+      console.error('[pipeline/match] Attempted to parse:', match[0])
+      return NextResponse.json({ error: 'JSON 파싱 실패. 다시 시도해 주세요.' }, { status: 500 })
+    }
+
     console.log('[pipeline/match] Analysis complete. Score:', result.match_score)
     return NextResponse.json(result)
   } catch (e: any) {
