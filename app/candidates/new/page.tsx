@@ -235,6 +235,17 @@ export default function CandidateNewPage() {
               <span>AI 분석 결과</span>
               <span className={`badge badge-${parsed.job_search_status}`}>{parsed.job_search_status}</span>
             </div>
+            <div style={{
+              fontSize: 13,
+              color: 'var(--text-secondary)',
+              marginBottom: 16,
+              padding: 10,
+              background: 'var(--bg-secondary)',
+              borderRadius: 6,
+              borderLeft: '3px solid var(--accent)'
+            }}>
+              💡 <strong>안내:</strong> AI 분석 결과가 정확하지 않을 수 있습니다. 잘못된 내용은 직접 수정해 주세요.
+            </div>
 
             <div className="form-row" style={{ marginBottom: 12 }}>
               <div className="form-group" style={{ marginBottom: 0 }}>
