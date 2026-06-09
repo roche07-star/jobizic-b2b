@@ -20,11 +20,13 @@ interface Candidate {
   name: string
   email: string | null
   phone: string | null
+  birth_year: number | null
   location: string | null
   current_company: string | null
   current_position: string | null
   total_experience_years: number | null
   career_summary: string
+  education: string[]
   skills: string[]
   tech_stack: string[]
   ideal_roles: string[]
@@ -62,6 +64,37 @@ interface User {
   email: string
   full_name: string | null
   role: string
+}
+
+// 최종학력 추출 함수
+function getFinalEducation(education: string[] | undefined): string {
+  if (!education || education.length === 0) return ''
+
+  // 학력 우선순위 (높은 순서)
+  const priorities = [
+    { keywords: ['박사', 'Ph.D', 'PhD', 'Doctor'], label: '박사' },
+    { keywords: ['석사', 'Master', '대학원'], label: '석사' },
+    { keywords: ['학사', '대학교', '대졸', 'Bachelor', '4년제'], label: '학사' },
+    { keywords: ['전문학사', '전문대', '2년제'], label: '전문학사' },
+    { keywords: ['고등학교', '고졸'], label: '고졸' },
+  ]
+
+  // 가장 높은 학력 찾기
+  for (const priority of priorities) {
+    const found = education.find(edu =>
+      priority.keywords.some(keyword => edu.includes(keyword))
+    )
+    if (found) {
+      // 수료인 경우 표시
+      if (found.includes('수료')) {
+        return `${priority.label} 수료`
+      }
+      return priority.label
+    }
+  }
+
+  // 우선순위에 없으면 마지막 항목 반환
+  return education[education.length - 1]
 }
 
 export default function CandidatesPage() {
@@ -162,6 +195,7 @@ export default function CandidatesPage() {
     if (editForm.name !== undefined) updateData.name = editForm.name
     if (editForm.email !== undefined) updateData.email = editForm.email
     if (editForm.phone !== undefined) updateData.phone = editForm.phone
+    if (editForm.birth_year !== undefined) updateData.birth_year = editForm.birth_year
     if (editForm.location !== undefined) updateData.location = editForm.location
     if (editForm.current_company !== undefined) updateData.current_company = editForm.current_company
     if (editForm.current_position !== undefined) updateData.current_position = editForm.current_position
@@ -509,6 +543,18 @@ export default function CandidatesPage() {
                 <div className="form-row" style={{ marginBottom: 16 }}>
                   {selected.email && <div><span className="form-label">이메일</span><div>{selected.email}</div></div>}
                   {selected.phone && <div><span className="form-label">전화</span><div>{selected.phone}</div></div>}
+                  {selected.birth_year && (
+                    <div>
+                      <span className="form-label">출생년도(연령)</span>
+                      <div>{selected.birth_year}년 ({new Date().getFullYear() - selected.birth_year}세)</div>
+                    </div>
+                  )}
+                  {getFinalEducation(selected.education) && (
+                    <div>
+                      <span className="form-label">최종학력</span>
+                      <div>{getFinalEducation(selected.education)}</div>
+                    </div>
+                  )}
                   {selected.location && <div><span className="form-label">거주지</span><div>{selected.location}</div></div>}
                   {selected.market_value && <div><span className="form-label">시장가치</span><div>{selected.market_value}</div></div>}
                 </div>
@@ -582,29 +628,35 @@ export default function CandidatesPage() {
 
                 <div className="form-row" style={{ marginBottom: 16, gap: 16 }}>
                   <div style={{ flex: 1 }}>
-                    <span className="form-label">거주지</span>
-                    <input type="text" className="input" value={editForm.location ?? selected.location ?? ''} onChange={e => setEditForm(prev => ({ ...prev, location: e.target.value }))} />
+                    <span className="form-label">출생년도</span>
+                    <input type="number" className="input" placeholder="예: 1990" value={editForm.birth_year ?? selected.birth_year ?? ''} onChange={e => setEditForm(prev => ({ ...prev, birth_year: e.target.value ? parseInt(e.target.value) : null }))} />
                   </div>
                   <div style={{ flex: 1 }}>
-                    <span className="form-label">현재 회사</span>
-                    <input type="text" className="input" value={editForm.current_company ?? selected.current_company ?? ''} onChange={e => setEditForm(prev => ({ ...prev, current_company: e.target.value }))} />
+                    <span className="form-label">거주지</span>
+                    <input type="text" className="input" value={editForm.location ?? selected.location ?? ''} onChange={e => setEditForm(prev => ({ ...prev, location: e.target.value }))} />
                   </div>
                 </div>
 
                 <div className="form-row" style={{ marginBottom: 16, gap: 16 }}>
                   <div style={{ flex: 1 }}>
+                    <span className="form-label">현재 회사</span>
+                    <input type="text" className="input" value={editForm.current_company ?? selected.current_company ?? ''} onChange={e => setEditForm(prev => ({ ...prev, current_company: e.target.value }))} />
+                  </div>
+                  <div style={{ flex: 1 }}>
                     <span className="form-label">현재 포지션</span>
                     <input type="text" className="input" value={editForm.current_position ?? selected.current_position ?? ''} onChange={e => setEditForm(prev => ({ ...prev, current_position: e.target.value }))} />
                   </div>
+                </div>
+
+                <div className="form-row" style={{ marginBottom: 16, gap: 16 }}>
                   <div style={{ flex: 1 }}>
                     <span className="form-label">총 경력 (년)</span>
                     <input type="number" className="input" value={editForm.total_experience_years ?? selected.total_experience_years ?? ''} onChange={e => setEditForm(prev => ({ ...prev, total_experience_years: parseInt(e.target.value) || 0 }))} />
                   </div>
-                </div>
-
-                <div style={{ marginBottom: 16 }}>
-                  <div className="form-label">시장가치</div>
-                  <input type="text" className="input" value={editForm.market_value ?? selected.market_value ?? ''} onChange={e => setEditForm(prev => ({ ...prev, market_value: e.target.value }))} />
+                  <div style={{ flex: 1 }}>
+                    <span className="form-label">시장가치</span>
+                    <input type="text" className="input" value={editForm.market_value ?? selected.market_value ?? ''} onChange={e => setEditForm(prev => ({ ...prev, market_value: e.target.value }))} />
+                  </div>
                 </div>
 
                 <div style={{ marginBottom: 16 }}>

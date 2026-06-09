@@ -2,6 +2,37 @@
  * CSV 다운로드 유틸리티
  */
 
+// 최종학력 추출 함수
+function getFinalEducation(education: any): string {
+  if (!Array.isArray(education) || education.length === 0) return ''
+
+  // 학력 우선순위 (높은 순서)
+  const priorities = [
+    { keywords: ['박사', 'Ph.D', 'PhD', 'Doctor'], label: '박사' },
+    { keywords: ['석사', 'Master', '대학원'], label: '석사' },
+    { keywords: ['학사', '대학교', '대졸', 'Bachelor', '4년제'], label: '학사' },
+    { keywords: ['전문학사', '전문대', '2년제'], label: '전문학사' },
+    { keywords: ['고등학교', '고졸'], label: '고졸' },
+  ]
+
+  // 가장 높은 학력 찾기
+  for (const priority of priorities) {
+    const found = education.find((edu: string) =>
+      priority.keywords.some(keyword => edu.includes(keyword))
+    )
+    if (found) {
+      // 수료인 경우 표시
+      if (found.includes('수료')) {
+        return `${priority.label} 수료`
+      }
+      return priority.label
+    }
+  }
+
+  // 우선순위에 없으면 마지막 항목 반환
+  return education[education.length - 1]
+}
+
 export function downloadCSV(filename: string, data: any[], headers: string[]) {
   // CSV 헤더
   const csvHeaders = headers.join(',')
@@ -78,11 +109,8 @@ export function downloadCandidatesAsCSV(candidates: any[]) {
       birthYearText = `${c.birth_year}년 (${age}세)`
     }
 
-    // 최종학력 추출 (education 배열의 마지막 항목)
-    let finalEducation = ''
-    if (Array.isArray(c.education) && c.education.length > 0) {
-      finalEducation = c.education[c.education.length - 1]
-    }
+    // 최종학력 추출 (가장 높은 학력)
+    const finalEducation = getFinalEducation(c.education)
 
     return {
       이름: c.name,
