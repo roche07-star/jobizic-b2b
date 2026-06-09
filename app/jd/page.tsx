@@ -877,8 +877,8 @@ export default function JDPage() {
                     {/* 좌우 분할 레이아웃 */}
                     <div style={{
                       display: 'grid',
-                      gridTemplateColumns: selected.raw_text ? '3fr 2fr' : '1fr',
-                      gap: 20,
+                      gridTemplateColumns: selected.raw_text ? '1fr 1fr' : '1fr',
+                      gap: 24,
                       marginBottom: 20
                     }}>
                       {/* 좌측: JD 원문 */}
