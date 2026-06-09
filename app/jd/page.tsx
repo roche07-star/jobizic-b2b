@@ -64,7 +64,6 @@ interface Organization {
 export default function JDPage() {
   const [jds, setJds] = useState<JD[]>([])
   const [loading, setLoading] = useState(true)
-  const [showRawText, setShowRawText] = useState(false)
   const [filter, setFilter] = useState('전체')
   const [priorityFilter, setPriorityFilter] = useState('전체')
   const [selected, setSelected] = useState<JD | null>(null)
@@ -167,7 +166,6 @@ export default function JDPage() {
 
   function closeModal() {
     setSelected(null)
-    setShowRawText(false)
     setModalTab('overview')
     setBoardPosts([])
     setBoardForm({ title: '', content: '' })
@@ -876,123 +874,129 @@ export default function JDPage() {
                       <span className={`badge badge-${selected.difficulty}`}>난이도 {selected.difficulty}</span>
                     </div>
 
-                    <div className="form-row" style={{ marginBottom: 16 }}>
-                      {selected.location && <div><span className="form-label">근무지</span><div>{selected.location}</div></div>}
-                      {selected.salary_estimate && <div><span className="form-label">예상 연봉</span><div>{selected.salary_estimate}</div></div>}
+                    {/* 좌우 분할 레이아웃 */}
+                    <div style={{
+                      display: 'grid',
+                      gridTemplateColumns: selected.raw_text ? '1fr 1fr' : '1fr',
+                      gap: 20,
+                      marginBottom: 20
+                    }}>
+                      {/* 좌측: JD 원문 */}
+                      {selected.raw_text && (
+                        <div>
+                          <div className="form-label" style={{ marginBottom: 12 }}>📄 JD 원문</div>
+                          <div style={{
+                            padding: 16,
+                            background: 'var(--bg-2)',
+                            borderRadius: 8,
+                            border: '1px solid var(--border)',
+                            maxHeight: 600,
+                            overflowY: 'auto',
+                            whiteSpace: 'pre-wrap',
+                            fontSize: 12,
+                            lineHeight: 1.7,
+                            color: 'var(--text)'
+                          }}>
+                            {selected.raw_text}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* 우측: 분석 내용 */}
+                      <div>
+                        <div className="form-label" style={{ marginBottom: 12 }}>🔍 AI 분석 결과</div>
+
+                        <div className="form-row" style={{ marginBottom: 16 }}>
+                          {selected.location && <div><span className="form-label">근무지</span><div>{selected.location}</div></div>}
+                          {selected.salary_estimate && <div><span className="form-label">예상 연봉</span><div>{selected.salary_estimate}</div></div>}
+                        </div>
+
+                        {selected.required_skills?.length > 0 && (
+                          <div style={{ marginBottom: 16 }}>
+                            <div className="form-label">필수 스킬</div>
+                            <div className="skills-wrap">
+                              {selected.required_skills.map(s => <span key={s} className="skill-chip">{s}</span>)}
+                            </div>
+                          </div>
+                        )}
+
+                        <div className="analysis-box" style={{ marginBottom: 16 }}>
+                          <div className="analysis-row">
+                            <span className="analysis-label">난이도</span>
+                            <span className="analysis-value">{selected.difficulty_reason}</span>
+                          </div>
+                          <div className="analysis-row">
+                            <span className="analysis-label">타깃 프로파일</span>
+                            <span className="analysis-value">{selected.target_profile}</span>
+                          </div>
+                          <div className="analysis-row">
+                            <span className="analysis-label">서칭 전략</span>
+                            <span className="analysis-value">{selected.search_strategy}</span>
+                          </div>
+                        </div>
+
+                        {selected.key_points?.length > 0 && (
+                          <div style={{ marginBottom: 16 }}>
+                            <div className="form-label">헤드헌터 주목 포인트</div>
+                            <ul style={{ paddingLeft: 16, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                              {selected.key_points.map((p, i) => <li key={i} style={{ fontSize: 13 }}>{p}</li>)}
+                            </ul>
+                          </div>
+                        )}
+
+                        {/* 진행 중인 후보자 목록 (JD Owner인 경우만) */}
+                        {selected.created_by === userEmail && selected.active_candidates && selected.active_candidates.length > 0 && (
+                          <div>
+                            <div className="form-label">👥 진행 중인 후보자 ({selected.active_candidates.length}명)</div>
+                            <div style={{
+                              padding: 12,
+                              background: 'var(--bg-2)',
+                              borderRadius: 8,
+                              border: '1px solid var(--border)',
+                              maxHeight: 200,
+                              overflowY: 'auto'
+                            }}>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                {selected.active_candidates.map((ac) => (
+                                  <div key={ac.id} style={{
+                                    display: 'flex',
+                                    justifyContent: 'space-between',
+                                    alignItems: 'center',
+                                    padding: '8px 10px',
+                                    background: 'var(--bg)',
+                                    borderRadius: 6,
+                                    border: '1px solid var(--border)'
+                                  }}>
+                                    <div style={{ flex: 1 }}>
+                                      <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 2 }}>
+                                        {ac.candidates.name}
+                                      </div>
+                                      {ac.candidates.current_company && (
+                                        <div style={{ fontSize: 11, color: 'var(--muted)' }}>
+                                          {ac.candidates.current_company} {ac.candidates.current_position && `· ${ac.candidates.current_position}`}
+                                        </div>
+                                      )}
+                                    </div>
+                                    <span style={{
+                                      fontSize: 11,
+                                      padding: '4px 8px',
+                                      background: 'rgba(74, 158, 255, 0.15)',
+                                      color: '#4a9eff',
+                                      borderRadius: 4,
+                                      fontWeight: 500
+                                    }}>
+                                      {ac.stage}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </>
                 )}
-
-            {selected.required_skills?.length > 0 && (
-              <div style={{ marginBottom: 16 }}>
-                <div className="form-label">필수 스킬</div>
-                <div className="skills-wrap">
-                  {selected.required_skills.map(s => <span key={s} className="skill-chip">{s}</span>)}
-                </div>
-              </div>
-            )}
-
-            <div className="analysis-box" style={{ marginBottom: 16 }}>
-              <div className="analysis-row">
-                <span className="analysis-label">난이도</span>
-                <span className="analysis-value">{selected.difficulty_reason}</span>
-              </div>
-              <div className="analysis-row">
-                <span className="analysis-label">타깃 프로파일</span>
-                <span className="analysis-value">{selected.target_profile}</span>
-              </div>
-              <div className="analysis-row">
-                <span className="analysis-label">서칭 전략</span>
-                <span className="analysis-value">{selected.search_strategy}</span>
-              </div>
-            </div>
-
-            {selected.key_points?.length > 0 && (
-              <div style={{ marginBottom: 20 }}>
-                <div className="form-label">헤드헌터 주목 포인트</div>
-                <ul style={{ paddingLeft: 16, display: 'flex', flexDirection: 'column', gap: 4 }}>
-                  {selected.key_points.map((p, i) => <li key={i} style={{ fontSize: 13 }}>{p}</li>)}
-                </ul>
-              </div>
-            )}
-
-            {/* 진행 중인 후보자 목록 (JD Owner인 경우만) */}
-            {selected.created_by === userEmail && selected.active_candidates && selected.active_candidates.length > 0 && (
-              <div style={{ marginBottom: 20 }}>
-                <div className="form-label">👥 진행 중인 후보자 ({selected.active_candidates.length}명)</div>
-                <div style={{
-                  padding: 12,
-                  background: 'var(--bg-2)',
-                  borderRadius: 8,
-                  border: '1px solid var(--border)',
-                  maxHeight: 200,
-                  overflowY: 'auto'
-                }}>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                    {selected.active_candidates.map((ac) => (
-                      <div key={ac.id} style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        padding: '8px 10px',
-                        background: 'var(--bg)',
-                        borderRadius: 6,
-                        border: '1px solid var(--border)'
-                      }}>
-                        <div style={{ flex: 1 }}>
-                          <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 2 }}>
-                            {ac.candidates.name}
-                          </div>
-                          {ac.candidates.current_company && (
-                            <div style={{ fontSize: 11, color: 'var(--muted)' }}>
-                              {ac.candidates.current_company} {ac.candidates.current_position && `· ${ac.candidates.current_position}`}
-                            </div>
-                          )}
-                        </div>
-                        <span style={{
-                          fontSize: 11,
-                          padding: '4px 8px',
-                          background: 'rgba(74, 158, 255, 0.15)',
-                          color: '#4a9eff',
-                          borderRadius: 4,
-                          fontWeight: 500
-                        }}>
-                          {ac.stage}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {selected.raw_text && (
-              <div style={{ marginBottom: 20 }}>
-                <button
-                  className="btn btn-ghost btn-sm"
-                  onClick={() => setShowRawText(!showRawText)}
-                  style={{ marginBottom: 12 }}
-                >
-                  {showRawText ? '원문 숨기기 ▲' : 'JD 원문 보기 ▼'}
-                </button>
-                {showRawText && (
-                  <div style={{
-                    padding: 16,
-                    background: 'var(--bg-2)',
-                    borderRadius: 8,
-                    border: '1px solid var(--border)',
-                    maxHeight: 400,
-                    overflowY: 'auto',
-                    whiteSpace: 'pre-wrap',
-                    fontSize: 12,
-                    lineHeight: 1.6,
-                    color: 'var(--text)'
-                  }}>
-                    {selected.raw_text}
-                  </div>
-                )}
-              </div>
-            )}
 
             <div style={{ display: 'flex', gap: 8 }}>
               {(selected.created_by === userEmail || userRole === 'owner' || userRole === 'admin') && (
