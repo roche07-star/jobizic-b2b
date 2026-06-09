@@ -165,12 +165,22 @@ export default function PipelinePage() {
       })
 
       if (res.ok) {
-        // 새로고침
-        const updated = await fetch('/api/pipeline').then(r => r.json())
+        // 새로고침 (파라미터 포함!)
+        const params = new URLSearchParams({
+          role: profile.role,
+          user_email: profile.email,
+          ...(profile.role === 'admin' && selectedOrgId !== '전체' && { organization_id: selectedOrgId }),
+          ...(profile.role !== 'admin' && profile.organization_id && { organization_id: profile.organization_id })
+        })
+        const updated = await fetch(`/api/pipeline?${params}`, {
+          cache: 'no-store',
+          headers: { 'Cache-Control': 'no-cache' }
+        }).then(r => r.json())
         setPipeline(updated.pipeline ?? [])
         setShowAddModal(false)
         setSelectedJd('')
         setSelectedCandidate('')
+        alert('✅ 채용 프로세스에 추가되었습니다!')
       } else {
         const err = await res.json()
         alert(err.error)
