@@ -210,6 +210,25 @@ export default function CandidateNewPage() {
               </div>
             </div>
 
+            <div className="form-group" style={{ marginBottom: 12 }}>
+              <label className="form-label">학력 (최종학력을 최상단에 입력, 줄바꿈으로 구분)</label>
+              <textarea
+                className="form-textarea"
+                rows={3}
+                placeholder="예:&#10;한밭대학교 융합기술학과 학사 졸업&#10;대전고등학교 졸업"
+                value={parsed.education?.join('\n') ?? ''}
+                onChange={e => {
+                  const lines = e.target.value.split('\n').filter(line => line.trim())
+                  setParsed(p => p ? { ...p, education: lines } : p)
+                }}
+              />
+              {parsed.education && parsed.education.length > 0 && (
+                <div style={{ marginTop: 8, fontSize: 12, color: 'var(--accent)' }}>
+                  ✓ 최종학력: {getFinalEducation(parsed.education)}
+                </div>
+              )}
+            </div>
+
             <div className="form-row" style={{ marginBottom: 12 }}>
               <div className="form-group" style={{ marginBottom: 0 }}>
                 <label className="form-label">전화번호</label>
@@ -265,20 +284,6 @@ export default function CandidateNewPage() {
                 </div>
               </div>
             )}
-
-            <div className="form-group" style={{ marginBottom: 12 }}>
-              <label className="form-label">학력 (최종학력을 최상단에 입력, 줄바꿈으로 구분)</label>
-              <textarea
-                className="form-textarea"
-                rows={3}
-                placeholder="예:&#10;서울대학교 컴퓨터공학과 학사 졸업&#10;한국과학기술원(KAIST) 전자공학과 석사 졸업"
-                value={parsed.education?.join('\n') ?? ''}
-                onChange={e => {
-                  const lines = e.target.value.split('\n').filter(line => line.trim())
-                  setParsed(p => p ? { ...p, education: lines } : p)
-                }}
-              />
-            </div>
 
             <div className="analysis-box" style={{ marginBottom: 12 }}>
               <div className="analysis-row">
