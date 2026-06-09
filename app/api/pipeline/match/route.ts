@@ -10,6 +10,16 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'JD와 후보자 정보가 필요합니다.' }, { status: 400 })
     }
 
+    console.log('[pipeline/match] Starting analysis for JD:', jd.position)
+
+    // 안전한 배열 처리 헬퍼 함수
+    const safeJoin = (arr: any, separator: string = ', '): string => {
+      if (Array.isArray(arr) && arr.length > 0) {
+        return arr.join(separator)
+      }
+      return '없음'
+    }
+
     const message = await client.messages.create({
       model: 'claude-haiku-4-5-20251001',
       max_tokens: 1500,
@@ -47,8 +57,8 @@ JD-후보자 매칭을 분석하는 목적은 하나입니다: "이 후보자를
 【JD 정보】
 - 회사: ${jd.company ?? '미상'}
 - 포지션: ${jd.position}
-- 필수 스킬: ${jd.required_skills?.join(', ') ?? '없음'}
-- 우대 스킬: ${jd.preferred_skills?.join(', ') ?? '없음'}
+- 필수 스킬: ${safeJoin(jd.required_skills)}
+- 우대 스킬: ${safeJoin(jd.preferred_skills)}
 - 난이도: ${jd.difficulty}
 - 타깃 프로파일: ${jd.target_profile ?? '없음'}
 - 서칭 전략: ${jd.search_strategy ?? '없음'}
@@ -57,10 +67,10 @@ JD-후보자 매칭을 분석하는 목적은 하나입니다: "이 후보자를
 🔒 개인정보 보호: 이름, 회사명 등 개인정보는 제외됨
 - 현재 포지션: ${candidate.current_position ?? '미상'}
 - 경력: ${candidate.total_experience_years ? `${candidate.total_experience_years}년` : '미상'}
-- 스킬: ${candidate.skills?.join(', ') ?? '없음'}
-- 기술스택: ${candidate.tech_stack?.join(', ') ?? '없음'}
-- 자격증: ${candidate.certifications?.join(', ') ?? '없음'}
-- 학력: ${candidate.education?.join(', ') ?? '없음'}
+- 스킬: ${safeJoin(candidate.skills)}
+- 기술스택: ${safeJoin(candidate.tech_stack)}
+- 자격증: ${safeJoin(candidate.certifications)}
+- 학력: ${safeJoin(candidate.education)}
 - 강점 요약: ${candidate.strength_summary ?? '없음'}
 - 약점 분석: ${candidate.weakness_summary ?? '없음'}
 - 커리어 방향: ${candidate.career_trajectory ?? '없음'}
@@ -70,13 +80,23 @@ JD-후보자 매칭을 분석하는 목적은 하나입니다: "이 후보자를
     })
 
     const raw = (message.content[0] as { type: string; text: string }).text
+    console.log('[pipeline/match] Claude response preview:', raw.substring(0, 200))
+
     const match = raw.match(/\{[\s\S]*\}/)
-    if (!match) return NextResponse.json({ error: '매칭 분석 실패. 다시 시도해 주세요.' }, { status: 500 })
+    if (!match) {
+      console.error('[pipeline/match] No JSON found in response:', raw)
+      return NextResponse.json({ error: '매칭 분석 실패. 다시 시도해 주세요.' }, { status: 500 })
+    }
 
     const result = JSON.parse(match[0])
+    console.log('[pipeline/match] Analysis complete. Score:', result.match_score)
     return NextResponse.json(result)
-  } catch (e) {
-    console.error('[pipeline/match]', e)
-    return NextResponse.json({ error: '서버 오류가 발생했습니다.' }, { status: 500 })
+  } catch (e: any) {
+    console.error('[pipeline/match] Error:', e.message)
+    console.error('[pipeline/match] Stack:', e.stack)
+    return NextResponse.json({
+      error: '서버 오류가 발생했습니다.',
+      details: process.env.NODE_ENV === 'development' ? e.message : undefined
+    }, { status: 500 })
   }
 }
