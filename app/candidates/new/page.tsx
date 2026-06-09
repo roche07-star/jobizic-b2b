@@ -235,14 +235,19 @@ export default function CandidateNewPage() {
               </div>
             )}
 
-            {parsed.education?.length > 0 && (
-              <div className="form-group" style={{ marginBottom: 12 }}>
-                <label className="form-label">학력</label>
-                {parsed.education.map((e, i) => (
-                  <div key={i} style={{ fontSize: 13, color: 'var(--text)', marginBottom: 4 }}>{e}</div>
-                ))}
-              </div>
-            )}
+            <div className="form-group" style={{ marginBottom: 12 }}>
+              <label className="form-label">학력 (최종학력을 최상단에 입력, 줄바꿈으로 구분)</label>
+              <textarea
+                className="form-textarea"
+                rows={3}
+                placeholder="예:&#10;서울대학교 컴퓨터공학과 학사 졸업&#10;한국과학기술원(KAIST) 전자공학과 석사 졸업"
+                value={parsed.education?.join('\n') ?? ''}
+                onChange={e => {
+                  const lines = e.target.value.split('\n').filter(line => line.trim())
+                  setParsed(p => p ? { ...p, education: lines } : p)
+                }}
+              />
+            </div>
 
             <div className="analysis-box" style={{ marginBottom: 12 }}>
               <div className="analysis-row">
