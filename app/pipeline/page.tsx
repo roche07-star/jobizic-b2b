@@ -274,9 +274,11 @@ export default function PipelinePage() {
     if (selected?.id === id) setSelected(null)
   }
 
+  // is_active가 true인 활성 프로세스만 표시 (Candidates 페이지와 일관성 유지)
+  const activePipeline = pipeline.filter(p => p.is_active)
   const groupedByStage = STAGES.map(stage => ({
     stage,
-    items: pipeline.filter(p => p.stage === stage)
+    items: activePipeline.filter(p => p.stage === stage)
   }))
 
   return (
@@ -284,7 +286,7 @@ export default function PipelinePage() {
       <div className="page-header">
         <div>
           <div className="page-title">채용 프로세스</div>
-          <div className="page-sub">총 {pipeline.length}건 진행 중</div>
+          <div className="page-sub">총 {activePipeline.length}건 진행 중</div>
 
           {/* 안내 문구 */}
           <div style={{
@@ -323,10 +325,10 @@ export default function PipelinePage() {
               ))}
             </select>
           )}
-          {pipeline.length > 0 && (
+          {activePipeline.length > 0 && (
             <button
               className="btn btn-ghost"
-              onClick={() => downloadPipelineAsCSV(pipeline)}
+              onClick={() => downloadPipelineAsCSV(activePipeline)}
               style={{ fontSize: 13 }}
             >
               📥 엑셀 다운로드
@@ -338,10 +340,10 @@ export default function PipelinePage() {
 
       {loading ? (
         <div className="empty"><div className="spinner" style={{ margin: '0 auto 12px' }} /></div>
-      ) : pipeline.length === 0 ? (
+      ) : activePipeline.length === 0 ? (
         <div className="empty">
           <div className="empty-icon">🔄</div>
-          <div className="empty-text">진행 중인 프로세스이 없습니다</div>
+          <div className="empty-text">진행 중인 프로세스가 없습니다</div>
           <div className="empty-sub">JD와 후보자를 매칭하여 채용을 시작하세요</div>
         </div>
       ) : (
