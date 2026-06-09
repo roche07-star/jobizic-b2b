@@ -14,10 +14,12 @@ async function extractTextFromImagePDF(buffer: Buffer): Promise<string> {
   const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
   const base64 = buffer.toString('base64')
 
+  console.log('[extractText] Image-based PDF detected. Using Claude Vision OCR (may take 15-30 seconds)...')
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const response = await (client.messages.create as any)({
-    model: 'claude-sonnet-4-6',
-    max_tokens: 4096,
+    model: 'claude-haiku-4-5-20251001', // Haiku로 변경 (텍스트 추출은 Haiku로 충분, 3-5배 빠름)
+    max_tokens: 8192, // 이력서가 길 수 있으므로 증가
     messages: [
       {
         role: 'user',

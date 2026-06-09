@@ -82,6 +82,14 @@ export default function CandidateNewPage() {
     }
   }
 
+  function getParsingMessage() {
+    if (!parsing) return '🤖 AI 파싱'
+    if (file && file.name.toLowerCase().endsWith('.pdf')) {
+      return '📄 PDF 처리 중... (이미지 기반 PDF는 15-30초 소요)'
+    }
+    return '분석 중...'
+  }
+
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const selectedFile = e.target.files?.[0]
     if (selectedFile) {
@@ -210,7 +218,7 @@ export default function CandidateNewPage() {
               onClick={handleParse}
               disabled={(!rawResume.trim() && !file) || parsing}
             >
-              {parsing ? <><div className="spinner" /> 분석 중...</> : '🤖 AI 파싱'}
+              {parsing ? <><div className="spinner" /> {getParsingMessage()}</> : '🤖 AI 파싱'}
             </button>
             {parsed && (
               <button className="btn btn-ghost" onClick={() => { setParsed(null); setRawResume(''); setFile(null) }}>
