@@ -68,16 +68,31 @@ export async function GET(req: NextRequest) {
           console.log('[pipeline] No JDs found, showing only recommended by user')
           q = q.eq('created_by', userEmail)
         }
+      } else if (role === 'owner') {
+        // Owner: 조직 전체 파이프라인 조회
+        console.log('[pipeline] Owner: Fetching user organization...')
+        const { data: ownerProfile } = await supabaseAdmin
+          .from('profiles')
+          .select('organization_id')
+          .eq('email', userEmail)
+          .single()
+
+        if (ownerProfile?.organization_id) {
+          console.log('[pipeline] Owner: Filtering by organization_id:', ownerProfile.organization_id)
+          q = q.eq('organization_id', ownerProfile.organization_id)
+        } else {
+          console.warn('[pipeline] Owner has no organization_id, showing only own pipelines')
+          q = q.eq('created_by', userEmail)
+        }
       }
-      // Owner: organization_id 필터만 적용 (아래에서 처리)
     } else if (role === 'admin') {
       console.log('[pipeline DEBUG] Admin user - no role filter applied')
     } else {
       console.log('[pipeline DEBUG] No role or userEmail - showing all (organization filter may apply)')
     }
 
-    // organization_id가 있으면 필터링 (admin이 특정 조직 선택 시)
-    if (organizationId) {
+    // organization_id가 있으면 필터링 (admin이 특정 조직 선택 시 - Owner의 organization_id 필터와 중복되지 않도록)
+    if (organizationId && role === 'admin') {
       q = q.eq('organization_id', organizationId)
     }
 
