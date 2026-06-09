@@ -30,12 +30,16 @@ function extractPersonalInfo(text: string): {
   if (birthDateMatch) {
     birth_year = parseInt(birthDateMatch[2])
   } else {
-    // 패턴 2: "1990년생" 또는 "90년생"
-    const yearMatch = text.match(/(\d{4}|\d{2})년생/)
+    // 패턴 2: "1990년생" 또는 "90년생" 또는 "출생: 1990년"
+    const yearMatch = text.match(/(출생|생년|태어난)[\s:：]*(\d{4}|\d{2})년?|(\d{4}|\d{2})년생/i)
     if (yearMatch) {
-      let year = parseInt(yearMatch[1])
-      if (year < 100) year += year < 50 ? 2000 : 1900 // 2자리 년도 처리
-      birth_year = year
+      const year = yearMatch[2] || yearMatch[3]
+      let birthYear = parseInt(year)
+      if (birthYear < 100) birthYear += birthYear < 50 ? 2000 : 1900 // 2자리 년도 처리
+      // 유효 범위 검증 (1940-2020년)
+      if (birthYear >= 1940 && birthYear <= 2020) {
+        birth_year = birthYear
+      }
     } else {
       // 패턴 3: "만 33세" 에서 역산
       const ageMatch = text.match(/만\s*(\d{1,2})세/)
