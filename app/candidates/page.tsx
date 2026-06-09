@@ -426,7 +426,7 @@ export default function CandidatesPage() {
                   <span className={`badge badge-${candidate.status}`}>{candidate.status}</span>
                 </div>
               </div>
-              <div className="jd-position" style={{ marginBottom: 4 }}>{candidate.name}</div>
+              <div className="jd-position" style={{ marginBottom: 4 }}>{candidate.name || '이름 미상'}</div>
               <div style={{ fontSize: 13, color: 'var(--muted2)', marginBottom: 6 }}>
                 {candidate.current_position ?? '—'} · {candidate.total_experience_years ? `${candidate.total_experience_years}년` : '경력 미상'}
               </div>
