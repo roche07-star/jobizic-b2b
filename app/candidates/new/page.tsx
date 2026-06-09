@@ -43,22 +43,35 @@ interface ParsedCandidate {
 export default function CandidateNewPage() {
   const router = useRouter()
   const [rawResume, setRawResume] = useState('')
+  const [file, setFile] = useState<File | null>(null)
   const [parsing, setParsing] = useState(false)
   const [parsed, setParsed] = useState<ParsedCandidate | null>(null)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   async function handleParse() {
-    if (!rawResume.trim()) return
+    if (!rawResume.trim() && !file) return
     setParsing(true)
     setError(null)
     setParsed(null)
     try {
-      const res = await fetch('/api/candidates/parse', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: rawResume }),
-      })
+      let res: Response
+      if (file) {
+        // 파일 업로드
+        const formData = new FormData()
+        formData.append('file', file)
+        res = await fetch('/api/candidates/parse', {
+          method: 'POST',
+          body: formData,
+        })
+      } else {
+        // 텍스트 입력
+        res = await fetch('/api/candidates/parse', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: rawResume }),
+        })
+      }
       const data = await res.json()
       if (!res.ok) { setError(data.error); return }
       setParsed(data)
@@ -66,6 +79,15 @@ export default function CandidateNewPage() {
       setError('서버 오류가 발생했습니다.')
     } finally {
       setParsing(false)
+    }
+  }
+
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const selectedFile = e.target.files?.[0]
+    if (selectedFile) {
+      setFile(selectedFile)
+      setRawResume('') // 파일 선택 시 텍스트 초기화
+      setError(null)
     }
   }
 
@@ -142,26 +164,56 @@ export default function CandidateNewPage() {
         {/* 입력 영역 */}
         <div className="card">
           <div className="card-title">이력서 원문 입력</div>
+
+          {/* 파일 업로드 */}
           <div className="form-group">
+            <label className="form-label">📎 파일 업로드 (PDF, DOCX)</label>
+            <input
+              type="file"
+              accept=".pdf,.docx,.doc,.txt"
+              onChange={handleFileChange}
+              style={{
+                padding: 8,
+                border: '1px solid var(--border)',
+                borderRadius: 6,
+                width: '100%',
+                cursor: 'pointer'
+              }}
+            />
+            {file && (
+              <div style={{ marginTop: 8, fontSize: 12, color: 'var(--accent)' }}>
+                ✓ 선택된 파일: {file.name} ({(file.size / 1024).toFixed(1)}KB)
+              </div>
+            )}
+          </div>
+
+          {/* 텍스트 입력 */}
+          <div className="form-group">
+            <label className="form-label">또는 직접 붙여넣기</label>
             <textarea
               className="form-textarea"
-              style={{ minHeight: 320 }}
+              style={{ minHeight: 220 }}
               placeholder="이력서 전체 내용을 여기에 붙여넣으세요.&#10;&#10;이메일, 링크드인, 사람인, 잡코리아 등 어디서든 복사해서 붙여넣으면 됩니다."
               value={rawResume}
-              onChange={e => setRawResume(e.target.value)}
+              onChange={e => {
+                setRawResume(e.target.value)
+                if (e.target.value) setFile(null) // 텍스트 입력 시 파일 초기화
+              }}
+              disabled={!!file}
             />
           </div>
+
           {error && <div style={{ color: 'var(--danger)', fontSize: 13, marginBottom: 12 }}>{error}</div>}
           <div style={{ display: 'flex', gap: 8 }}>
             <button
               className="btn btn-primary"
               onClick={handleParse}
-              disabled={!rawResume.trim() || parsing}
+              disabled={(!rawResume.trim() && !file) || parsing}
             >
               {parsing ? <><div className="spinner" /> 분석 중...</> : '🤖 AI 파싱'}
             </button>
             {parsed && (
-              <button className="btn btn-ghost" onClick={() => { setParsed(null); setRawResume('') }}>
+              <button className="btn btn-ghost" onClick={() => { setParsed(null); setRawResume(''); setFile(null) }}>
                 초기화
               </button>
             )}

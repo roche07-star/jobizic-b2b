@@ -84,14 +84,45 @@ function maskPersonalInfo(text: string): string {
 
 export async function POST(req: NextRequest) {
   try {
-    const { text } = await req.json()
-    if (!text?.trim()) {
+    let resumeText: string
+
+    const contentType = req.headers.get('content-type') || ''
+
+    if (contentType.includes('multipart/form-data')) {
+      // 파일 업로드
+      const formData = await req.formData()
+      const file = formData.get('file') as File | null
+
+      if (!file) {
+        return NextResponse.json({ error: '파일을 업로드해 주세요.' }, { status: 400 })
+      }
+
+      if (file.size > 10 * 1024 * 1024) {
+        return NextResponse.json({ error: '파일 크기는 10MB 이하여야 합니다.' }, { status: 400 })
+      }
+
+      const { extractText } = await import('@/lib/extractText')
+      const buffer = Buffer.from(await file.arrayBuffer())
+
+      try {
+        resumeText = await extractText(buffer, file.name)
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : '파일을 읽을 수 없습니다.'
+        return NextResponse.json({ error: msg }, { status: 422 })
+      }
+    } else {
+      // 텍스트 입력
+      const { text } = await req.json()
+      resumeText = text
+    }
+
+    if (!resumeText?.trim()) {
       console.error('[candidates/parse] Empty text received')
       return NextResponse.json({ error: '이력서 내용을 입력해 주세요.' }, { status: 400 })
     }
 
     // 🔒 개인정보 추출 (Claude에 보내지 않음)
-    const personalInfo = extractPersonalInfo(text)
+    const personalInfo = extractPersonalInfo(resumeText)
     console.log('[candidates/parse] Personal info extracted:', {
       hasName: !!personalInfo.name,
       hasEmail: !!personalInfo.email,
@@ -99,7 +130,7 @@ export async function POST(req: NextRequest) {
     })
 
     // 🔒 개인정보 마스킹
-    const maskedText = maskPersonalInfo(text)
+    const maskedText = maskPersonalInfo(resumeText)
     console.log('[candidates/parse] Personal info masked. Calling Claude API...')
 
     const message = await client.messages.create({
