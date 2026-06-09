@@ -11,6 +11,7 @@ interface JD {
   priority: string
   required_skills: string[]
   preferred_skills: string[]
+  created_by: string
 }
 
 interface Candidate {
@@ -71,6 +72,8 @@ export default function PipelinePage() {
   const [selectedCandidate, setSelectedCandidate] = useState('')
   const [matching, setMatching] = useState(false)
   const [isAdmin, setIsAdmin] = useState(false)
+  const [isOwner, setIsOwner] = useState(false)
+  const [userEmail, setUserEmail] = useState('')
   const [organizations, setOrganizations] = useState<Organization[]>([])
   const [selectedOrgId, setSelectedOrgId] = useState<string>('전체')
 
@@ -80,6 +83,8 @@ export default function PipelinePage() {
       if (!profile) return
 
       setIsAdmin(profile.role === 'admin')
+      setIsOwner(profile.role === 'owner')
+      setUserEmail(profile.email)
 
       if (profile.role === 'admin') {
         const res = await fetch('/api/admin/organizations')
@@ -447,13 +452,38 @@ export default function PipelinePage() {
 
             <div className="form-group" style={{ marginBottom: 16 }}>
               <label className="form-label">진행 단계</label>
-              <select
-                className="form-select"
-                value={selected.stage}
-                onChange={e => updateStage(selected.id, e.target.value)}
-              >
-                {STAGES.map(s => <option key={s} value={s}>{s}</option>)}
-              </select>
+              {(() => {
+                // 권한 체크: Owner 또는 JD Owner만 변경 가능
+                const canChangeStage = isOwner || userEmail === selected.job_descriptions.created_by
+
+                if (canChangeStage) {
+                  return (
+                    <select
+                      className="form-select"
+                      value={selected.stage}
+                      onChange={e => updateStage(selected.id, e.target.value)}
+                    >
+                      {STAGES.map(s => <option key={s} value={s}>{s}</option>)}
+                    </select>
+                  )
+                } else {
+                  return (
+                    <div style={{
+                      padding: '10px 14px',
+                      background: 'var(--bg3)',
+                      borderRadius: 6,
+                      border: '1px solid var(--border)',
+                      color: 'var(--text)',
+                      fontSize: 14
+                    }}>
+                      {selected.stage}
+                      <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>
+                        🔒 진행 단계는 JD 담당자만 변경할 수 있습니다
+                      </div>
+                    </div>
+                  )
+                }
+              })()}
             </div>
 
             {selected.stage === '불합격' && (selected as any).rejection_reason && (
