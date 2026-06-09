@@ -25,7 +25,15 @@ export async function signIn(email: string, password: string) {
     email,
     password,
   })
-  if (error) throw error
+
+  if (error) {
+    // 에러 메시지 한글화
+    if (error.message === 'Invalid login credentials') {
+      throw new Error('이메일 또는 비밀번호가 틀렸습니다.')
+    }
+    throw error
+  }
+
   return data
 }
 
