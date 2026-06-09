@@ -52,6 +52,10 @@ export async function GET(req: NextRequest) {
       // organizationId가 '전체'이면 모든 조직 조회
     } else {
       // 일반 사용자는 자기 조직만
+      if (!profile.organization_id) {
+        console.warn('[boards GET] User has no organization_id:', userEmail)
+        return NextResponse.json({ error: '조직에 속하지 않은 사용자입니다.' }, { status: 403 })
+      }
       query = query.eq('organization_id', profile.organization_id)
     }
 
@@ -59,7 +63,12 @@ export async function GET(req: NextRequest) {
 
     if (error) {
       console.error('[boards GET] Error:', error)
-      return NextResponse.json({ error: error.message }, { status: 500 })
+      console.error('[boards GET] Error details:', JSON.stringify(error, null, 2))
+      return NextResponse.json({
+        error: error.message,
+        hint: 'Supabase에서 company_boards 테이블을 생성했는지 확인하세요.',
+        details: process.env.NODE_ENV === 'development' ? error : undefined
+      }, { status: 500 })
     }
 
     // 각 게시물의 댓글 개수 조회
