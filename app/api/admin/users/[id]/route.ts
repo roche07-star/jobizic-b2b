@@ -10,6 +10,20 @@ export async function PATCH(
     const { id } = await context.params
     const body = await req.json()
 
+    // 비밀번호 업데이트 (있을 경우)
+    if (body.password && body.password.trim()) {
+      console.log('[admin/users/[id]] Updating password for user:', id)
+      const { error: authError } = await supabaseAdmin.auth.admin.updateUserById(id, {
+        password: body.password
+      })
+
+      if (authError) {
+        console.error('[admin/users/[id]] Password update error:', authError)
+        return NextResponse.json({ error: `비밀번호 변경 실패: ${authError.message}` }, { status: 500 })
+      }
+      console.log('[admin/users/[id]] Password updated successfully')
+    }
+
     // profiles 테이블 업데이트
     const { data, error } = await supabaseAdmin
       .from('profiles')
