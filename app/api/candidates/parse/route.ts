@@ -3,6 +3,32 @@ import Anthropic from '@anthropic-ai/sdk'
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
+// 개인정보 추출 함수
+function extractPersonalInfo(text: string): {
+  name: string | null
+  email: string | null
+  phone: string | null
+  location: string | null
+} {
+  // 이메일 추출
+  const emailMatch = text.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/)
+  const email = emailMatch ? emailMatch[0] : null
+
+  // 전화번호 추출 (첫 번째 것만)
+  const phoneMatch = text.match(/(\d{2,3}[-\s]?\d{3,4}[-\s]?\d{4})|(\+82[-\s]?\d{1,2}[-\s]?\d{3,4}[-\s]?\d{4})/)
+  const phone = phoneMatch ? phoneMatch[0] : null
+
+  // 이름 추출 (간단한 패턴: 이력서 상단의 한글 2-4자)
+  const nameMatch = text.match(/^[\s\n]*([가-힣]{2,4})[\s\n]/m)
+  const name = nameMatch ? nameMatch[1] : null
+
+  // 주소 추출 (첫 번째 것만)
+  const locationMatch = text.match(/(서울|부산|대구|인천|광주|대전|울산|세종|경기|강원|충북|충남|전북|전남|경북|경남|제주)(특별시|광역시|특별자치시|도|특별자치도)?[가-힣0-9\s-]+/)
+  const location = locationMatch ? locationMatch[0].trim() : null
+
+  return { name, email, phone, location }
+}
+
 // 개인정보 마스킹 함수
 function maskPersonalInfo(text: string): string {
   // 이메일 마스킹
@@ -22,6 +48,14 @@ export async function POST(req: NextRequest) {
       console.error('[candidates/parse] Empty text received')
       return NextResponse.json({ error: '이력서 내용을 입력해 주세요.' }, { status: 400 })
     }
+
+    // 🔒 개인정보 추출 (Claude에 보내지 않음)
+    const personalInfo = extractPersonalInfo(text)
+    console.log('[candidates/parse] Personal info extracted:', {
+      hasName: !!personalInfo.name,
+      hasEmail: !!personalInfo.email,
+      hasPhone: !!personalInfo.phone
+    })
 
     // 🔒 개인정보 마스킹
     const maskedText = maskPersonalInfo(text)
@@ -102,7 +136,23 @@ export async function POST(req: NextRequest) {
 
     const parsed = JSON.parse(match[0])
     console.log('[candidates/parse] Successfully parsed:', Object.keys(parsed))
-    return NextResponse.json(parsed)
+
+    // ✅ 추출한 개인정보를 Claude 응답과 합치기
+    const result = {
+      ...parsed,
+      name: personalInfo.name || parsed.name,
+      email: personalInfo.email || parsed.email,
+      phone: personalInfo.phone || parsed.phone,
+      location: personalInfo.location || parsed.location,
+    }
+
+    console.log('[candidates/parse] Final result with personal info:', {
+      hasName: !!result.name,
+      hasEmail: !!result.email,
+      hasPhone: !!result.phone
+    })
+
+    return NextResponse.json(result)
   } catch (e: any) {
     console.error('[candidates/parse] Error:', e)
     console.error('[candidates/parse] Error name:', e.name)
