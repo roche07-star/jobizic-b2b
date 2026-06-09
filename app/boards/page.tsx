@@ -396,13 +396,13 @@ export default function BoardsPage() {
           <div style={{ fontSize: 12, marginTop: 8 }}>첫 번째 글을 작성해보세요!</div>
         </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           {boards.map((board) => (
             <div
               key={board.id}
               onClick={() => loadBoardDetail(board.id)}
               style={{
-                padding: 20,
+                padding: '24px 28px',
                 background: board.is_pinned
                   ? 'linear-gradient(135deg, rgba(232, 255, 71, 0.08) 0%, rgba(232, 255, 71, 0.02) 100%)'
                   : 'var(--bg2)',
@@ -414,7 +414,7 @@ export default function BoardsPage() {
               onMouseEnter={(e) => {
                 e.currentTarget.style.borderColor = 'var(--accent)'
                 e.currentTarget.style.transform = 'translateY(-2px)'
-                e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)'
+                e.currentTarget.style.boxShadow = '0 6px 16px rgba(0,0,0,0.15)'
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.borderColor = 'var(--border)'
@@ -422,15 +422,15 @@ export default function BoardsPage() {
                 e.currentTarget.style.boxShadow = 'none'
               }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
                 {board.is_pinned && (
-                  <span style={{ fontSize: 14 }}>📌</span>
+                  <span style={{ fontSize: 16 }}>📌</span>
                 )}
                 {board.is_admin_reply && (
                   <span
                     style={{
                       fontSize: 10,
-                      padding: '2px 6px',
+                      padding: '3px 8px',
                       background: '#4a9eff',
                       color: '#fff',
                       borderRadius: 4,
@@ -440,32 +440,50 @@ export default function BoardsPage() {
                     ADMIN
                   </span>
                 )}
-                <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>
+                <span style={{ fontSize: 17, fontWeight: 700, color: 'var(--text)', lineHeight: 1.4 }}>
                   {board.title}
                 </span>
               </div>
               <div
                 style={{
-                  fontSize: 13,
-                  color: 'var(--muted)',
-                  marginBottom: 12,
-                  lineHeight: 1.6,
+                  fontSize: 14,
+                  color: 'var(--text)',
+                  marginBottom: 16,
+                  lineHeight: 1.8,
+                  display: '-webkit-box',
+                  WebkitLineClamp: 3,
+                  WebkitBoxOrient: 'vertical',
                   overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
+                  wordBreak: 'keep-all',
+                  opacity: 0.85,
                 }}
               >
                 {board.content}
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 16, fontSize: 11, color: 'var(--muted2)' }}>
-                <div>👤 {board.author.full_name || board.author.email.split('@')[0]}</div>
-                <div>🕐 {formatDate(board.created_at)}</div>
-                <div>👁️ {board.view_count}</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 16, fontSize: 12, color: 'var(--muted2)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <span>👤</span>
+                  <span>{board.author.full_name || board.author.email.split('@')[0]}</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <span>🕐</span>
+                  <span>{formatDate(board.created_at)}</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <span>👁️</span>
+                  <span>{board.view_count}</span>
+                </div>
                 {board.reply_count !== undefined && board.reply_count > 0 && (
-                  <div style={{ color: 'var(--accent)', fontWeight: 600 }}>💬 {board.reply_count}</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'var(--accent)', fontWeight: 600 }}>
+                    <span>💬</span>
+                    <span>{board.reply_count}</span>
+                  </div>
                 )}
                 {userRole === 'admin' && (
-                  <div>🏢 {board.organization.name}</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <span>🏢</span>
+                    <span>{board.organization.name}</span>
+                  </div>
                 )}
               </div>
             </div>
