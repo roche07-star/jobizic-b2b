@@ -49,9 +49,23 @@ export async function GET(req: NextRequest) {
     }
 
     // Admin과 Owner는 조직 전체 후보자 조회
-    // 기타 사용자는 본인이 등록한 후보자만 조회
+    // 기타 사용자는 본인이 등록한 후보자만 조회 (현재 조직 내에서만)
     if (role && role !== 'admin' && role !== 'owner' && userEmail) {
-      console.log('[candidates] Filtering by created_by:', userEmail)
+      // 먼저 현재 사용자의 organization_id 조회 (조직 격리를 위해 필수!)
+      const { data: userProfile } = await supabaseAdmin
+        .from('profiles')
+        .select('organization_id')
+        .eq('email', userEmail)
+        .single()
+
+      if (!userProfile?.organization_id) {
+        console.warn('[candidates] User has no organization_id:', userEmail)
+        return NextResponse.json({ candidates: [] }, { status: 200 })
+      }
+
+      // 조직 격리: 현재 조직의 후보자만 조회
+      console.log('[candidates] Filtering by organization_id:', userProfile.organization_id, 'and created_by:', userEmail)
+      q = q.eq('organization_id', userProfile.organization_id)
       q = q.eq('created_by', userEmail)
     }
 

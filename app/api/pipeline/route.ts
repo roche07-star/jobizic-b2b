@@ -36,19 +36,37 @@ export async function GET(req: NextRequest) {
       .order('created_at', { ascending: false })
 
     // Role별 필터링: Owner는 조직 전체, PM은 본인 JD만, Searcher는 본인이 생성한 파이프라인만
+    // 모든 role에 대해 현재 조직 내 데이터만 조회 (조직 격리)
     console.log('[pipeline DEBUG] User:', userEmail, 'Role:', role, 'OrgId:', organizationId)
     if (role !== 'admin' && userEmail) {
+      // 먼저 현재 사용자의 organization_id 조회 (조직 격리를 위해 필수!)
+      const { data: userProfile } = await supabaseAdmin
+        .from('profiles')
+        .select('organization_id')
+        .eq('email', userEmail)
+        .single()
+
+      if (!userProfile?.organization_id) {
+        console.warn('[pipeline] User has no organization_id:', userEmail)
+        return NextResponse.json({ pipeline: [] }, { status: 200 })
+      }
+
+      // 조직 격리: 현재 조직의 pipeline만 조회
+      console.log('[pipeline] Filtering by user organization_id:', userProfile.organization_id)
+      q = q.eq('organization_id', userProfile.organization_id)
+
       if (role === 'searcher') {
-        // Searcher: 본인이 생성한 파이프라인만
+        // Searcher: 본인이 생성한 파이프라인만 (현재 조직 내에서)
         console.log('[pipeline] Searcher: Filtering by created_by:', userEmail)
         q = q.eq('created_by', userEmail)
       } else if (role === 'headhunter') {
-        // PM: 본인 JD에 연결된 파이프라인 + 본인이 추천한 파이프라인
+        // PM: 본인 JD에 연결된 파이프라인 + 본인이 추천한 파이프라인 (현재 조직 내에서)
         console.log('[pipeline] PM: Filtering by JD owner and recommender:', userEmail)
         const { data: myJDs, error: jdError } = await supabaseAdmin
           .from('job_descriptions')
           .select('id, company, position')
           .eq('created_by', userEmail)
+          .eq('organization_id', userProfile.organization_id) // 조직 격리!
 
         console.log('[pipeline DEBUG] My JDs:', myJDs)
 
@@ -68,23 +86,9 @@ export async function GET(req: NextRequest) {
           console.log('[pipeline] No JDs found, showing only recommended by user')
           q = q.eq('created_by', userEmail)
         }
-      } else if (role === 'owner') {
-        // Owner: 조직 전체 파이프라인 조회
-        console.log('[pipeline] Owner: Fetching user organization...')
-        const { data: ownerProfile } = await supabaseAdmin
-          .from('profiles')
-          .select('organization_id')
-          .eq('email', userEmail)
-          .single()
-
-        if (ownerProfile?.organization_id) {
-          console.log('[pipeline] Owner: Filtering by organization_id:', ownerProfile.organization_id)
-          q = q.eq('organization_id', ownerProfile.organization_id)
-        } else {
-          console.warn('[pipeline] Owner has no organization_id, showing only own pipelines')
-          q = q.eq('created_by', userEmail)
-        }
       }
+      // owner role은 위에서 이미 organization_id로 필터링했으므로 추가 필터 불필요
+      // owner는 조직 전체 pipeline을 볼 수 있음
     } else if (role === 'admin') {
       console.log('[pipeline DEBUG] Admin user - no role filter applied')
     } else {
