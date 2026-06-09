@@ -105,6 +105,12 @@ export async function POST(req: NextRequest) {
         type: 'text',
         text: `당신은 10년 경력의 전문 헤드헌터입니다. 주어진 이력서를 분석하여 아래 JSON 형식으로만 응답하세요. 설명 없이 JSON만 출력하세요.
 ⚠️ 개인정보(이름, 이메일, 전화번호, 생년월일, 주소)는 [EMAIL], [PHONE], [BIRTHDATE], [BIRTHYEAR], [AGE], [ADDRESS]로 마스킹되어 있으므로 null로 반환하세요.
+
+[중요] 학력 추출 규칙:
+- "기본정보", "학력", "최종학력:" 같은 헤더는 제외
+- 순수 학력 정보만 추출 (예: "한밭대학교 융합기술학과 학사 졸업")
+- 최종학력(가장 높은 학력)을 배열의 첫 번째로 배치
+
 {
   "name": null,
   "email": null,
@@ -115,7 +121,7 @@ export async function POST(req: NextRequest) {
   "current_position": "현재 직급/포지션 (없으면 null)",
   "total_experience_years": 총경력년수숫자,
   "career_summary": "경력 요약 2~3문장",
-  "education": ["학력1", "학력2"],
+  "education": ["최종학력", "그 이전 학력..."],
   "skills": ["스킬1", "스킬2", "스킬3"],
   "tech_stack": ["기술스택1", "기술스택2"],
   "certifications": ["자격증1", "자격증2"],
