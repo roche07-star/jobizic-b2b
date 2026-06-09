@@ -4,34 +4,11 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { getProfile } from '@/lib/auth'
 
-// 최종학력 추출 함수
+// 최종학력 추출 함수 (전체 텍스트 반환)
 function getFinalEducation(education: string[] | undefined): string {
   if (!education || education.length === 0) return ''
 
-  // 학력 우선순위 (높은 순서)
-  const priorities = [
-    { keywords: ['박사', 'Ph.D', 'PhD', 'Doctor'], label: '박사' },
-    { keywords: ['석사', 'Master', '대학원'], label: '석사' },
-    { keywords: ['학사', '대학교', '대졸', 'Bachelor', '4년제'], label: '학사' },
-    { keywords: ['전문학사', '전문대', '2년제'], label: '전문학사' },
-    { keywords: ['고등학교', '고졸'], label: '고졸' },
-  ]
-
-  // 가장 높은 학력 찾기
-  for (const priority of priorities) {
-    const found = education.find(edu =>
-      priority.keywords.some(keyword => edu.includes(keyword))
-    )
-    if (found) {
-      // 수료인 경우 표시
-      if (found.includes('수료')) {
-        return `${priority.label} 수료`
-      }
-      return priority.label
-    }
-  }
-
-  // 우선순위에 없으면 첫 번째 항목 반환 (최상단 = 최종학력)
+  // 최종학력은 배열의 첫 번째 항목 (사용자가 최상단에 입력)
   return education[0]
 }
 

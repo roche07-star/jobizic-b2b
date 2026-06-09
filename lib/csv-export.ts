@@ -2,35 +2,29 @@
  * CSV 다운로드 유틸리티
  */
 
-// 최종학력 추출 함수
+// 최종학력 추출 함수 (전체 텍스트 반환)
 function getFinalEducation(education: any): string {
   if (!Array.isArray(education) || education.length === 0) return ''
 
-  // 학력 우선순위 (높은 순서)
+  // 학력 우선순위로 가장 높은 학력 찾기
   const priorities = [
-    { keywords: ['박사', 'Ph.D', 'PhD', 'Doctor'], label: '박사' },
-    { keywords: ['석사', 'Master', '대학원'], label: '석사' },
-    { keywords: ['학사', '대학교', '대졸', 'Bachelor', '4년제'], label: '학사' },
-    { keywords: ['전문학사', '전문대', '2년제'], label: '전문학사' },
-    { keywords: ['고등학교', '고졸'], label: '고졸' },
+    ['박사', 'Ph.D', 'PhD', 'Doctor'],
+    ['석사', 'Master', '대학원'],
+    ['학사', '대학교', '대졸', 'Bachelor', '4년제'],
+    ['전문학사', '전문대', '2년제'],
+    ['고등학교', '고졸'],
   ]
 
-  // 가장 높은 학력 찾기
-  for (const priority of priorities) {
+  // 우선순위대로 검색해서 가장 높은 학력 반환
+  for (const keywords of priorities) {
     const found = education.find((edu: string) =>
-      priority.keywords.some(keyword => edu.includes(keyword))
+      keywords.some(keyword => edu.includes(keyword))
     )
-    if (found) {
-      // 수료인 경우 표시
-      if (found.includes('수료')) {
-        return `${priority.label} 수료`
-      }
-      return priority.label
-    }
+    if (found) return found
   }
 
-  // 우선순위에 없으면 마지막 항목 반환
-  return education[education.length - 1]
+  // 우선순위에 없으면 첫 번째 항목 반환
+  return education[0]
 }
 
 export function downloadCSV(filename: string, data: any[], headers: string[]) {
