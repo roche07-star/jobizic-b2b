@@ -142,12 +142,22 @@ export default function PipelinePage() {
       const jd = jds.find(j => j.id === selectedJd)
       const candidate = candidates.find(c => c.id === selectedCandidate)
 
+      console.log('[Pipeline Add] Starting AI matching analysis...')
       const matchRes = await fetch('/api/pipeline/match', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ jd, candidate }),
       })
+
+      if (!matchRes.ok) {
+        const errorData = await matchRes.json()
+        console.error('[Pipeline Add] Matching analysis failed:', errorData)
+        alert(`❌ AI 매칭 분석 실패\n\n${errorData.error || '서버 오류가 발생했습니다.'}\n\n프로세스 추가를 중단합니다.`)
+        return
+      }
+
       const matchData = await matchRes.json()
+      console.log('[Pipeline Add] Matching analysis success. Score:', matchData.match_score)
 
       // 프로세스에 추가
       const res = await fetch('/api/pipeline', {
@@ -247,6 +257,94 @@ export default function PipelinePage() {
     } catch (error) {
       console.error('[updateStage] Error:', error)
       alert('단계 변경 중 오류가 발생했습니다.')
+    }
+  }
+
+  async function reanalyzePipeline(id: string) {
+    if (!confirm('AI 매칭 분석을 다시 수행할까요?')) return
+
+    const profile = await getProfile()
+    if (!profile) {
+      alert('로그인이 필요합니다.')
+      return
+    }
+
+    const targetPipeline = pipeline.find(p => p.id === id)
+    if (!targetPipeline) {
+      alert('프로세스를 찾을 수 없습니다.')
+      return
+    }
+
+    try {
+      console.log('[Reanalyze] Starting for pipeline:', id)
+
+      // JD와 후보자 정보 가져오기
+      const jd = targetPipeline.job_descriptions
+      const candidate = targetPipeline.candidates
+
+      // AI 매칭 분석
+      console.log('[Reanalyze] Calling matching API...')
+      const matchRes = await fetch('/api/pipeline/match', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ jd, candidate }),
+      })
+
+      if (!matchRes.ok) {
+        const errorData = await matchRes.json()
+        console.error('[Reanalyze] Matching failed:', errorData)
+        alert(`❌ AI 매칭 분석 실패\n\n${errorData.error || '서버 오류가 발생했습니다.'}`)
+        return
+      }
+
+      const matchData = await matchRes.json()
+      console.log('[Reanalyze] Match score:', matchData.match_score)
+
+      // 분석 결과로 업데이트
+      const updateRes = await fetch(`/api/pipeline/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          match_score: matchData.match_score,
+          match_reason: matchData.match_reason,
+          skill_match_rate: matchData.skill_match_rate,
+          experience_match: matchData.experience_match,
+          strength_for_jd: matchData.strength_for_jd,
+          concerns: matchData.concerns,
+          updated_by: profile.email
+        }),
+      })
+
+      if (!updateRes.ok) {
+        const error = await updateRes.json()
+        alert(`업데이트 실패: ${error.error || '서버 오류'}`)
+        return
+      }
+
+      // 성공 시 목록 새로고침
+      const params = new URLSearchParams({
+        role: profile.role,
+        user_email: profile.email,
+        ...(profile.role === 'admin' && selectedOrgId !== '전체' && { organization_id: selectedOrgId }),
+        ...(profile.role !== 'admin' && profile.organization_id && { organization_id: profile.organization_id })
+      })
+      const updated = await fetch(`/api/pipeline?${params}`, {
+        cache: 'no-store',
+        headers: { 'Cache-Control': 'no-cache' }
+      }).then(r => r.json())
+      setPipeline(updated.pipeline ?? [])
+
+      // 모달이 열려있으면 선택된 항목도 업데이트
+      if (selected?.id === id) {
+        const updatedItem = updated.pipeline?.find((p: any) => p.id === id)
+        if (updatedItem) setSelected(updatedItem)
+      }
+
+      alert('✅ AI 매칭 분석이 완료되었습니다!')
+      console.log('[Reanalyze] Success')
+    } catch (e) {
+      console.error('[Reanalyze] Error:', e)
+      alert('재분석 중 오류가 발생했습니다.')
     }
   }
 
@@ -534,7 +632,14 @@ export default function PipelinePage() {
               </div>
             )}
 
-            <div style={{ display: 'flex', gap: 8 }}>
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'space-between' }}>
+              <button
+                className="btn btn-primary"
+                onClick={() => reanalyzePipeline(selected.id)}
+                style={{ fontSize: 13 }}
+              >
+                🔄 AI 재분석
+              </button>
               <button className="btn btn-danger" onClick={() => { deletePipeline(selected.id); setSelected(null) }}>
                 프로세스에서 제거
               </button>
