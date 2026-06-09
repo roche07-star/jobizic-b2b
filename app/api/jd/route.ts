@@ -29,11 +29,26 @@ export async function GET(req: NextRequest) {
     console.log('[jd] User:', userEmail, 'Role:', role)
 
     // organization_id 필터링
-    if (organizationId) {
+    if (organizationId && role === 'admin') {
+      // Admin만 organization_id 파라미터로 조직 선택 가능
       q = q.eq('organization_id', organizationId)
+    } else if (role === 'owner' && userEmail) {
+      // Owner는 자신의 조직 전체 JD 조회
+      const { data: ownerProfile } = await supabaseAdmin
+        .from('profiles')
+        .select('organization_id')
+        .eq('email', userEmail)
+        .single()
+
+      if (ownerProfile?.organization_id) {
+        console.log('[jd] Owner: Filtering by organization_id:', ownerProfile.organization_id)
+        q = q.eq('organization_id', ownerProfile.organization_id)
+      } else {
+        console.warn('[jd] Owner has no organization_id')
+      }
     }
 
-    // Admin과 Owner는 모든 JD 조회
+    // Admin과 Owner는 조직 전체 JD 조회
     // headhunter는 본인 JD + 관심 JD + 활성 JD
     // 기타 사용자는 본인 JD 또는 활성 JD
     if (role && role !== 'admin' && role !== 'owner' && userEmail) {

@@ -25,16 +25,34 @@ export async function GET(req: NextRequest) {
       `)
       .order('created_at', { ascending: false })
 
-    // 본인이 등록한 후보자만 조회 (admin 제외)
+    // Role별 필터링
     console.log('[candidates] User:', userEmail, 'Role:', role)
-    if (role !== 'admin' && userEmail) {
-      console.log('[candidates] Filtering by created_by:', userEmail)
-      q = q.eq('created_by', userEmail)
+
+    // organization_id 필터링
+    if (organizationId && role === 'admin') {
+      // Admin만 organization_id 파라미터로 조직 선택 가능
+      q = q.eq('organization_id', organizationId)
+    } else if (role === 'owner' && userEmail) {
+      // Owner는 자신의 조직 전체 후보자 조회
+      const { data: ownerProfile } = await supabaseAdmin
+        .from('profiles')
+        .select('organization_id')
+        .eq('email', userEmail)
+        .single()
+
+      if (ownerProfile?.organization_id) {
+        console.log('[candidates] Owner: Filtering by organization_id:', ownerProfile.organization_id)
+        q = q.eq('organization_id', ownerProfile.organization_id)
+      } else {
+        console.warn('[candidates] Owner has no organization_id')
+      }
     }
 
-    // organization_id가 있으면 필터링 (admin이 특정 조직 선택 시)
-    if (organizationId) {
-      q = q.eq('organization_id', organizationId)
+    // Admin과 Owner는 조직 전체 후보자 조회
+    // 기타 사용자는 본인이 등록한 후보자만 조회
+    if (role && role !== 'admin' && role !== 'owner' && userEmail) {
+      console.log('[candidates] Filtering by created_by:', userEmail)
+      q = q.eq('created_by', userEmail)
     }
 
     if (status) q = q.eq('status', status)
