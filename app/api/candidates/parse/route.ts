@@ -19,9 +19,20 @@ function extractPersonalInfo(text: string): {
   const phoneMatch = text.match(/(\d{2,3}[-\s]?\d{3,4}[-\s]?\d{4})|(\+82[-\s]?\d{1,2}[-\s]?\d{3,4}[-\s]?\d{4})/)
   const phone = phoneMatch ? phoneMatch[0] : null
 
-  // 이름 추출 (간단한 패턴: 이력서 상단의 한글 2-4자)
-  const nameMatch = text.match(/^[\s\n]*([가-힣]{2,4})[\s\n]/m)
-  const name = nameMatch ? nameMatch[1] : null
+  // 이름 추출
+  let name: string | null = null
+
+  // 패턴 1: "성명:", "이름:", "Name:" 등의 레이블 다음에 오는 이름
+  const labeledNameMatch = text.match(/(성명|이름|성\s*명|Name|NAME)[\s:：]+([가-힣]{2,4}|[A-Z][a-z]+\s[A-Z][a-z]+)/i)
+  if (labeledNameMatch) {
+    name = labeledNameMatch[2].trim()
+  } else {
+    // 패턴 2: 이력서 상단의 한글 2-4자 (fallback)
+    const simpleNameMatch = text.match(/^[\s\n]*([가-힣]{2,4})[\s\n]/m)
+    if (simpleNameMatch) {
+      name = simpleNameMatch[1]
+    }
+  }
 
   // 출생년도 추출
   let birth_year: number | null = null
