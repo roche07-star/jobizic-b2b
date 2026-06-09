@@ -427,9 +427,15 @@ export default function CandidatesPage() {
                 </div>
               </div>
               <div className="jd-position" style={{ marginBottom: 4 }}>{candidate.name}</div>
-              <div style={{ fontSize: 13, color: 'var(--muted2)', marginBottom: 10 }}>
+              <div style={{ fontSize: 13, color: 'var(--muted2)', marginBottom: 6 }}>
                 {candidate.current_position ?? '—'} · {candidate.total_experience_years ? `${candidate.total_experience_years}년` : '경력 미상'}
               </div>
+              {(candidate.email || candidate.phone) && (
+                <div style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 8, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  {candidate.email && <div>📧 {candidate.email}</div>}
+                  {candidate.phone && <div>📞 {candidate.phone}</div>}
+                </div>
+              )}
               <div className="jd-meta">
                 {candidate.location && <span className="jd-tag">📍 {candidate.location}</span>}
                 {candidate.market_value && <span className="jd-tag">💰 {candidate.market_value}</span>}
