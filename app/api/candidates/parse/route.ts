@@ -8,6 +8,7 @@ function extractPersonalInfo(text: string): {
   name: string | null
   email: string | null
   phone: string | null
+  birth_year: number | null
   location: string | null
 } {
   // 이메일 추출
@@ -22,11 +23,34 @@ function extractPersonalInfo(text: string): {
   const nameMatch = text.match(/^[\s\n]*([가-힣]{2,4})[\s\n]/m)
   const name = nameMatch ? nameMatch[1] : null
 
+  // 출생년도 추출
+  let birth_year: number | null = null
+  // 패턴 1: "생년월일: 1990.01.01" 또는 "1990-01-01"
+  const birthDateMatch = text.match(/(생년월일|생일|DOB|Birth)[\s:：]*(\d{4})[-./]?\d{1,2}[-./]?\d{1,2}/i)
+  if (birthDateMatch) {
+    birth_year = parseInt(birthDateMatch[2])
+  } else {
+    // 패턴 2: "1990년생" 또는 "90년생"
+    const yearMatch = text.match(/(\d{4}|\d{2})년생/)
+    if (yearMatch) {
+      let year = parseInt(yearMatch[1])
+      if (year < 100) year += year < 50 ? 2000 : 1900 // 2자리 년도 처리
+      birth_year = year
+    } else {
+      // 패턴 3: "만 33세" 에서 역산
+      const ageMatch = text.match(/만\s*(\d{1,2})세/)
+      if (ageMatch) {
+        const age = parseInt(ageMatch[1])
+        birth_year = new Date().getFullYear() - age
+      }
+    }
+  }
+
   // 주소 추출 (첫 번째 것만)
   const locationMatch = text.match(/(서울|부산|대구|인천|광주|대전|울산|세종|경기|강원|충북|충남|전북|전남|경북|경남|제주)(특별시|광역시|특별자치시|도|특별자치도)?[가-힣0-9\s-]+/)
   const location = locationMatch ? locationMatch[0].trim() : null
 
-  return { name, email, phone, location }
+  return { name, email, phone, birth_year, location }
 }
 
 // 개인정보 마스킹 함수
@@ -36,6 +60,10 @@ function maskPersonalInfo(text: string): string {
   // 전화번호 마스킹 (한국 형식)
   text = text.replace(/(\d{2,3}[-\s]?\d{3,4}[-\s]?\d{4})/g, '[PHONE]')
   text = text.replace(/(\+82[-\s]?\d{1,2}[-\s]?\d{3,4}[-\s]?\d{4})/g, '[PHONE]')
+  // 생년월일 마스킹
+  text = text.replace(/(생년월일|생일|DOB|Birth)[\s:：]*\d{4}[-./]?\d{1,2}[-./]?\d{1,2}/gi, '[BIRTHDATE]')
+  text = text.replace(/\d{4}년생/g, '[BIRTHYEAR]')
+  text = text.replace(/만\s*\d{1,2}세/g, '[AGE]')
   // 주소 마스킹 (시/도, 시/군/구 포함)
   text = text.replace(/(서울|부산|대구|인천|광주|대전|울산|세종|경기|강원|충북|충남|전북|전남|경북|경남|제주)(특별시|광역시|특별자치시|도|특별자치도)?\s*[가-힣0-9\s-]+/g, '[ADDRESS]')
   return text
@@ -67,11 +95,12 @@ export async function POST(req: NextRequest) {
       system: [{
         type: 'text',
         text: `당신은 10년 경력의 전문 헤드헌터입니다. 주어진 이력서를 분석하여 아래 JSON 형식으로만 응답하세요. 설명 없이 JSON만 출력하세요.
-⚠️ 개인정보(이름, 이메일, 전화번호, 주소)는 [EMAIL], [PHONE], [ADDRESS]로 마스킹되어 있으므로 null로 반환하세요.
+⚠️ 개인정보(이름, 이메일, 전화번호, 생년월일, 주소)는 [EMAIL], [PHONE], [BIRTHDATE], [BIRTHYEAR], [AGE], [ADDRESS]로 마스킹되어 있으므로 null로 반환하세요.
 {
   "name": null,
   "email": null,
   "phone": null,
+  "birth_year": null,
   "location": null,
   "current_company": "현재 회사 (없으면 null)",
   "current_position": "현재 직급/포지션 (없으면 null)",
@@ -144,13 +173,15 @@ export async function POST(req: NextRequest) {
       name: personalInfo.name || parsed.name,
       email: personalInfo.email || parsed.email,
       phone: personalInfo.phone || parsed.phone,
+      birth_year: personalInfo.birth_year || parsed.birth_year,
       location: personalInfo.location || parsed.location,
     }
 
     console.log('[candidates/parse] Final result with personal info:', {
       hasName: !!result.name,
       hasEmail: !!result.email,
-      hasPhone: !!result.phone
+      hasPhone: !!result.phone,
+      hasBirthYear: !!result.birth_year
     })
 
     return NextResponse.json(result)

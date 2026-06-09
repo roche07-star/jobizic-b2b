@@ -8,6 +8,7 @@ interface ParsedCandidate {
   name: string
   email: string | null
   phone: string | null
+  birth_year: number | null
   location: string | null
   current_company: string | null
   current_position: string | null
@@ -23,6 +24,7 @@ interface ParsedCandidate {
   desired_location: string | null
   job_search_status: string
   strength_summary: string
+  weakness_summary: string
   career_trajectory: string
   ideal_roles: string[]
   market_value: string
@@ -190,6 +192,17 @@ export default function CandidateNewPage() {
 
             <div className="form-row" style={{ marginBottom: 12 }}>
               <div className="form-group" style={{ marginBottom: 0 }}>
+                <label className="form-label">출생년도</label>
+                <input className="form-input" type="number" placeholder="예: 1990" value={parsed.birth_year ?? ''} onChange={e => setParsed(p => p ? { ...p, birth_year: e.target.value ? parseInt(e.target.value) : null } : p)} />
+              </div>
+              <div className="form-group" style={{ marginBottom: 0 }}>
+                <label className="form-label">총 경력</label>
+                <input className="form-input" type="number" value={parsed.total_experience_years ?? ''} onChange={e => setParsed(p => p ? { ...p, total_experience_years: e.target.value ? parseInt(e.target.value) : null } : p)} />
+              </div>
+            </div>
+
+            <div className="form-row" style={{ marginBottom: 12 }}>
+              <div className="form-group" style={{ marginBottom: 0 }}>
                 <label className="form-label">현재 회사</label>
                 <input className="form-input" value={parsed.current_company ?? ''} onChange={e => setParsed(p => p ? { ...p, current_company: e.target.value } : p)} />
               </div>
@@ -197,11 +210,6 @@ export default function CandidateNewPage() {
                 <label className="form-label">현재 포지션</label>
                 <input className="form-input" value={parsed.current_position ?? ''} onChange={e => setParsed(p => p ? { ...p, current_position: e.target.value } : p)} />
               </div>
-            </div>
-
-            <div className="form-group" style={{ marginBottom: 12 }}>
-              <label className="form-label">총 경력</label>
-              <input className="form-input" type="number" value={parsed.total_experience_years ?? ''} onChange={e => setParsed(p => p ? { ...p, total_experience_years: parseInt(e.target.value) } : p)} />
             </div>
 
             <div className="form-group" style={{ marginBottom: 12 }}>
