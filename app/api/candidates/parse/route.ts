@@ -3,6 +3,18 @@ import Anthropic from '@anthropic-ai/sdk'
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
+// 개인정보 마스킹 함수
+function maskPersonalInfo(text: string): string {
+  // 이메일 마스킹
+  text = text.replace(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, '[EMAIL]')
+  // 전화번호 마스킹 (한국 형식)
+  text = text.replace(/(\d{2,3}[-\s]?\d{3,4}[-\s]?\d{4})/g, '[PHONE]')
+  text = text.replace(/(\+82[-\s]?\d{1,2}[-\s]?\d{3,4}[-\s]?\d{4})/g, '[PHONE]')
+  // 주소 마스킹 (시/도, 시/군/구 포함)
+  text = text.replace(/(서울|부산|대구|인천|광주|대전|울산|세종|경기|강원|충북|충남|전북|전남|경북|경남|제주)(특별시|광역시|특별자치시|도|특별자치도)?\s*[가-힣0-9\s-]+/g, '[ADDRESS]')
+  return text
+}
+
 export async function POST(req: NextRequest) {
   try {
     const { text } = await req.json()
@@ -11,18 +23,22 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: '이력서 내용을 입력해 주세요.' }, { status: 400 })
     }
 
-    console.log('[candidates/parse] Calling Claude API...')
+    // 🔒 개인정보 마스킹
+    const maskedText = maskPersonalInfo(text)
+    console.log('[candidates/parse] Personal info masked. Calling Claude API...')
+
     const message = await client.messages.create({
       model: 'claude-haiku-4-5-20251001',
-      max_tokens: 4096,  // 증가: 2000 → 4096 (긴 이력서 대응)
+      max_tokens: 4096,
       system: [{
         type: 'text',
         text: `당신은 10년 경력의 전문 헤드헌터입니다. 주어진 이력서를 분석하여 아래 JSON 형식으로만 응답하세요. 설명 없이 JSON만 출력하세요.
+⚠️ 개인정보(이름, 이메일, 전화번호, 주소)는 [EMAIL], [PHONE], [ADDRESS]로 마스킹되어 있으므로 null로 반환하세요.
 {
-  "name": "이름",
-  "email": "이메일 (없으면 null)",
-  "phone": "전화번호 (없으면 null)",
-  "location": "거주지 (없으면 null)",
+  "name": null,
+  "email": null,
+  "phone": null,
+  "location": null,
   "current_company": "현재 회사 (없으면 null)",
   "current_position": "현재 직급/포지션 (없으면 null)",
   "total_experience_years": 총경력년수숫자,
@@ -45,7 +61,7 @@ export async function POST(req: NextRequest) {
 }`,
         cache_control: { type: 'ephemeral' }
       }],
-      messages: [{ role: 'user', content: `다음 이력서를 분석해주세요:\n\n${text}` }],
+      messages: [{ role: 'user', content: `다음 이력서를 분석해주세요:\n\n${maskedText}` }],
     })
 
     console.log('[candidates/parse] Claude API response received')

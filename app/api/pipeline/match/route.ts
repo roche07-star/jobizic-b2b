@@ -42,8 +42,8 @@ export async function POST(req: NextRequest) {
 - 타깃 프로파일: ${jd.target_profile ?? '없음'}
 
 【후보자 정보】
-- 이름: ${candidate.name}
-- 현재: ${candidate.current_company ?? '프리랜서'} / ${candidate.current_position ?? '미상'}
+🔒 개인정보 보호: 이름, 회사명 등 개인정보는 제외됨
+- 현재 포지션: ${candidate.current_position ?? '미상'}
 - 경력: ${candidate.total_experience_years ? `${candidate.total_experience_years}년` : '미상'}
 - 스킬: ${candidate.skills?.join(', ') ?? '없음'}
 - 기술스택: ${candidate.tech_stack?.join(', ') ?? '없음'}
