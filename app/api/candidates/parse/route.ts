@@ -308,21 +308,35 @@ export async function POST(req: NextRequest) {
       return str.length > maxLength ? str.substring(0, maxLength) : str
     }
 
-    // ✅ 추출한 개인정보를 Claude 응답과 합치기 (모든 VARCHAR(100) 필드 truncate!)
-    const result = {
-      ...parsed,
-      name: truncate(personalInfo.name || parsed.name, 100),
-      email: truncate(personalInfo.email || parsed.email, 100),
-      phone: truncate(personalInfo.phone || parsed.phone, 100),
-      birth_year: personalInfo.birth_year || parsed.birth_year,
-      location: truncate(personalInfo.location || parsed.location, 100),
-      // VARCHAR(100) 제한 필드들 (회사, 포지션, 시장가치 등)
-      current_company: truncate(parsed.current_company, 100),
-      current_position: truncate(parsed.current_position, 100),
-      desired_position: truncate(parsed.desired_position, 100),
-      desired_location: truncate(parsed.desired_location, 100),
-      market_value: truncate(parsed.market_value, 100),
+    // 🔒 모든 string 필드를 자동으로 truncate (더 이상 누락 없음!)
+    const applyTruncateToAllStrings = (obj: any): any => {
+      const result: any = {}
+      for (const key in obj) {
+        const value = obj[key]
+        if (value === null || value === undefined) {
+          result[key] = value
+        } else if (typeof value === 'string') {
+          // 길이가 긴 필드(summary, trajectory 등)는 제외, 일반 필드만 truncate
+          const isLongTextField = ['career_summary', 'strength_summary', 'weakness_summary', 'career_trajectory'].includes(key)
+          result[key] = isLongTextField ? value : truncate(value, 100)
+        } else {
+          result[key] = value
+        }
+      }
+      return result
     }
+
+    // ✅ 추출한 개인정보를 Claude 응답과 합치고, 모든 string 필드 truncate
+    const merged = {
+      ...parsed,
+      name: personalInfo.name || parsed.name,
+      email: personalInfo.email || parsed.email,
+      phone: personalInfo.phone || parsed.phone,
+      birth_year: personalInfo.birth_year || parsed.birth_year,
+      location: personalInfo.location || parsed.location,
+    }
+
+    const result = applyTruncateToAllStrings(merged)
 
     console.log('[candidates/parse] Final result with personal info:', {
       hasName: !!result.name,
