@@ -117,6 +117,9 @@ export default function CandidatesPage() {
   const [analyzing, setAnalyzing] = useState(false)
   const [analysisStep, setAnalysisStep] = useState(0)
   const [editForm, setEditForm] = useState<Partial<Candidate>>({})
+  const [comments, setComments] = useState<any[]>([])
+  const [commentContent, setCommentContent] = useState('')
+  const [showCommentForm, setShowCommentForm] = useState(false)
 
   const { toasts, success, error, info, removeToast } = useToast()
 
@@ -169,6 +172,13 @@ export default function CandidatesPage() {
     loadCandidates()
   }, [selectedOrgId])
 
+  // 모달 열릴 때 코멘트 로드
+  useEffect(() => {
+    if (selected?.id) {
+      loadComments(selected.id)
+    }
+  }, [selected?.id])
+
   async function updateStatus(id: string, status: string) {
     await fetch(`/api/candidates/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status }) })
     setCandidates(prev => prev.map(c => c.id === id ? { ...c, status } : c))
@@ -186,6 +196,9 @@ export default function CandidatesPage() {
     setSelected(null)
     setIsEditing(false)
     setEditForm({})
+    setComments([])
+    setCommentContent('')
+    setShowCommentForm(false)
   }
 
   async function updateCandidate() {
@@ -254,6 +267,80 @@ export default function CandidatesPage() {
       error('오류: ' + e.message)
     } finally {
       setTransferring(false)
+    }
+  }
+
+  // 코멘트 로드
+  async function loadComments(candidateId: string) {
+    try {
+      const profile = await getProfile()
+      if (!profile) return
+
+      const res = await fetch(`/api/candidates/${candidateId}/comments`, {
+        headers: { 'x-user-email': profile.email }
+      })
+      const data = await res.json()
+      setComments(data.comments || [])
+    } catch (e) {
+      console.error('[loadComments] Error:', e)
+      setComments([])
+    }
+  }
+
+  // 코멘트 작성
+  async function createComment() {
+    if (!selected || !commentContent.trim()) return
+
+    try {
+      const profile = await getProfile()
+      if (!profile) return
+
+      const res = await fetch(`/api/candidates/${selected.id}/comments`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-user-email': profile.email
+        },
+        body: JSON.stringify({ content: commentContent })
+      })
+
+      const data = await res.json()
+      if (res.ok) {
+        setComments([data.comment, ...comments])
+        setCommentContent('')
+        setShowCommentForm(false)
+        success('✅ 코멘트가 추가되었습니다!')
+      } else {
+        error(data.error || '작성 실패')
+      }
+    } catch (e) {
+      error('작성 중 오류가 발생했습니다.')
+    }
+  }
+
+  // 코멘트 삭제
+  async function deleteComment(commentId: string) {
+    if (!selected) return
+    if (!confirm('코멘트를 삭제할까요?')) return
+
+    try {
+      const profile = await getProfile()
+      if (!profile) return
+
+      const res = await fetch(`/api/candidates/${selected.id}/comments/${commentId}`, {
+        method: 'DELETE',
+        headers: { 'x-user-email': profile.email }
+      })
+
+      if (res.ok) {
+        setComments(prev => prev.filter(c => c.id !== commentId))
+        success('✅ 코멘트가 삭제되었습니다!')
+      } else {
+        const data = await res.json()
+        error(data.error || '삭제 실패')
+      }
+    } catch (e) {
+      error('삭제 중 오류가 발생했습니다.')
     }
   }
 
@@ -727,6 +814,127 @@ export default function CandidatesPage() {
                   <button className="btn btn-ghost" onClick={() => { setIsEditing(false); setEditForm({}) }}>취소</button>
                 </>
               )}
+            </div>
+
+            {/* 코멘트 섹션 */}
+            <div style={{
+              marginTop: 32,
+              paddingTop: 24,
+              borderTop: '1px solid var(--border)'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                <h3 style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)' }}>
+                  💬 코멘트 ({comments.length})
+                </h3>
+                {!showCommentForm && (
+                  <button
+                    className="btn btn-sm btn-primary"
+                    onClick={() => setShowCommentForm(true)}
+                  >
+                    ➕ 코멘트 추가
+                  </button>
+                )}
+              </div>
+
+              {/* 코멘트 작성 폼 */}
+              {showCommentForm && (
+                <div style={{
+                  background: 'var(--bg3)',
+                  padding: 16,
+                  borderRadius: 8,
+                  marginBottom: 16
+                }}>
+                  <textarea
+                    className="form-input"
+                    placeholder="코멘트를 입력하세요..."
+                    rows={3}
+                    value={commentContent}
+                    onChange={e => setCommentContent(e.target.value)}
+                    style={{ marginBottom: 12 }}
+                  />
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button
+                      className="btn btn-sm btn-success"
+                      onClick={createComment}
+                      disabled={!commentContent.trim()}
+                    >
+                      💾 저장
+                    </button>
+                    <button
+                      className="btn btn-sm btn-ghost"
+                      onClick={() => {
+                        setShowCommentForm(false)
+                        setCommentContent('')
+                      }}
+                    >
+                      취소
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* 코멘트 목록 */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {comments.length === 0 ? (
+                  <div style={{
+                    padding: 24,
+                    textAlign: 'center',
+                    color: 'var(--muted2)',
+                    fontSize: 14
+                  }}>
+                    아직 코멘트가 없습니다.
+                  </div>
+                ) : (
+                  comments.map(comment => (
+                    <div
+                      key={comment.id}
+                      style={{
+                        background: 'var(--bg3)',
+                        padding: 12,
+                        borderRadius: 8,
+                        position: 'relative'
+                      }}
+                    >
+                      <div style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        marginBottom: 8
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>
+                            {comment.profiles?.full_name || comment.author_email}
+                          </span>
+                          <span style={{ fontSize: 12, color: 'var(--muted2)' }}>
+                            {new Date(comment.created_at).toLocaleString('ko-KR', {
+                              year: 'numeric',
+                              month: '2-digit',
+                              day: '2-digit',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })}
+                          </span>
+                        </div>
+                        <button
+                          className="btn btn-sm btn-ghost"
+                          onClick={() => deleteComment(comment.id)}
+                          style={{ padding: '4px 8px', fontSize: 12 }}
+                        >
+                          🗑️
+                        </button>
+                      </div>
+                      <div style={{
+                        fontSize: 14,
+                        lineHeight: 1.6,
+                        color: 'var(--text)',
+                        whiteSpace: 'pre-wrap'
+                      }}>
+                        {comment.content}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
             </div>
 
             {/* 소유권 이전 모달 */}
