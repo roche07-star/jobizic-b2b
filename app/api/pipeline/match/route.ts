@@ -150,6 +150,21 @@ export async function POST(req: NextRequest) {
 
     console.log('[pipeline/match] ✅ Claude API response received')
 
+    // 📊 Prompt Caching Usage 로깅
+    if (message.usage) {
+      console.log('[pipeline/match] 💰 Token Usage:', {
+        input_tokens: message.usage.input_tokens,
+        output_tokens: message.usage.output_tokens,
+        cache_creation_input_tokens: message.usage.cache_creation_input_tokens || 0,
+        cache_read_input_tokens: message.usage.cache_read_input_tokens || 0
+      })
+
+      const cacheHitRate = message.usage.cache_read_input_tokens
+        ? (message.usage.cache_read_input_tokens / (message.usage.input_tokens + message.usage.cache_read_input_tokens) * 100).toFixed(1)
+        : 0
+      console.log('[pipeline/match] 📈 Cache Hit Rate:', `${cacheHitRate}%`)
+    }
+
     // 🎯 Tool Use 블록 추출
     if (!message.content || message.content.length === 0) {
       console.error('[pipeline/match] ❌ Empty content from Claude')
