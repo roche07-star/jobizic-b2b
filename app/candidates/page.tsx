@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { getProfile } from '@/lib/auth'
 import { downloadCandidatesAsCSV } from '@/lib/csv-export'
+import AnalysisProgress from '@/components/AnalysisProgress'
 
 interface PipelineInfo {
   id: string
@@ -111,6 +112,8 @@ export default function CandidatesPage() {
   const [transferring, setTransferring] = useState(false)
   const [orgMembers, setOrgMembers] = useState<User[]>([])
   const [isEditing, setIsEditing] = useState(false)
+  const [analyzing, setAnalyzing] = useState(false)
+  const [analysisStep, setAnalysisStep] = useState(0)
   const [editForm, setEditForm] = useState<Partial<Candidate>>({})
 
   useEffect(() => {
@@ -795,6 +798,19 @@ export default function CandidatesPage() {
             )}
           </div>
         </div>
+      )}
+
+      {/* Analysis Progress */}
+      {analyzing && (
+        <AnalysisProgress
+          steps={[
+            '이력서 파일 읽는 중...',
+            'AI 분석 중 (약 30초 소요)',
+            '결과 생성 중...'
+          ]}
+          currentStep={analysisStep}
+          estimatedTime={30}
+        />
       )}
     </main>
   )
