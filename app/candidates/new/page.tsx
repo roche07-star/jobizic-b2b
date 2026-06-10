@@ -80,8 +80,12 @@ export default function CandidateNewPage() {
         })
       }
 
-      setAnalysisStep(2) // Step 3: 결과 생성 중
+      // ✅ 응답을 먼저 받고
       const data = await res.json()
+
+      // ✅ 그 다음 Step 3으로 전환 (정확한 타이밍!)
+      setAnalysisStep(2) // Step 3: 결과 생성 중
+
       if (!res.ok) { setError(data.error); return }
       setParsed(data)
     } catch {
@@ -388,13 +392,21 @@ export default function CandidateNewPage() {
       {/* Analysis Progress */}
       {parsing && (
         <AnalysisProgress
-          steps={[
-            '이력서 파일 읽는 중...',
-            'AI 분석 중 (약 30초 소요)',
-            '결과 생성 중...'
-          ]}
+          steps={
+            file && file.name.toLowerCase().endsWith('.pdf')
+              ? [
+                  '📄 PDF 파일 읽는 중...',
+                  '🤖 AI 분석 중 (PDF는 60초 이상 소요)',
+                  '✨ 결과 생성 중...'
+                ]
+              : [
+                  '📝 이력서 읽는 중...',
+                  '🤖 AI 분석 중 (약 30초 소요)',
+                  '✨ 결과 생성 중...'
+                ]
+          }
           currentStep={analysisStep}
-          estimatedTime={30}
+          estimatedTime={file && file.name.toLowerCase().endsWith('.pdf') ? 90 : 45}
         />
       )}
     </main>
