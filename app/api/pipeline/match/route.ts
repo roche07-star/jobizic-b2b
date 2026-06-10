@@ -4,6 +4,65 @@ import { getMatchingPrompt } from '@/lib/prompts/base-headhunter'
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
+// 📝 매칭 결과 타입 정의
+interface MatchingResult {
+  match_score: number
+  match_reason: string
+  skill_match_rate: number
+  experience_match: string
+  strength_for_jd: string[]
+  concerns: string[]
+  recommendation: '추천' | '보류' | '부적합'
+  next_steps: string
+}
+
+// 🔧 Tool 정의: 매칭 분석 결과 구조화
+const MATCHING_TOOL: Anthropic.Tool = {
+  name: 'analyze_jd_candidate_match',
+  description: 'JD와 후보자의 매칭 분석 결과를 구조화된 형식으로 반환',
+  input_schema: {
+    type: 'object',
+    properties: {
+      match_score: {
+        type: 'number',
+        description: '0-100 사이의 매칭 점수'
+      },
+      match_reason: {
+        type: 'string',
+        description: '매칭 근거 2-3문장 (구체적 수치와 근거 포함)'
+      },
+      skill_match_rate: {
+        type: 'number',
+        description: '0-100 사이의 스킬 매칭률'
+      },
+      experience_match: {
+        type: 'string',
+        description: '경력 적합도 평가 2문장 (연수, 직급, 산업 경험 기준)'
+      },
+      strength_for_jd: {
+        type: 'array',
+        items: { type: 'string' },
+        description: '이 JD에 대한 후보자 강점 (반드시 구체적 근거 포함, 최대 3개)'
+      },
+      concerns: {
+        type: 'array',
+        items: { type: 'string' },
+        description: '우려사항 (가장 치명적인 것부터 정렬, 최대 4개)'
+      },
+      recommendation: {
+        type: 'string',
+        enum: ['추천', '보류', '부적합'],
+        description: '최종 추천 여부'
+      },
+      next_steps: {
+        type: 'string',
+        description: '다음 단계 제안 (예: 1차 면접 추천, 자격증 확인 후 재검토 등)'
+      }
+    },
+    required: ['match_score', 'match_reason', 'skill_match_rate', 'experience_match', 'strength_for_jd', 'concerns', 'recommendation', 'next_steps']
+  }
+}
+
 export async function POST(req: NextRequest) {
   try {
     const { jd, candidate } = await req.json()
@@ -75,12 +134,14 @@ export async function POST(req: NextRequest) {
 
     const message = await client.messages.create({
       model: 'claude-haiku-4-5-20251001',
-      max_tokens: 1500,
+      max_tokens: 2000,
       system: [{
         type: 'text',
         text: getMatchingPrompt(), // ✨ Enhanced prompt from ADAM
         cache_control: { type: 'ephemeral' }
       }],
+      tools: [MATCHING_TOOL],
+      tool_choice: { type: 'tool', name: 'analyze_jd_candidate_match' }, // 필수 사용
       messages: [{
         role: 'user',
         content: userPrompt
@@ -89,7 +150,7 @@ export async function POST(req: NextRequest) {
 
     console.log('[pipeline/match] ✅ Claude API response received')
 
-    // Content 검증
+    // 🎯 Tool Use 블록 추출
     if (!message.content || message.content.length === 0) {
       console.error('[pipeline/match] ❌ Empty content from Claude')
       return NextResponse.json({
@@ -98,47 +159,31 @@ export async function POST(req: NextRequest) {
       }, { status: 500 })
     }
 
-    const firstContent = message.content[0]
-    if (firstContent.type !== 'text') {
-      console.error('[pipeline/match] ❌ Unexpected content type:', firstContent.type)
+    // Tool use 블록 찾기
+    const toolUseBlock = message.content.find((block): block is Anthropic.ToolUseBlock => block.type === 'tool_use')
+
+    if (!toolUseBlock) {
+      console.error('[pipeline/match] ❌ No tool_use block found in response')
+      console.error('[pipeline/match] ❌ Content blocks:', message.content.map(b => b.type))
       return NextResponse.json({
-        error: 'AI 응답 형식 오류',
-        details: `Expected text, got ${firstContent.type}`
+        error: '매칭 분석 실패. AI가 tool을 사용하지 않았습니다.',
+        details: 'No tool_use block found in response'
       }, { status: 500 })
     }
 
-    const raw = firstContent.text
-    console.log('[pipeline/match] 📄 Raw response length:', raw.length)
-    console.log('[pipeline/match] 📄 Response preview:', raw.substring(0, 200) + '...')
-
-    // 🔧 마크다운 코드 블록 제거 (```json ... ``` 패턴)
-    let cleanedRaw = raw.replace(/```json\s*/g, '').replace(/```\s*/g, '')
-    console.log('[pipeline/match] 🧹 Cleaned response preview:', cleanedRaw.substring(0, 200) + '...')
-
-    const match = cleanedRaw.match(/\{[\s\S]*\}/)
-    if (!match) {
-      console.error('[pipeline/match] ❌ No JSON found in response.')
-      console.error('[pipeline/match] ❌ Full response:', raw)
+    if (toolUseBlock.name !== 'analyze_jd_candidate_match') {
+      console.error('[pipeline/match] ❌ Unexpected tool name:', toolUseBlock.name)
       return NextResponse.json({
-        error: '매칭 분석 실패. AI가 올바른 형식으로 응답하지 않았습니다.',
-        details: 'No JSON object found in response'
+        error: '매칭 분석 실패. 잘못된 tool이 호출되었습니다.',
+        details: `Expected analyze_jd_candidate_match, got ${toolUseBlock.name}`
       }, { status: 500 })
     }
 
-    let result
-    try {
-      result = JSON.parse(match[0])
-      console.log('[pipeline/match] ✅ JSON parsed successfully')
-    } catch (parseError: any) {
-      console.error('[pipeline/match] ❌ JSON parse error:', parseError.message)
-      console.error('[pipeline/match] ❌ Attempted to parse:', match[0].substring(0, 500))
-      return NextResponse.json({
-        error: 'JSON 파싱 실패. 다시 시도해 주세요.',
-        details: parseError.message
-      }, { status: 500 })
-    }
-
+    // ✅ Tool input이 바로 결과!
+    const result = toolUseBlock.input as MatchingResult
+    console.log('[pipeline/match] ✅ Tool use extracted successfully')
     console.log('[pipeline/match] ✅ Analysis complete. Score:', result.match_score)
+
     return NextResponse.json(result)
   } catch (e: any) {
     console.error('[pipeline/match] ❌❌❌ FATAL ERROR ❌❌❌')
