@@ -111,7 +111,11 @@ export async function POST(req: NextRequest) {
     console.log('[pipeline/match] 📄 Raw response length:', raw.length)
     console.log('[pipeline/match] 📄 Response preview:', raw.substring(0, 200) + '...')
 
-    const match = raw.match(/\{[\s\S]*\}/)
+    // 🔧 마크다운 코드 블록 제거 (```json ... ``` 패턴)
+    let cleanedRaw = raw.replace(/```json\s*/g, '').replace(/```\s*/g, '')
+    console.log('[pipeline/match] 🧹 Cleaned response preview:', cleanedRaw.substring(0, 200) + '...')
+
+    const match = cleanedRaw.match(/\{[\s\S]*\}/)
     if (!match) {
       console.error('[pipeline/match] ❌ No JSON found in response.')
       console.error('[pipeline/match] ❌ Full response:', raw)
