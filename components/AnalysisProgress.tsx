@@ -1,26 +1,12 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-
 interface AnalysisProgressProps {
   steps: string[]
   currentStep: number
-  estimatedTime?: number // seconds
 }
 
-export default function AnalysisProgress({ steps, currentStep, estimatedTime = 30 }: AnalysisProgressProps) {
-  const [elapsed, setElapsed] = useState(0)
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setElapsed(prev => Math.min(prev + 1, estimatedTime))
-    }, 1000)
-
-    return () => clearInterval(timer)
-  }, [estimatedTime])
-
+export default function AnalysisProgress({ steps, currentStep }: AnalysisProgressProps) {
   const progress = (currentStep / steps.length) * 100
-  const timeRemaining = Math.max(0, estimatedTime - elapsed)
 
   return (
     <div
@@ -46,7 +32,7 @@ export default function AnalysisProgress({ steps, currentStep, estimatedTime = 3
           AI 분석 중...
         </h3>
         <p style={{ fontSize: '13px', color: 'var(--muted2)', marginTop: '8px' }}>
-          약 {estimatedTime}초 소요됩니다
+          Step {currentStep + 1}/{steps.length}
         </p>
       </div>
 
@@ -131,7 +117,7 @@ export default function AnalysisProgress({ steps, currentStep, estimatedTime = 3
         ))}
       </div>
 
-      {/* Time Remaining */}
+      {/* Current Step Status */}
       <div
         style={{
           textAlign: 'center',
@@ -141,8 +127,8 @@ export default function AnalysisProgress({ steps, currentStep, estimatedTime = 3
           borderTop: '1px solid var(--border)'
         }}
       >
-        {timeRemaining > 0 ? (
-          <>남은 시간: 약 {timeRemaining}초</>
+        {currentStep < steps.length - 1 ? (
+          <>{steps[currentStep]}</>
         ) : (
           <>거의 완료되었습니다...</>
         )}

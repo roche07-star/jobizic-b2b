@@ -406,7 +406,6 @@ export default function CandidateNewPage() {
                 ]
           }
           currentStep={analysisStep}
-          estimatedTime={file && file.name.toLowerCase().endsWith('.pdf') ? 300 : 45}
         />
       )}
     </main>
