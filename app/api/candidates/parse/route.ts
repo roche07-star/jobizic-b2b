@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
+import { getCandidateParsePrompt } from '@/lib/prompts/base-headhunter'
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
@@ -149,41 +150,7 @@ export async function POST(req: NextRequest) {
       max_tokens: 4096,
       system: [{
         type: 'text',
-        text: `당신은 10년 경력의 전문 헤드헌터입니다. 주어진 이력서를 분석하여 아래 JSON 형식으로만 응답하세요. 설명 없이 JSON만 출력하세요.
-⚠️ 개인정보(이름, 이메일, 전화번호, 생년월일, 주소)는 [EMAIL], [PHONE], [BIRTHDATE], [BIRTHYEAR], [AGE], [ADDRESS]로 마스킹되어 있으므로 null로 반환하세요.
-
-[중요] 학력 추출 규칙:
-- "기본정보", "학력", "최종학력:" 같은 헤더는 제외
-- 순수 학력 정보만 추출 (예: "한밭대학교 융합기술학과 학사 졸업")
-- 최종학력(가장 높은 학력)을 배열의 첫 번째로 배치
-
-{
-  "name": null,
-  "email": null,
-  "phone": null,
-  "birth_year": null,
-  "location": null,
-  "current_company": "현재 회사 (없으면 null)",
-  "current_position": "현재 직급/포지션 (없으면 null)",
-  "total_experience_years": 총경력년수숫자,
-  "career_summary": "경력 요약 2~3문장",
-  "education": ["최종학력", "그 이전 학력..."],
-  "skills": ["스킬1", "스킬2", "스킬3"],
-  "tech_stack": ["기술스택1", "기술스택2"],
-  "certifications": ["자격증1", "자격증2"],
-  "languages": ["한국어(원어민)", "영어(비즈니스)", "일본어(기초)"],
-  "desired_position": "희망 포지션 (없으면 null)",
-  "desired_salary": "희망 연봉 (없으면 null)",
-  "desired_location": "희망 근무지 (없으면 null)",
-  "job_search_status": "적극적|관심있음|잠재적",
-  "strength_summary": "강점 요약 2~3문장",
-  "weakness_summary": "약점 또는 보완 필요 영역 2~3문장",
-  "career_trajectory": "커리어 방향성 및 성장 궤적 2~3문장",
-  "ideal_roles": ["적합한포지션1", "적합한포지션2", "적합한포지션3"],
-  "market_value": "시장가치 예상 연봉대",
-  "key_highlights": ["하이라이트1", "하이라이트2", "하이라이트3"],
-  "tags": ["태그1", "태그2", "태그3"]
-}`,
+        text: getCandidateParsePrompt(), // ✨ Enhanced prompt from ADAM
         cache_control: { type: 'ephemeral' }
       }],
       messages: [{ role: 'user', content: `다음 이력서를 분석해주세요:\n\n${maskedText}` }],
