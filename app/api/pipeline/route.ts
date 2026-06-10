@@ -30,8 +30,16 @@ export async function GET(req: NextRequest) {
       .from('pipeline')
       .select(`
         *,
-        job_descriptions (id, company, position, priority, created_by),
-        candidates (id, name, email, current_company, current_position, status)
+        job_descriptions (
+          id, company, position, priority, created_by,
+          required_skills, preferred_skills, difficulty,
+          target_profile, search_strategy
+        ),
+        candidates (
+          id, name, email, current_company, current_position, status,
+          total_experience_years, skills, tech_stack, certifications, education,
+          strength_summary, weakness_summary, career_summary, career_trajectory
+        )
       `)
       .order('created_at', { ascending: false })
 
