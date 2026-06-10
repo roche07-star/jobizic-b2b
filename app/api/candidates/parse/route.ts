@@ -308,19 +308,20 @@ export async function POST(req: NextRequest) {
       return str.length > maxLength ? str.substring(0, maxLength) : str
     }
 
-    // ✅ 추출한 개인정보를 Claude 응답과 합치기
+    // ✅ 추출한 개인정보를 Claude 응답과 합치기 (모든 VARCHAR(100) 필드 truncate!)
     const result = {
       ...parsed,
-      name: personalInfo.name || parsed.name,
-      email: personalInfo.email || parsed.email,
-      phone: personalInfo.phone || parsed.phone,
+      name: truncate(personalInfo.name || parsed.name, 100),
+      email: truncate(personalInfo.email || parsed.email, 100),
+      phone: truncate(personalInfo.phone || parsed.phone, 100),
       birth_year: personalInfo.birth_year || parsed.birth_year,
       location: truncate(personalInfo.location || parsed.location, 100),
-      // VARCHAR(100) 제한 필드들
+      // VARCHAR(100) 제한 필드들 (회사, 포지션, 시장가치 등)
       current_company: truncate(parsed.current_company, 100),
       current_position: truncate(parsed.current_position, 100),
       desired_position: truncate(parsed.desired_position, 100),
       desired_location: truncate(parsed.desired_location, 100),
+      market_value: truncate(parsed.market_value, 100),
     }
 
     console.log('[candidates/parse] Final result with personal info:', {
