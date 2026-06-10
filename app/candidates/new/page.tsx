@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { getProfile } from '@/lib/auth'
+import AnalysisProgress from '@/components/AnalysisProgress'
 
 // 최종학력 추출 함수 (전체 텍스트 반환)
 function getFinalEducation(education: string[] | undefined): string {
@@ -45,6 +46,7 @@ export default function CandidateNewPage() {
   const [rawResume, setRawResume] = useState('')
   const [file, setFile] = useState<File | null>(null)
   const [parsing, setParsing] = useState(false)
+  const [analysisStep, setAnalysisStep] = useState(0)
   const [parsed, setParsed] = useState<ParsedCandidate | null>(null)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -55,23 +57,30 @@ export default function CandidateNewPage() {
     setError(null)
     setParsed(null)
     try {
+      setAnalysisStep(0) // Step 1: 이력서 읽는 중
+
       let res: Response
       if (file) {
         // 파일 업로드
         const formData = new FormData()
         formData.append('file', file)
+
+        setAnalysisStep(1) // Step 2: AI 분석 중
         res = await fetch('/api/candidates/parse', {
           method: 'POST',
           body: formData,
         })
       } else {
         // 텍스트 입력
+        setAnalysisStep(1) // Step 2: AI 분석 중
         res = await fetch('/api/candidates/parse', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ text: rawResume }),
         })
       }
+
+      setAnalysisStep(2) // Step 3: 결과 생성 중
       const data = await res.json()
       if (!res.ok) { setError(data.error); return }
       setParsed(data)
@@ -79,6 +88,7 @@ export default function CandidateNewPage() {
       setError('서버 오류가 발생했습니다.')
     } finally {
       setParsing(false)
+      setAnalysisStep(0) // 초기화
     }
   }
 
@@ -374,6 +384,19 @@ export default function CandidateNewPage() {
           </div>
         )}
       </div>
+
+      {/* Analysis Progress */}
+      {parsing && (
+        <AnalysisProgress
+          steps={[
+            '이력서 파일 읽는 중...',
+            'AI 분석 중 (약 30초 소요)',
+            '결과 생성 중...'
+          ]}
+          currentStep={analysisStep}
+          estimatedTime={30}
+        />
+      )}
     </main>
   )
 }
