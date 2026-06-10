@@ -255,6 +255,15 @@ export async function POST(req: NextRequest) {
     console.log('[candidates/parse] ✅ Tool use extracted successfully')
     console.log('[candidates/parse] Parsed fields:', Object.keys(parsed))
 
+    // 🔧 VARCHAR(100) 제한 필드 자르기 (DB 에러 방지)
+    const truncate = (str: string | null, maxLength: number = 100): string | null => {
+      if (!str) return str
+      if (str.length > maxLength) {
+        console.warn(`[candidates/parse] ⚠️ Truncating field (${str.length} → ${maxLength}):`, str.substring(0, 50) + '...')
+      }
+      return str.length > maxLength ? str.substring(0, maxLength) : str
+    }
+
     // ✅ 추출한 개인정보를 Claude 응답과 합치기
     const result = {
       ...parsed,
@@ -262,7 +271,12 @@ export async function POST(req: NextRequest) {
       email: personalInfo.email || parsed.email,
       phone: personalInfo.phone || parsed.phone,
       birth_year: personalInfo.birth_year || parsed.birth_year,
-      location: personalInfo.location || parsed.location,
+      location: truncate(personalInfo.location || parsed.location, 100),
+      // VARCHAR(100) 제한 필드들
+      current_company: truncate(parsed.current_company, 100),
+      current_position: truncate(parsed.current_position, 100),
+      desired_position: truncate(parsed.desired_position, 100),
+      desired_location: truncate(parsed.desired_location, 100),
     }
 
     console.log('[candidates/parse] Final result with personal info:', {
