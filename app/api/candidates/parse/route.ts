@@ -71,7 +71,7 @@ const CANDIDATE_PARSE_TOOL: Anthropic.Tool = {
 }
 
 // 개인정보 추출 함수
-function extractPersonalInfo(text: string): {
+function extractPersonalInfo(text: string, filename?: string): {
   name: string | null
   email: string | null
   phone: string | null
@@ -86,15 +86,48 @@ function extractPersonalInfo(text: string): {
   const phoneMatch = text.match(/(\d{2,3}[-\s]?\d{3,4}[-\s]?\d{4})|(\+82[-\s]?\d{1,2}[-\s]?\d{3,4}[-\s]?\d{4})/)
   const phone = phoneMatch ? phoneMatch[0] : null
 
-  // 이름 추출
+  // 이름 추출 (우선순위: 레이블 → 파일명 → 상단)
   let name: string | null = null
 
-  // 패턴 1: "성명:", "이름:", "Name:" 등의 레이블 다음에 오는 이름
-  const labeledNameMatch = text.match(/(성명|이름|성\s*명|Name|NAME)[\s:：]+([가-힣]{2,4}|[A-Z][a-z]+\s[A-Z][a-z]+)/i)
+  // 패턴 1: "성명:", "이름:", "Name:" 등의 레이블 다음에 오는 이름 (최우선)
+  const labeledNameMatch = text.match(/(성명|이름|성\s*명|지원자|후보자|본인|Name|NAME|Applicant)[\s:：]+([가-힣]{2,4}|[A-Z][a-z]+\s[A-Z][a-z]+)/i)
   if (labeledNameMatch) {
     name = labeledNameMatch[2].trim()
-  } else {
-    // 패턴 2: 이력서 상단의 한글 2-4자 (fallback)
+  }
+
+  // 패턴 2: 파일명에서 추출 (fallback 1)
+  if (!name && filename) {
+    console.log('[extractPersonalInfo] Trying to extract name from filename:', filename)
+
+    // 확장자 제거
+    const nameWithoutExt = filename.replace(/\.(pdf|docx?|txt|hwp|hwpx)$/i, '')
+
+    // 다양한 파일명 패턴
+    const filenamePatterns = [
+      // "홍길동_이력서", "홍길동-이력서", "홍길동 이력서"
+      /^([가-힣]{2,4})[\s_-]*(이력서|경력기술서|자기소개서|Resume|CV|resume|cv)/i,
+      // "이력서_홍길동", "Resume-홍길동"
+      /(이력서|경력기술서|자기소개서|Resume|CV|resume|cv)[\s_-]*([가-힣]{2,4})$/i,
+      // 파일명이 이름만 있는 경우 (예: "홍길동.pdf")
+      /^([가-힣]{2,4})$/
+    ]
+
+    for (const pattern of filenamePatterns) {
+      const match = nameWithoutExt.match(pattern)
+      if (match) {
+        // 매치된 그룹 중 한글 이름 찾기
+        const candidateName = match[1] || match[2]
+        if (candidateName && /^[가-힣]{2,4}$/.test(candidateName)) {
+          name = candidateName
+          console.log('[extractPersonalInfo] ✅ Name extracted from filename:', name)
+          break
+        }
+      }
+    }
+  }
+
+  // 패턴 3: 이력서 상단의 한글 2-4자 (fallback 2)
+  if (!name) {
     const simpleNameMatch = text.match(/^[\s\n]*([가-힣]{2,4})[\s\n]/m)
     if (simpleNameMatch) {
       name = simpleNameMatch[1]
@@ -163,6 +196,7 @@ function maskPersonalInfo(text: string): string {
 export async function POST(req: NextRequest) {
   try {
     let resumeText: string
+    let filename: string | undefined
 
     const contentType = req.headers.get('content-type') || ''
 
@@ -178,6 +212,9 @@ export async function POST(req: NextRequest) {
       if (file.size > 10 * 1024 * 1024) {
         return NextResponse.json({ error: '파일 크기는 10MB 이하여야 합니다.' }, { status: 400 })
       }
+
+      filename = file.name // 파일명 저장
+      console.log('[candidates/parse] File uploaded:', filename)
 
       const { extractText } = await import('@/lib/extractText')
       const buffer = Buffer.from(await file.arrayBuffer())
@@ -199,8 +236,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: '이력서 내용을 입력해 주세요.' }, { status: 400 })
     }
 
-    // 🔒 개인정보 추출 (Claude에 보내지 않음)
-    const personalInfo = extractPersonalInfo(resumeText)
+    // 🔒 개인정보 추출 (Claude에 보내지 않음, 파일명 포함)
+    const personalInfo = extractPersonalInfo(resumeText, filename)
     console.log('[candidates/parse] Personal info extracted:', {
       hasName: !!personalInfo.name,
       hasEmail: !!personalInfo.email,
