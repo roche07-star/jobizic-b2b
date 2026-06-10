@@ -45,17 +45,9 @@ export async function POST(req: NextRequest) {
     }
 
     console.log('[pipeline/match] Calling Claude API...')
-    const message = await client.messages.create({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 1500,
-      system: [{
-        type: 'text',
-        text: getMatchingPrompt(), // ✨ Enhanced prompt from ADAM
-        cache_control: { type: 'ephemeral' }
-      }],
-      messages: [{
-        role: 'user',
-        content: `다음 JD와 후보자의 적합도를 분석해주세요:
+
+    // 🔍 프롬프트 생성 및 검증
+    const userPrompt = `다음 JD와 후보자의 적합도를 분석해주세요:
 
 【JD 정보】
 - 회사: ${jd.company ?? '미상'}
@@ -79,36 +71,86 @@ export async function POST(req: NextRequest) {
 - 커리어 방향: ${candidate.career_trajectory ?? '없음'}
 - 경력 요약: ${candidate.career_summary ?? '없음'}
 `
+    console.log('[pipeline/match] 📝 User prompt:', userPrompt.substring(0, 300) + '...')
+
+    const message = await client.messages.create({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 1500,
+      system: [{
+        type: 'text',
+        text: getMatchingPrompt(), // ✨ Enhanced prompt from ADAM
+        cache_control: { type: 'ephemeral' }
+      }],
+      messages: [{
+        role: 'user',
+        content: userPrompt
       }],
     })
 
-    console.log('[pipeline/match] Claude API response received')
-    const raw = (message.content[0] as { type: string; text: string }).text
-    console.log('[pipeline/match] Claude response preview:', raw.substring(0, 200))
+    console.log('[pipeline/match] ✅ Claude API response received')
+
+    // Content 검증
+    if (!message.content || message.content.length === 0) {
+      console.error('[pipeline/match] ❌ Empty content from Claude')
+      return NextResponse.json({
+        error: 'AI 응답이 비어있습니다.',
+        details: 'Claude API returned empty content'
+      }, { status: 500 })
+    }
+
+    const firstContent = message.content[0]
+    if (firstContent.type !== 'text') {
+      console.error('[pipeline/match] ❌ Unexpected content type:', firstContent.type)
+      return NextResponse.json({
+        error: 'AI 응답 형식 오류',
+        details: `Expected text, got ${firstContent.type}`
+      }, { status: 500 })
+    }
+
+    const raw = firstContent.text
+    console.log('[pipeline/match] 📄 Raw response length:', raw.length)
+    console.log('[pipeline/match] 📄 Response preview:', raw.substring(0, 200) + '...')
 
     const match = raw.match(/\{[\s\S]*\}/)
     if (!match) {
-      console.error('[pipeline/match] No JSON found in response. Full response:', raw)
-      return NextResponse.json({ error: '매칭 분석 실패. 다시 시도해 주세요.' }, { status: 500 })
+      console.error('[pipeline/match] ❌ No JSON found in response.')
+      console.error('[pipeline/match] ❌ Full response:', raw)
+      return NextResponse.json({
+        error: '매칭 분석 실패. AI가 올바른 형식으로 응답하지 않았습니다.',
+        details: 'No JSON object found in response'
+      }, { status: 500 })
     }
 
     let result
     try {
       result = JSON.parse(match[0])
+      console.log('[pipeline/match] ✅ JSON parsed successfully')
     } catch (parseError: any) {
-      console.error('[pipeline/match] JSON parse error:', parseError.message)
-      console.error('[pipeline/match] Attempted to parse:', match[0])
-      return NextResponse.json({ error: 'JSON 파싱 실패. 다시 시도해 주세요.' }, { status: 500 })
+      console.error('[pipeline/match] ❌ JSON parse error:', parseError.message)
+      console.error('[pipeline/match] ❌ Attempted to parse:', match[0].substring(0, 500))
+      return NextResponse.json({
+        error: 'JSON 파싱 실패. 다시 시도해 주세요.',
+        details: parseError.message
+      }, { status: 500 })
     }
 
-    console.log('[pipeline/match] Analysis complete. Score:', result.match_score)
+    console.log('[pipeline/match] ✅ Analysis complete. Score:', result.match_score)
     return NextResponse.json(result)
   } catch (e: any) {
-    console.error('[pipeline/match] Error:', e.message)
-    console.error('[pipeline/match] Stack:', e.stack)
+    console.error('[pipeline/match] ❌❌❌ FATAL ERROR ❌❌❌')
+    console.error('[pipeline/match] Error name:', e.name)
+    console.error('[pipeline/match] Error message:', e.message)
+    console.error('[pipeline/match] Error stack:', e.stack)
+
+    // Anthropic API 에러 상세 정보
+    if (e.status) {
+      console.error('[pipeline/match] Anthropic API status:', e.status)
+      console.error('[pipeline/match] Anthropic API error:', e.error)
+    }
+
     return NextResponse.json({
       error: '서버 오류가 발생했습니다.',
-      details: process.env.NODE_ENV === 'development' ? e.message : undefined
+      details: e.message || 'Unknown error'
     }, { status: 500 })
   }
 }

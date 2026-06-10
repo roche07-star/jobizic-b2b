@@ -151,9 +151,12 @@ export default function PipelinePage() {
       })
 
       if (!matchRes.ok) {
-        const errorData = await matchRes.json()
-        console.error('[Pipeline Add] Matching analysis failed:', errorData)
-        alert(`❌ AI 매칭 분석 실패\n\n${errorData.error || '서버 오류가 발생했습니다.'}\n\n프로세스 추가를 중단합니다.`)
+        const errorData = await matchRes.json().catch(() => ({ error: 'JSON 파싱 실패' }))
+        console.error('[Pipeline Add] ❌ Matching failed. Status:', matchRes.status)
+        console.error('[Pipeline Add] ❌ Error data:', JSON.stringify(errorData, null, 2))
+        console.error('[Pipeline Add] ❌ JD data sent:', JSON.stringify(jd, null, 2))
+        console.error('[Pipeline Add] ❌ Candidate data sent:', JSON.stringify(candidate, null, 2))
+        alert(`❌ AI 매칭 분석 실패 (${matchRes.status})\n\n${errorData.error || '서버 오류가 발생했습니다.'}\n\n상세: ${errorData.details || '없음'}\n\n프로세스 추가를 중단합니다.`)
         return
       }
 
@@ -296,9 +299,12 @@ export default function PipelinePage() {
       })
 
       if (!matchRes.ok) {
-        const errorData = await matchRes.json()
-        console.error('[Reanalyze] ❌ Matching failed:', errorData)
-        alert(`❌ AI 매칭 분석 실패\n\n${errorData.error || '서버 오류가 발생했습니다.'}\n\n상세: ${errorData.details || '없음'}`)
+        const errorData = await matchRes.json().catch(() => ({ error: 'JSON 파싱 실패' }))
+        console.error('[Reanalyze] ❌ Matching failed. Status:', matchRes.status)
+        console.error('[Reanalyze] ❌ Error data:', JSON.stringify(errorData, null, 2))
+        console.error('[Reanalyze] ❌ JD data sent:', JSON.stringify(jd, null, 2))
+        console.error('[Reanalyze] ❌ Candidate data sent:', JSON.stringify(candidate, null, 2))
+        alert(`❌ AI 매칭 분석 실패 (${matchRes.status})\n\n${errorData.error || '서버 오류가 발생했습니다.'}\n\n상세: ${errorData.details || '없음'}`)
         return
       }
 
