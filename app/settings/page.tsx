@@ -23,7 +23,6 @@ export default function SettingsPage() {
   const [loadingMembers, setLoadingMembers] = useState(false)
 
   // 비밀번호 변경
-  const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [changingPassword, setChangingPassword] = useState(false)
@@ -80,28 +79,18 @@ export default function SettingsPage() {
 
   async function handleChangePassword() {
     // 유효성 검사
-    if (!currentPassword.trim()) {
-      error('현재 비밀번호를 입력해주세요.')
-      return
-    }
-
     if (!newPassword.trim()) {
-      error('새 비밀번호를 입력해주세요.')
+      error(profile.password_set === false ? '비밀번호를 입력해주세요.' : '새 비밀번호를 입력해주세요.')
       return
     }
 
     if (newPassword.length < 8) {
-      error('새 비밀번호는 8자 이상이어야 합니다.')
+      error('비밀번호는 8자 이상이어야 합니다.')
       return
     }
 
     if (newPassword !== confirmPassword) {
-      error('새 비밀번호가 일치하지 않습니다.')
-      return
-    }
-
-    if (currentPassword === newPassword) {
-      error('새 비밀번호는 현재 비밀번호와 달라야 합니다.')
+      error('비밀번호가 일치하지 않습니다.')
       return
     }
 
@@ -119,27 +108,39 @@ export default function SettingsPage() {
         return
       }
 
-      const res = await fetch('/api/auth/change-password', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`
-        },
-        body: JSON.stringify({
-          currentPassword,
-          newPassword
-        })
+      // 직접 비밀번호 업데이트 (현재 비밀번호 검증 없이)
+      const { error: updateError } = await supabase.auth.updateUser({
+        password: newPassword
       })
 
-      const data = await res.json()
+      if (updateError) {
+        console.error('[change-password] Update error:', updateError)
+        error('비밀번호 변경 중 오류가 발생했습니다.')
+        return
+      }
 
-      if (res.ok) {
-        success('✅ 비밀번호가 성공적으로 변경되었습니다!')
-        setCurrentPassword('')
-        setNewPassword('')
-        setConfirmPassword('')
-      } else {
-        error(data.error || '비밀번호 변경에 실패했습니다.')
+      // password_set 플래그 업데이트 (처음 설정한 경우)
+      if (profile.password_set === false) {
+        await fetch('/api/auth/set-password-flag', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.access_token}`
+          }
+        })
+      }
+
+      success(profile.password_set === false
+        ? '✅ 비밀번호가 성공적으로 설정되었습니다!'
+        : '✅ 비밀번호가 성공적으로 변경되었습니다!')
+
+      setNewPassword('')
+      setConfirmPassword('')
+
+      // 프로필 다시 로드 (password_set 플래그 업데이트)
+      const updatedProfile = await getProfile()
+      if (updatedProfile) {
+        setProfile(updatedProfile)
       }
     } catch (e) {
       error('비밀번호 변경 중 오류가 발생했습니다.')
@@ -290,36 +291,26 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      {/* 비밀번호 변경 */}
+      {/* 비밀번호 설정/변경 */}
       <div className="card" style={{ marginBottom: 20 }}>
-        <div className="card-title">🔐 비밀번호 변경</div>
+        <div className="card-title">
+          {profile.password_set === false ? '🔐 비밀번호 설정' : '🔐 비밀번호 변경'}
+        </div>
         <p style={{ fontSize: 14, color: 'var(--muted2)', marginBottom: 20 }}>
-          계정 보안을 위해 주기적으로 비밀번호를 변경하세요.
+          {profile.password_set === false
+            ? '처음 로그인하셨네요! 안전한 비밀번호를 설정해주세요.'
+            : '계정 보안을 위해 주기적으로 비밀번호를 변경하세요.'}
         </p>
 
         <div style={{ display: 'grid', gap: 16, maxWidth: 400 }}>
           <div>
             <label className="form-label" style={{ marginBottom: 6, display: 'block' }}>
-              현재 비밀번호
+              {profile.password_set === false ? '비밀번호' : '새 비밀번호'}
             </label>
             <input
               type="password"
               className="form-input"
-              placeholder="현재 비밀번호 입력"
-              value={currentPassword}
-              onChange={(e) => setCurrentPassword(e.target.value)}
-              disabled={changingPassword}
-            />
-          </div>
-
-          <div>
-            <label className="form-label" style={{ marginBottom: 6, display: 'block' }}>
-              새 비밀번호
-            </label>
-            <input
-              type="password"
-              className="form-input"
-              placeholder="새 비밀번호 (8자 이상)"
+              placeholder="비밀번호 (8자 이상)"
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
               disabled={changingPassword}
@@ -328,12 +319,12 @@ export default function SettingsPage() {
 
           <div>
             <label className="form-label" style={{ marginBottom: 6, display: 'block' }}>
-              새 비밀번호 확인
+              {profile.password_set === false ? '비밀번호 확인' : '새 비밀번호 확인'}
             </label>
             <input
               type="password"
               className="form-input"
-              placeholder="새 비밀번호 다시 입력"
+              placeholder="비밀번호 다시 입력"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               disabled={changingPassword}
@@ -344,10 +335,12 @@ export default function SettingsPage() {
             <button
               className="btn btn-primary"
               onClick={handleChangePassword}
-              disabled={changingPassword || !currentPassword || !newPassword || !confirmPassword}
+              disabled={changingPassword || !newPassword || !confirmPassword}
               style={{ width: 'fit-content' }}
             >
-              {changingPassword ? '변경 중...' : '🔐 비밀번호 변경'}
+              {changingPassword
+                ? profile.password_set === false ? '설정 중...' : '변경 중...'
+                : profile.password_set === false ? '🔐 비밀번호 설정' : '🔐 비밀번호 변경'}
             </button>
           </div>
         </div>
