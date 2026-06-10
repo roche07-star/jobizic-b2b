@@ -350,7 +350,7 @@ export default function CandidatesPage() {
   // 검색 (이름, 이메일, 회사, 직무)
   const searched = search.trim()
     ? filtered.filter(c =>
-        c.name.toLowerCase().includes(search.toLowerCase()) ||
+        c.name?.toLowerCase().includes(search.toLowerCase()) ||
         c.email?.toLowerCase().includes(search.toLowerCase()) ||
         c.current_company?.toLowerCase().includes(search.toLowerCase()) ||
         c.current_position?.toLowerCase().includes(search.toLowerCase())
@@ -364,7 +364,7 @@ export default function CandidatesPage() {
   if (skillSearch.trim()) {
     advanced = advanced.filter(c => {
       const skills = [...(c.skills || []), ...(c.tech_stack || [])]
-      return skills.some(s => s.toLowerCase().includes(skillSearch.toLowerCase()))
+      return skills.some(s => s?.toLowerCase().includes(skillSearch.toLowerCase()))
     })
   }
 
