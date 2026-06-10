@@ -5,6 +5,8 @@ import Link from 'next/link'
 import { getProfile } from '@/lib/auth'
 import { downloadCandidatesAsCSV } from '@/lib/csv-export'
 import AnalysisProgress from '@/components/AnalysisProgress'
+import { useToast } from '@/hooks/useToast'
+import ToastContainer from '@/components/ToastContainer'
 
 interface PipelineInfo {
   id: string
@@ -116,6 +118,8 @@ export default function CandidatesPage() {
   const [analysisStep, setAnalysisStep] = useState(0)
   const [editForm, setEditForm] = useState<Partial<Candidate>>({})
 
+  const { toasts, success, error, info, removeToast } = useToast()
+
   useEffect(() => {
     async function loadOrganizations() {
       const profile = await getProfile()
@@ -210,7 +214,7 @@ export default function CandidatesPage() {
     })
 
     if (!res.ok) {
-      alert('업데이트 실패')
+      error('업데이트 실패')
       return
     }
 
@@ -235,11 +239,11 @@ export default function CandidatesPage() {
       const data = await res.json()
 
       if (!res.ok) {
-        alert(data.error || '이전 실패')
+        error(data.error || '이전 실패')
         return
       }
 
-      alert(`✅ 소유권이 이전되었습니다!`)
+      success('✅ 소유권이 이전되었습니다!')
       setShowTransferModal(false)
       setTransferTarget('')
       closeModal()
@@ -247,7 +251,7 @@ export default function CandidatesPage() {
       // 목록 새로고침
       window.location.reload()
     } catch (e: any) {
-      alert('오류: ' + e.message)
+      error('오류: ' + e.message)
     } finally {
       setTransferring(false)
     }
@@ -812,6 +816,9 @@ export default function CandidatesPage() {
           estimatedTime={30}
         />
       )}
+
+      {/* Toast Container */}
+      <ToastContainer toasts={toasts} onRemove={removeToast} />
     </main>
   )
 }

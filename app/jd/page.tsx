@@ -139,7 +139,7 @@ export default function JDPage() {
         })
         .catch(err => {
           console.error('[JD Page] Error loading JDs:', err)
-          alert('JD 목록을 불러오는데 실패했습니다: ' + err.message)
+          error('JD 목록을 불러오는데 실패했습니다: ' + err.message)
         })
         .finally(() => setLoading(false))
     }
@@ -161,7 +161,7 @@ export default function JDPage() {
     const res = await fetch(`/api/jd/${id}?${params}`, { method: 'DELETE' })
     if (!res.ok) {
       const data = await res.json()
-      alert(data.error || '삭제 실패')
+      error(data.error || '삭제 실패')
       return
     }
     setJds(prev => prev.filter(j => j.id !== id))
@@ -199,7 +199,7 @@ export default function JDPage() {
   // 게시글 작성
   async function createBoardPost() {
     if (!selected || !boardForm.title.trim() || !boardForm.content.trim()) {
-      alert('제목과 내용을 입력해주세요.')
+      error('제목과 내용을 입력해주세요.')
       return
     }
 
@@ -218,11 +218,11 @@ export default function JDPage() {
         setBoardForm({ title: '', content: '' })
         setShowBoardForm(false)
       } else {
-        alert(data.error || '작성 실패')
+        error(data.error || '작성 실패')
       }
     } catch (e) {
       console.error('[Board] Create exception:', e)
-      alert('작성 중 오류가 발생했습니다.')
+      error('작성 중 오류가 발생했습니다.')
     }
   }
 
@@ -239,11 +239,11 @@ export default function JDPage() {
         setBoardPosts(prev => prev.filter(p => p.id !== postId))
       } else {
         const data = await res.json()
-        alert(data.error || '삭제 실패')
+        error(data.error || '삭제 실패')
       }
     } catch (e) {
       console.error('[Board] Delete exception:', e)
-      alert('삭제 중 오류가 발생했습니다.')
+      error('삭제 중 오류가 발생했습니다.')
     }
   }
 
@@ -288,8 +288,8 @@ export default function JDPage() {
       })
 
       if (!res.ok) {
-        const error = await res.json()
-        alert(`수정 실패: ${error.error || '서버 오류'}`)
+        const errorData = await res.json()
+        error(`수정 실패: ${errorData.error || '서버 오류'}`)
         return
       }
 

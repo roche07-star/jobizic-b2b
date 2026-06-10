@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react'
 import { getProfile } from '@/lib/auth'
 import { downloadPipelineAsCSV } from '@/lib/csv-export'
+import { useToast } from '@/hooks/useToast'
+import ToastContainer from '@/components/ToastContainer'
 
 interface JD {
   id: string
@@ -78,6 +80,8 @@ export default function PipelinePage() {
   const [organizations, setOrganizations] = useState<Organization[]>([])
   const [selectedOrgId, setSelectedOrgId] = useState<string>('전체')
 
+  const { toasts, success, error, info, removeToast } = useToast()
+
   useEffect(() => {
     async function loadOrganizations() {
       const profile = await getProfile()
@@ -134,7 +138,7 @@ export default function PipelinePage() {
       // organization_id 가져오기
       const profile = await getProfile()
       if (!profile?.organization_id) {
-        alert('조직 정보가 없습니다. 관리자에게 문의하세요.')
+        error('조직 정보가 없습니다. 관리자에게 문의하세요.')
         setMatching(false)
         return
       }
@@ -156,7 +160,7 @@ export default function PipelinePage() {
         console.error('[Pipeline Add] ❌ Error data:', JSON.stringify(errorData, null, 2))
         console.error('[Pipeline Add] ❌ JD data sent:', JSON.stringify(jd, null, 2))
         console.error('[Pipeline Add] ❌ Candidate data sent:', JSON.stringify(candidate, null, 2))
-        alert(`❌ AI 매칭 분석 실패 (${matchRes.status})\n\n${errorData.error || '서버 오류가 발생했습니다.'}\n\n상세: ${errorData.details || '없음'}\n\n프로세스 추가를 중단합니다.`)
+        error(`❌ AI 매칭 분석 실패 (${matchRes.status})\n\n${errorData.error || '서버 오류가 발생했습니다.'}\n\n상세: ${errorData.details || '없음'}\n\n프로세스 추가를 중단합니다.`)
         return
       }
 
@@ -199,13 +203,13 @@ export default function PipelinePage() {
         setShowAddModal(false)
         setSelectedJd('')
         setSelectedCandidate('')
-        alert('✅ 채용 프로세스에 추가되었습니다!')
+        success('✅ 채용 프로세스에 추가되었습니다!')
       } else {
         const err = await res.json()
-        alert(err.error)
+        error(err.error)
       }
     } catch (e) {
-      alert('추가 중 오류가 발생했습니다.')
+      error('추가 중 오류가 발생했습니다.')
     } finally {
       setMatching(false)
     }
@@ -214,7 +218,7 @@ export default function PipelinePage() {
   async function updateStage(id: string, stage: string) {
     const profile = await getProfile()
     if (!profile) {
-      alert('로그인이 필요합니다.')
+      error('로그인이 필요합니다.')
       return
     }
 
@@ -223,7 +227,7 @@ export default function PipelinePage() {
     if (stage === '불합격') {
       rejectionReason = prompt('불합격 사유를 입력해주세요:')
       if (!rejectionReason || rejectionReason.trim() === '') {
-        alert('불합격 사유를 입력해야 합니다.')
+        error('불합격 사유를 입력해야 합니다.')
         return
       }
     }
@@ -244,9 +248,9 @@ export default function PipelinePage() {
       })
 
       if (!res.ok) {
-        const error = await res.json()
-        console.error('[updateStage] Failed:', error)
-        alert(`단계 변경 실패: ${error.error || '서버 오류'}`)
+        const errorData = await res.json()
+        console.error('[updateStage] Failed:', errorData)
+        error(`단계 변경 실패: ${errorData.error || '서버 오류'}`)
         return
       }
 
@@ -258,9 +262,9 @@ export default function PipelinePage() {
       if (selected?.id === id) {
         setSelected(null)
       }
-    } catch (error) {
-      console.error('[updateStage] Error:', error)
-      alert('단계 변경 중 오류가 발생했습니다.')
+    } catch (err) {
+      console.error('[updateStage] Error:', err)
+      error('단계 변경 중 오류가 발생했습니다.')
     }
   }
 
@@ -269,13 +273,13 @@ export default function PipelinePage() {
 
     const profile = await getProfile()
     if (!profile) {
-      alert('로그인이 필요합니다.')
+      error('로그인이 필요합니다.')
       return
     }
 
     const targetPipeline = pipeline.find(p => p.id === id)
     if (!targetPipeline) {
-      alert('프로세스를 찾을 수 없습니다.')
+      error('프로세스를 찾을 수 없습니다.')
       return
     }
 
@@ -304,7 +308,7 @@ export default function PipelinePage() {
         console.error('[Reanalyze] ❌ Error data:', JSON.stringify(errorData, null, 2))
         console.error('[Reanalyze] ❌ JD data sent:', JSON.stringify(jd, null, 2))
         console.error('[Reanalyze] ❌ Candidate data sent:', JSON.stringify(candidate, null, 2))
-        alert(`❌ AI 매칭 분석 실패 (${matchRes.status})\n\n${errorData.error || '서버 오류가 발생했습니다.'}\n\n상세: ${errorData.details || '없음'}`)
+        error(`❌ AI 매칭 분석 실패 (${matchRes.status})\n\n${errorData.error || '서버 오류가 발생했습니다.'}\n\n상세: ${errorData.details || '없음'}`)
         return
       }
 
@@ -328,8 +332,8 @@ export default function PipelinePage() {
       })
 
       if (!updateRes.ok) {
-        const error = await updateRes.json()
-        alert(`업데이트 실패: ${error.error || '서버 오류'}`)
+        const errorData = await updateRes.json()
+        error(`업데이트 실패: ${errorData.error || '서버 오류'}`)
         return
       }
 
@@ -352,11 +356,11 @@ export default function PipelinePage() {
         if (updatedItem) setSelected(updatedItem)
       }
 
-      alert('✅ AI 매칭 분석이 완료되었습니다!')
+      success('✅ AI 매칭 분석이 완료되었습니다!')
       console.log('[Reanalyze] ✅ Success')
     } catch (e) {
       console.error('[Reanalyze] ❌ Error:', e)
-      alert('재분석 중 오류가 발생했습니다.')
+      error('재분석 중 오류가 발생했습니다.')
     } finally {
       setReanalyzing(null) // 🔄 재분석 종료
     }
@@ -367,7 +371,7 @@ export default function PipelinePage() {
 
     const profile = await getProfile()
     if (!profile) {
-      alert('로그인이 필요합니다.')
+      error('로그인이 필요합니다.')
       return
     }
 
@@ -378,7 +382,7 @@ export default function PipelinePage() {
     const res = await fetch(`/api/pipeline/${id}?${params}`, { method: 'DELETE' })
     if (!res.ok) {
       const data = await res.json()
-      alert(data.error || '삭제 실패')
+      error(data.error || '삭제 실패')
       return
     }
 
@@ -733,6 +737,9 @@ export default function PipelinePage() {
           </div>
         </div>
       )}
+
+      {/* Toast Container */}
+      <ToastContainer toasts={toasts} onRemove={removeToast} />
     </main>
   )
 }
