@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { getProfile } from '@/lib/auth'
 import { downloadJDsAsCSV } from '@/lib/csv-export'
+import { useToast } from '@/hooks/useToast'
+import ToastContainer from '@/components/ToastContainer'
 
 interface JD {
   id: string
@@ -62,6 +64,7 @@ interface Organization {
 }
 
 export default function JDPage() {
+  const { toasts, success, error, info, removeToast } = useToast()
   const [jds, setJds] = useState<JD[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('전체')
@@ -295,15 +298,15 @@ export default function JDPage() {
       setJds(prev => prev.map(j => j.id === selected.id ? updatedJD as JD : j))
       setSelected(updatedJD as JD)
       setEditMode(false)
-      alert('JD가 수정되었습니다!')
+      success('✅ JD가 수정되었습니다!')
 
       // 추천된 후보자가 있으면 자동으로 재분석 (백그라운드)
       if (selected.active_candidates && selected.active_candidates.length > 0) {
         reanalyzeCandidates(updatedJD as JD)
       }
-    } catch (error) {
-      console.error('[updateJD] Error:', error)
-      alert('수정 중 오류가 발생했습니다.')
+    } catch (err) {
+      console.error('[updateJD] Error:', err)
+      error('❌ 수정 중 오류가 발생했습니다.')
     }
   }
 
@@ -1149,6 +1152,9 @@ export default function JDPage() {
           </div>
         </div>
       )}
+
+      {/* Toast Notifications */}
+      <ToastContainer toasts={toasts} onRemove={removeToast} />
     </main>
   )
 }
