@@ -4,6 +4,72 @@ import { getCandidateParsePrompt } from '@/lib/prompts/base-headhunter'
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
+// 📝 후보자 분석 결과 타입 정의
+interface CandidateParseResult {
+  name: string | null
+  email: string | null
+  phone: string | null
+  birth_year: number | null
+  location: string | null
+  current_company: string | null
+  current_position: string | null
+  total_experience_years: number
+  career_summary: string
+  education: string[]
+  skills: string[]
+  tech_stack: string[]
+  certifications: string[]
+  languages: string[]
+  desired_position: string | null
+  desired_salary: string | null
+  desired_location: string | null
+  job_search_status: '적극적' | '관심있음' | '잠재적'
+  strength_summary: string
+  weakness_summary: string
+  career_trajectory: string
+  ideal_roles: string[]
+  market_value: string
+  key_highlights: string[]
+  tags: string[]
+}
+
+// 🔧 Tool 정의: 후보자 분석 결과 구조화
+const CANDIDATE_PARSE_TOOL: Anthropic.Tool = {
+  name: 'analyze_candidate_resume',
+  description: '후보자 이력서를 분석하여 구조화된 형식으로 반환',
+  input_schema: {
+    type: 'object',
+    properties: {
+      name: { type: 'string', description: '이름 (마스킹되어 null)' },
+      email: { type: 'string', description: '이메일 (마스킹되어 null)' },
+      phone: { type: 'string', description: '전화번호 (마스킹되어 null)' },
+      birth_year: { type: 'number', description: '출생연도 (마스킹되어 null)' },
+      location: { type: 'string', description: '거주지 (마스킹되어 null)' },
+      current_company: { type: 'string', description: '현재 회사 (없으면 null)' },
+      current_position: { type: 'string', description: '현재 직급/포지션 (없으면 null)' },
+      total_experience_years: { type: 'number', description: '총 경력 년수' },
+      career_summary: { type: 'string', description: '경력 요약 2-3문장 (구체적 수치와 프로젝트 포함)' },
+      education: { type: 'array', items: { type: 'string' }, description: '학력 (최종학력부터)' },
+      skills: { type: 'array', items: { type: 'string' }, description: '스킬 목록' },
+      tech_stack: { type: 'array', items: { type: 'string' }, description: '기술스택' },
+      certifications: { type: 'array', items: { type: 'string' }, description: '자격증' },
+      languages: { type: 'array', items: { type: 'string' }, description: '언어 능력' },
+      desired_position: { type: 'string', description: '희망 포지션 (없으면 null)' },
+      desired_salary: { type: 'string', description: '희망 연봉 (없으면 null)' },
+      desired_location: { type: 'string', description: '희망 근무지 (없으면 null)' },
+      job_search_status: { type: 'string', enum: ['적극적', '관심있음', '잠재적'], description: '구직 상태' },
+      strength_summary: { type: 'string', description: '강점 요약 2-3문장 (구체적 수치, 프로젝트명, 결과물 포함)' },
+      weakness_summary: { type: 'string', description: '약점 또는 보완 필요 영역 2-3문장 (심각한 순서대로)' },
+      career_trajectory: { type: 'string', description: '커리어 방향성 및 성장 궤적 2-3문장' },
+      ideal_roles: { type: 'array', items: { type: 'string' }, description: '적합한 포지션 목록' },
+      market_value: { type: 'string', description: '시장가치 예상 연봉대' },
+      key_highlights: { type: 'array', items: { type: 'string' }, description: '핵심 하이라이트 (구체적 수치 포함)' },
+      tags: { type: 'array', items: { type: 'string' }, description: '태그' }
+    },
+    required: ['total_experience_years', 'career_summary', 'education', 'skills', 'tech_stack', 'certifications', 'languages', 'job_search_status', 'strength_summary', 'weakness_summary', 'career_trajectory', 'ideal_roles', 'market_value', 'key_highlights', 'tags']
+  }
+}
+
 // 개인정보 추출 함수
 function extractPersonalInfo(text: string): {
   name: string | null
@@ -145,6 +211,8 @@ export async function POST(req: NextRequest) {
     const maskedText = maskPersonalInfo(resumeText)
     console.log('[candidates/parse] Personal info masked. Calling Claude API...')
 
+    console.log('[candidates/parse] Calling Claude API with Tool Calling...')
+
     const message = await client.messages.create({
       model: 'claude-haiku-4-5-20251001',
       max_tokens: 4096,
@@ -153,47 +221,24 @@ export async function POST(req: NextRequest) {
         text: getCandidateParsePrompt(), // ✨ Enhanced prompt from ADAM
         cache_control: { type: 'ephemeral' }
       }],
+      tools: [CANDIDATE_PARSE_TOOL],
+      tool_choice: { type: 'tool', name: 'analyze_candidate_resume' },
       messages: [{ role: 'user', content: `다음 이력서를 분석해주세요:\n\n${maskedText}` }],
     })
 
-    console.log('[candidates/parse] Claude API response received')
+    console.log('[candidates/parse] ✅ Claude API response received')
 
-    // Content 검증
-    if (!message.content || message.content.length === 0) {
-      console.error('[candidates/parse] Empty content from Claude')
-      return NextResponse.json({ error: 'AI 응답이 비어있습니다.' }, { status: 500 })
-    }
+    // 🎯 Tool Use 블록 추출
+    const toolUseBlock = message.content.find((block): block is Anthropic.ToolUseBlock => block.type === 'tool_use')
 
-    const firstContent = message.content[0]
-    if (firstContent.type !== 'text') {
-      console.error('[candidates/parse] Unexpected content type:', firstContent.type)
-      return NextResponse.json({ error: 'AI 응답 형식 오류.' }, { status: 500 })
-    }
-
-    const raw = firstContent.text
-    console.log('[candidates/parse] Raw response length:', raw.length)
-    console.log('[candidates/parse] Raw response preview:', raw.substring(0, 200) + '...')
-
-    // JSON 추출 개선: 첫 번째 { 부터 마지막 } 까지 (greedy → non-greedy)
-    const jsonStart = raw.indexOf('{')
-    const jsonEnd = raw.lastIndexOf('}')
-
-    if (jsonStart === -1 || jsonEnd === -1) {
-      console.error('[candidates/parse] No JSON braces found in response')
+    if (!toolUseBlock) {
+      console.error('[candidates/parse] ❌ No tool_use block found')
       return NextResponse.json({ error: '파싱 실패. 다시 시도해 주세요.' }, { status: 500 })
     }
 
-    const jsonStr = raw.substring(jsonStart, jsonEnd + 1)
-    console.log('[candidates/parse] Extracted JSON length:', jsonStr.length)
-
-    const match = jsonStr.match(/\{[\s\S]*\}/)
-    if (!match) {
-      console.error('[candidates/parse] JSON not found in response:', raw)
-      return NextResponse.json({ error: '파싱 실패. 다시 시도해 주세요.' }, { status: 500 })
-    }
-
-    const parsed = JSON.parse(match[0])
-    console.log('[candidates/parse] Successfully parsed:', Object.keys(parsed))
+    const parsed = toolUseBlock.input as CandidateParseResult
+    console.log('[candidates/parse] ✅ Tool use extracted successfully')
+    console.log('[candidates/parse] Parsed fields:', Object.keys(parsed))
 
     // ✅ 추출한 개인정보를 Claude 응답과 합치기
     const result = {
@@ -214,20 +259,20 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(result)
   } catch (e: any) {
-    console.error('[candidates/parse] Error:', e)
+    console.error('[candidates/parse] ❌❌❌ FATAL ERROR ❌❌❌')
     console.error('[candidates/parse] Error name:', e.name)
     console.error('[candidates/parse] Error message:', e.message)
     console.error('[candidates/parse] Error stack:', e.stack)
 
     // Anthropic API 에러 상세 정보
     if (e.status) {
-      console.error('[candidates/parse] API status:', e.status)
-      console.error('[candidates/parse] API error:', e.error)
+      console.error('[candidates/parse] Anthropic API status:', e.status)
+      console.error('[candidates/parse] Anthropic API error:', e.error)
     }
 
     return NextResponse.json({
       error: '서버 오류가 발생했습니다.',
-      details: process.env.NODE_ENV === 'development' ? e.message : undefined
+      details: e.message || 'Unknown error'
     }, { status: 500 })
   }
 }
