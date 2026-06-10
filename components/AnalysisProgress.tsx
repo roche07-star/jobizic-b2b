@@ -3,9 +3,10 @@
 interface AnalysisProgressProps {
   steps: string[]
   currentStep: number
+  estimatedTime?: number // seconds (for display only, no countdown)
 }
 
-export default function AnalysisProgress({ steps, currentStep }: AnalysisProgressProps) {
+export default function AnalysisProgress({ steps, currentStep, estimatedTime = 60 }: AnalysisProgressProps) {
   const progress = (currentStep / steps.length) * 100
 
   return (
@@ -32,7 +33,7 @@ export default function AnalysisProgress({ steps, currentStep }: AnalysisProgres
           AI 분석 중...
         </h3>
         <p style={{ fontSize: '13px', color: 'var(--muted2)', marginTop: '8px' }}>
-          Step {currentStep + 1}/{steps.length}
+          약 {estimatedTime}초 소요됩니다 · Step {currentStep + 1}/{steps.length}
         </p>
       </div>
 
