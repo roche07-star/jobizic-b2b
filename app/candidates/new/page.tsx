@@ -99,7 +99,7 @@ export default function CandidateNewPage() {
   function getParsingMessage() {
     if (!parsing) return '🤖 AI 파싱'
     if (file && file.name.toLowerCase().endsWith('.pdf')) {
-      return '📄 PDF 처리 중... (이미지 기반 PDF는 15-30초 소요)'
+      return '📄 PDF 처리 중... (이미지 기반 PDF는 15-30분 소요 가능)'
     }
     return '분석 중...'
   }
@@ -396,7 +396,7 @@ export default function CandidateNewPage() {
             file && file.name.toLowerCase().endsWith('.pdf')
               ? [
                   '📄 PDF 파일 읽는 중...',
-                  '🤖 AI 분석 중 (PDF는 60초 이상 소요)',
+                  '🤖 AI 분석 중 (일반 60초, 이미지 기반 최대 30분)',
                   '✨ 결과 생성 중...'
                 ]
               : [
@@ -406,7 +406,7 @@ export default function CandidateNewPage() {
                 ]
           }
           currentStep={analysisStep}
-          estimatedTime={file && file.name.toLowerCase().endsWith('.pdf') ? 90 : 45}
+          estimatedTime={file && file.name.toLowerCase().endsWith('.pdf') ? 300 : 45}
         />
       )}
     </main>
