@@ -4,6 +4,9 @@ import { useState, useEffect } from 'react'
 import { getProfile } from '@/lib/auth'
 import { useRouter } from 'next/navigation'
 import TelegramLink from '@/components/TelegramLink'
+import { useToast } from '@/hooks/useToast'
+import ToastContainer from '@/components/ToastContainer'
+import { createClient } from '@supabase/supabase-js'
 
 interface Member {
   id: string
@@ -18,6 +21,14 @@ export default function SettingsPage() {
   const [members, setMembers] = useState<Member[]>([])
   const [showMembers, setShowMembers] = useState(false)
   const [loadingMembers, setLoadingMembers] = useState(false)
+
+  // 비밀번호 변경
+  const [currentPassword, setCurrentPassword] = useState('')
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [changingPassword, setChangingPassword] = useState(false)
+
+  const { toasts, success, error, removeToast } = useToast()
 
   useEffect(() => {
     getProfile().then(p => {
@@ -65,6 +76,76 @@ export default function SettingsPage() {
       'client_searcher': '고객사 Searcher',
     }
     return roleLabels[role] || role
+  }
+
+  async function handleChangePassword() {
+    // 유효성 검사
+    if (!currentPassword.trim()) {
+      error('현재 비밀번호를 입력해주세요.')
+      return
+    }
+
+    if (!newPassword.trim()) {
+      error('새 비밀번호를 입력해주세요.')
+      return
+    }
+
+    if (newPassword.length < 8) {
+      error('새 비밀번호는 8자 이상이어야 합니다.')
+      return
+    }
+
+    if (newPassword !== confirmPassword) {
+      error('새 비밀번호가 일치하지 않습니다.')
+      return
+    }
+
+    if (currentPassword === newPassword) {
+      error('새 비밀번호는 현재 비밀번호와 달라야 합니다.')
+      return
+    }
+
+    setChangingPassword(true)
+    try {
+      const supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      )
+
+      // 세션 토큰 가져오기
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) {
+        error('로그인이 필요합니다.')
+        return
+      }
+
+      const res = await fetch('/api/auth/change-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({
+          currentPassword,
+          newPassword
+        })
+      })
+
+      const data = await res.json()
+
+      if (res.ok) {
+        success('✅ 비밀번호가 성공적으로 변경되었습니다!')
+        setCurrentPassword('')
+        setNewPassword('')
+        setConfirmPassword('')
+      } else {
+        error(data.error || '비밀번호 변경에 실패했습니다.')
+      }
+    } catch (e) {
+      error('비밀번호 변경 중 오류가 발생했습니다.')
+    } finally {
+      setChangingPassword(false)
+    }
   }
 
   if (!profile) {
@@ -209,6 +290,69 @@ export default function SettingsPage() {
         </div>
       </div>
 
+      {/* 비밀번호 변경 */}
+      <div className="card" style={{ marginBottom: 20 }}>
+        <div className="card-title">🔐 비밀번호 변경</div>
+        <p style={{ fontSize: 14, color: 'var(--muted2)', marginBottom: 20 }}>
+          계정 보안을 위해 주기적으로 비밀번호를 변경하세요.
+        </p>
+
+        <div style={{ display: 'grid', gap: 16, maxWidth: 400 }}>
+          <div>
+            <label className="form-label" style={{ marginBottom: 6, display: 'block' }}>
+              현재 비밀번호
+            </label>
+            <input
+              type="password"
+              className="form-input"
+              placeholder="현재 비밀번호 입력"
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+              disabled={changingPassword}
+            />
+          </div>
+
+          <div>
+            <label className="form-label" style={{ marginBottom: 6, display: 'block' }}>
+              새 비밀번호
+            </label>
+            <input
+              type="password"
+              className="form-input"
+              placeholder="새 비밀번호 (8자 이상)"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              disabled={changingPassword}
+            />
+          </div>
+
+          <div>
+            <label className="form-label" style={{ marginBottom: 6, display: 'block' }}>
+              새 비밀번호 확인
+            </label>
+            <input
+              type="password"
+              className="form-input"
+              placeholder="새 비밀번호 다시 입력"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              disabled={changingPassword}
+            />
+          </div>
+
+          <div>
+            <button
+              className="btn btn-primary"
+              onClick={handleChangePassword}
+              disabled={changingPassword || !currentPassword || !newPassword || !confirmPassword}
+              style={{ width: 'fit-content' }}
+            >
+              {changingPassword ? '변경 중...' : '🔐 비밀번호 변경'}
+            </button>
+          </div>
+        </div>
+      </div>
+
       {/* 텔레그램 연동 */}
       <div className="card">
         <div className="card-title">📱 텔레그램 알림</div>
@@ -217,6 +361,9 @@ export default function SettingsPage() {
         </p>
         <TelegramLink />
       </div>
+
+      {/* Toast Container */}
+      <ToastContainer toasts={toasts} onRemove={removeToast} />
     </main>
   )
 }
