@@ -105,8 +105,14 @@ export async function POST(req: NextRequest) {
 
     console.log('[pipeline/match] Calling Claude API...')
 
+    // 현재 날짜 (경력 계산용)
+    const today = new Date()
+    const currentDate = `${today.getFullYear()}년 ${today.getMonth() + 1}월 ${today.getDate()}일`
+
     // 🔍 프롬프트 생성 및 검증
-    const userPrompt = `다음 JD와 후보자의 적합도를 분석해주세요:
+    const userPrompt = `**중요: 오늘은 ${currentDate}입니다. 경력 기간 계산 시 이 날짜를 기준으로 정확히 계산해주세요.**
+
+다음 JD와 후보자의 적합도를 분석해주세요:
 
 【JD 정보】
 - 회사: ${jd.company ?? '미상'}

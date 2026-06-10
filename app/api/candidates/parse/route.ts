@@ -213,6 +213,10 @@ export async function POST(req: NextRequest) {
 
     console.log('[candidates/parse] Calling Claude API with Tool Calling...')
 
+    // 현재 날짜 (경력 계산용)
+    const today = new Date()
+    const currentDate = `${today.getFullYear()}년 ${today.getMonth() + 1}월 ${today.getDate()}일`
+
     const message = await client.messages.create({
       model: 'claude-haiku-4-5-20251001',
       max_tokens: 4096,
@@ -223,7 +227,10 @@ export async function POST(req: NextRequest) {
       }],
       tools: [CANDIDATE_PARSE_TOOL],
       tool_choice: { type: 'tool', name: 'analyze_candidate_resume' },
-      messages: [{ role: 'user', content: `다음 이력서를 분석해주세요:\n\n${maskedText}` }],
+      messages: [{
+        role: 'user',
+        content: `**중요: 오늘은 ${currentDate}입니다. 경력 기간 계산 시 이 날짜를 기준으로 정확히 계산해주세요. 예: 2023년 10월 ~ 현재 = 약 2년 8개월**\n\n다음 이력서를 분석해주세요:\n\n${maskedText}`
+      }],
     })
 
     console.log('[candidates/parse] ✅ Claude API response received')
