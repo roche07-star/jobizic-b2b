@@ -11,14 +11,29 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'JD와 후보자 정보가 필요합니다.' }, { status: 400 })
     }
 
-    console.log('[pipeline/match] Starting analysis for JD:', jd.position)
-    console.log('[pipeline/match] Candidate data:', {
+    console.log('[pipeline/match] ========== STARTING MATCH ANALYSIS ==========')
+    console.log('[pipeline/match] JD data received:', {
+      id: jd.id,
+      position: jd.position,
+      company: jd.company,
+      required_skills: jd.required_skills,
+      preferred_skills: jd.preferred_skills,
+      difficulty: jd.difficulty,
+      target_profile: jd.target_profile?.substring(0, 50),
+      search_strategy: jd.search_strategy?.substring(0, 50)
+    })
+    console.log('[pipeline/match] Candidate data received:', {
       id: candidate.id,
       current_position: candidate.current_position,
-      hasSkills: !!candidate.skills,
-      hasTechStack: !!candidate.tech_stack,
-      hasEducation: !!candidate.education,
-      hasCertifications: !!candidate.certifications
+      total_experience_years: candidate.total_experience_years,
+      skills: candidate.skills,
+      tech_stack: candidate.tech_stack,
+      certifications: candidate.certifications,
+      education: candidate.education,
+      hasStrength: !!candidate.strength_summary,
+      hasWeakness: !!candidate.weakness_summary,
+      hasCareerSummary: !!candidate.career_summary,
+      hasCareerTrajectory: !!candidate.career_trajectory
     })
 
     // 안전한 배열 처리 헬퍼 함수

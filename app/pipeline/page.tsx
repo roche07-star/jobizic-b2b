@@ -71,6 +71,7 @@ export default function PipelinePage() {
   const [selectedJd, setSelectedJd] = useState('')
   const [selectedCandidate, setSelectedCandidate] = useState('')
   const [matching, setMatching] = useState(false)
+  const [reanalyzing, setReanalyzing] = useState<string | null>(null) // 재분석 중인 pipeline ID
   const [isAdmin, setIsAdmin] = useState(false)
   const [isOwner, setIsOwner] = useState(false)
   const [userEmail, setUserEmail] = useState('')
@@ -275,15 +276,19 @@ export default function PipelinePage() {
       return
     }
 
+    setReanalyzing(id) // 🔄 재분석 시작
+
     try {
-      console.log('[Reanalyze] Starting for pipeline:', id)
+      console.log('[Reanalyze] 📊 Step 1/3: JD와 후보자 데이터 준비 중...')
 
       // JD와 후보자 정보 가져오기
       const jd = targetPipeline.job_descriptions
       const candidate = targetPipeline.candidates
 
+      console.log('[Reanalyze] 🤖 Step 2/3: AI 매칭 분석 중...')
+      console.log('[Reanalyze] JD:', jd.position, '/ Candidate:', candidate.name)
+
       // AI 매칭 분석
-      console.log('[Reanalyze] Calling matching API...')
       const matchRes = await fetch('/api/pipeline/match', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -292,13 +297,14 @@ export default function PipelinePage() {
 
       if (!matchRes.ok) {
         const errorData = await matchRes.json()
-        console.error('[Reanalyze] Matching failed:', errorData)
-        alert(`❌ AI 매칭 분석 실패\n\n${errorData.error || '서버 오류가 발생했습니다.'}`)
+        console.error('[Reanalyze] ❌ Matching failed:', errorData)
+        alert(`❌ AI 매칭 분석 실패\n\n${errorData.error || '서버 오류가 발생했습니다.'}\n\n상세: ${errorData.details || '없음'}`)
         return
       }
 
       const matchData = await matchRes.json()
-      console.log('[Reanalyze] Match score:', matchData.match_score)
+      console.log('[Reanalyze] ✅ Match score:', matchData.match_score)
+      console.log('[Reanalyze] 💾 Step 3/3: 분석 결과 저장 중...')
 
       // 분석 결과로 업데이트
       const updateRes = await fetch(`/api/pipeline/${id}`, {
@@ -341,10 +347,12 @@ export default function PipelinePage() {
       }
 
       alert('✅ AI 매칭 분석이 완료되었습니다!')
-      console.log('[Reanalyze] Success')
+      console.log('[Reanalyze] ✅ Success')
     } catch (e) {
-      console.error('[Reanalyze] Error:', e)
+      console.error('[Reanalyze] ❌ Error:', e)
       alert('재분석 중 오류가 발생했습니다.')
+    } finally {
+      setReanalyzing(null) // 🔄 재분석 종료
     }
   }
 
@@ -636,9 +644,28 @@ export default function PipelinePage() {
               <button
                 className="btn btn-primary"
                 onClick={() => reanalyzePipeline(selected.id)}
-                style={{ fontSize: 13 }}
+                disabled={reanalyzing === selected.id}
+                style={{ fontSize: 13, position: 'relative' }}
               >
-                🔄 AI 재분석
+                {reanalyzing === selected.id ? (
+                  <>
+                    <span style={{ opacity: 0.6 }}>⏳ AI 분석 중...</span>
+                    <div style={{
+                      position: 'absolute',
+                      right: 8,
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      width: 16,
+                      height: 16,
+                      border: '2px solid rgba(255,255,255,0.3)',
+                      borderTop: '2px solid white',
+                      borderRadius: '50%',
+                      animation: 'spin 1s linear infinite'
+                    }} />
+                  </>
+                ) : (
+                  '🔄 AI 재분석'
+                )}
               </button>
               <button className="btn btn-danger" onClick={() => { deletePipeline(selected.id); setSelected(null) }}>
                 프로세스에서 제거
