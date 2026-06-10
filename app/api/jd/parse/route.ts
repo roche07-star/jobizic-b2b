@@ -169,11 +169,20 @@ export async function POST(req: NextRequest) {
     const parsed = toolUseBlock.input as JDParseResult
     console.log('[jd/parse] ✅ Tool use extracted successfully')
 
+    // 🔧 VARCHAR(100) 제한 필드 자르기 (DB 에러 방지)
+    const truncate = (str: string | null, maxLength: number = 100): string | null => {
+      if (!str) return str
+      if (str.length > maxLength) {
+        console.warn(`[jd/parse] ⚠️ Truncating field (${str.length} → ${maxLength}):`, str.substring(0, 50) + '...')
+      }
+      return str.length > maxLength ? str.substring(0, maxLength) : str
+    }
+
     // Backward compatibility: 이전 구조도 함께 반환
     const legacy = {
-      company: parsed.step1_context?.company || null,
-      position: parsed.step1_context?.position_official || parsed.step1_context?.position_actual || '포지션명',
-      location: parsed.metadata?.location || null,
+      company: truncate(parsed.step1_context?.company || null, 100),
+      position: truncate(parsed.step1_context?.position_official || parsed.step1_context?.position_actual || '포지션명', 100),
+      location: truncate(parsed.metadata?.location || null, 100),
       salary: parsed.metadata?.salary || null,
       deadline: parsed.metadata?.deadline || 'ASAP',
       keywords: [
