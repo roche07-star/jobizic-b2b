@@ -2,6 +2,8 @@
   "name": "jobizic_b2b",
   "version": "0.1.0",
   "private": true,
+  "license": "UNLICENSED",
+  "author": "ROCHE",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
