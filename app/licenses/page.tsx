@@ -130,14 +130,14 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.`,
 
 export default function LicensesPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
+    <div className="min-h-screen" style={{ background: 'var(--bg)', paddingTop: '80px' }}>
       {/* Header */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 text-center">
-          <h1 className="text-3xl font-bold text-gray-900">
+      <div style={{ borderBottom: '1px solid var(--border)' }}>
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 text-center">
+          <h1 className="text-3xl font-bold" style={{ color: 'var(--text)' }}>
             오픈소스 라이선스
           </h1>
-          <p className="mt-2 text-gray-600">
+          <p className="mt-3" style={{ color: 'var(--muted2)', fontSize: '15px', lineHeight: '1.7' }}>
             Jobizic B2B는 다음 오픈소스 라이브러리를 사용하고 있습니다.
             <br />
             각 라이브러리 개발자분들께 감사드립니다. 🙏
@@ -146,31 +146,36 @@ export default function LicensesPage() {
       </div>
 
       {/* Content */}
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Libraries */}
         <div className="space-y-6">
           {licenses.map((lib, index) => (
             <div
               key={index}
-              className={`bg-white border-l-4 ${lib.color} rounded-lg shadow-sm hover:shadow-md transition-shadow p-6`}
+              className={`border-l-4 ${lib.color} rounded-lg transition-all p-6`}
+              style={{
+                background: 'var(--bg2)',
+                border: '1px solid var(--border)',
+                borderLeftWidth: '4px'
+              }}
             >
               <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
                 <div className="flex-1">
-                  <h3 className="text-xl font-semibold text-gray-900">
+                  <h3 className="text-xl font-semibold" style={{ color: 'var(--text)' }}>
                     {lib.name}
                   </h3>
-                  <p className="text-sm text-gray-500 mt-1">
+                  <p className="text-sm mt-1" style={{ color: 'var(--muted2)' }}>
                     {lib.description}
                   </p>
                   <div className="mt-3 flex flex-wrap gap-3 text-sm">
-                    <span className="inline-flex items-center px-3 py-1 rounded-full bg-blue-100 text-blue-800">
+                    <span className="inline-flex items-center px-3 py-1 rounded-full" style={{ background: 'rgba(123,97,255,0.15)', color: 'var(--accent2)' }}>
                       {lib.version}
                     </span>
-                    <span className="inline-flex items-center px-3 py-1 rounded-full bg-green-100 text-green-800">
+                    <span className="inline-flex items-center px-3 py-1 rounded-full" style={{ background: 'rgba(76,175,134,0.15)', color: 'var(--success)' }}>
                       {lib.license}
                     </span>
                   </div>
-                  <p className="text-xs text-gray-500 mt-3">
+                  <p className="text-xs mt-3" style={{ color: 'var(--muted)' }}>
                     {lib.copyright}
                   </p>
                 </div>
@@ -179,7 +184,12 @@ export default function LicensesPage() {
                     href={lib.repository}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors"
+                    className="inline-flex items-center px-4 py-2 rounded-md text-sm font-medium transition-colors"
+                    style={{
+                      border: '1px solid var(--border)',
+                      color: 'var(--text)',
+                      background: 'var(--bg3)'
+                    }}
                   >
                     <svg
                       className="w-5 h-5 mr-2"
@@ -202,42 +212,42 @@ export default function LicensesPage() {
 
         {/* License Texts */}
         <div className="mt-16">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">
+          <h2 className="text-2xl font-bold mb-6 text-center" style={{ color: 'var(--text)' }}>
             라이선스 전문
           </h2>
 
-          <div className="space-y-8">
+          <div className="space-y-6">
             {/* Apache 2.0 */}
-            <details className="bg-white rounded-lg shadow-sm border border-gray-200">
-              <summary className="cursor-pointer px-6 py-4 font-semibold text-gray-900 hover:bg-gray-50 rounded-lg">
+            <details className="rounded-lg" style={{ background: 'var(--bg2)', border: '1px solid var(--border)' }}>
+              <summary className="cursor-pointer px-6 py-4 font-semibold rounded-lg transition-colors" style={{ color: 'var(--text)' }}>
                 Apache License 2.0
               </summary>
               <div className="px-6 pb-4">
-                <pre className="text-xs text-gray-600 whitespace-pre-wrap font-mono bg-gray-50 p-4 rounded mt-4 overflow-x-auto">
+                <pre className="text-xs whitespace-pre-wrap font-mono p-4 rounded mt-4 overflow-x-auto" style={{ background: 'var(--bg3)', color: 'var(--muted2)', border: '1px solid var(--border)' }}>
                   {licenseTexts.apache}
                 </pre>
               </div>
             </details>
 
             {/* MIT */}
-            <details className="bg-white rounded-lg shadow-sm border border-gray-200">
-              <summary className="cursor-pointer px-6 py-4 font-semibold text-gray-900 hover:bg-gray-50 rounded-lg">
+            <details className="rounded-lg" style={{ background: 'var(--bg2)', border: '1px solid var(--border)' }}>
+              <summary className="cursor-pointer px-6 py-4 font-semibold rounded-lg transition-colors" style={{ color: 'var(--text)' }}>
                 MIT License
               </summary>
               <div className="px-6 pb-4">
-                <pre className="text-xs text-gray-600 whitespace-pre-wrap font-mono bg-gray-50 p-4 rounded mt-4 overflow-x-auto">
+                <pre className="text-xs whitespace-pre-wrap font-mono p-4 rounded mt-4 overflow-x-auto" style={{ background: 'var(--bg3)', color: 'var(--muted2)', border: '1px solid var(--border)' }}>
                   {licenseTexts.mit}
                 </pre>
               </div>
             </details>
 
             {/* BSD */}
-            <details className="bg-white rounded-lg shadow-sm border border-gray-200">
-              <summary className="cursor-pointer px-6 py-4 font-semibold text-gray-900 hover:bg-gray-50 rounded-lg">
+            <details className="rounded-lg" style={{ background: 'var(--bg2)', border: '1px solid var(--border)' }}>
+              <summary className="cursor-pointer px-6 py-4 font-semibold rounded-lg transition-colors" style={{ color: 'var(--text)' }}>
                 BSD 2-Clause License
               </summary>
               <div className="px-6 pb-4">
-                <pre className="text-xs text-gray-600 whitespace-pre-wrap font-mono bg-gray-50 p-4 rounded mt-4 overflow-x-auto">
+                <pre className="text-xs whitespace-pre-wrap font-mono p-4 rounded mt-4 overflow-x-auto" style={{ background: 'var(--bg3)', color: 'var(--muted2)', border: '1px solid var(--border)' }}>
                   {licenseTexts.bsd}
                 </pre>
               </div>
@@ -246,17 +256,17 @@ export default function LicensesPage() {
         </div>
 
         {/* NOTICE file info */}
-        <div className="mt-12 bg-blue-50 border border-blue-200 rounded-lg p-6">
-          <h3 className="text-lg font-semibold text-blue-900 mb-2">
+        <div className="mt-12 rounded-lg p-6" style={{ background: 'rgba(123,97,255,0.1)', border: '1px solid rgba(123,97,255,0.3)' }}>
+          <h3 className="text-lg font-semibold mb-2" style={{ color: 'var(--accent2)' }}>
             전체 라이선스 정보
           </h3>
-          <p className="text-sm text-blue-700 mb-4">
+          <p className="text-sm" style={{ color: 'var(--muted2)' }}>
             모든 의존성의 상세한 라이선스 정보는 NOTICE 파일을 참조하세요.
           </p>
         </div>
 
         {/* Footer */}
-        <div className="mt-12 text-center text-sm text-gray-500">
+        <div className="mt-12 text-center text-sm" style={{ color: 'var(--muted)', paddingBottom: '40px' }}>
           <p>© 2026 ROCHE. All rights reserved.</p>
           <p className="mt-2">
             Last updated: 2026-06-10
