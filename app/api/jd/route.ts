@@ -154,26 +154,36 @@ export async function POST(req: NextRequest) {
     }
 
     // 중복 체크: 동일 조직 내 동일 회사+포지션 조합 확인
+    console.log('[JD POST] Checking duplicates:', { organization_id, company, position })
+
     if (organization_id && company && position) {
-      const { data: existingJD } = await supabaseAdmin
+      const { data: existingJD, error: dupCheckError } = await supabaseAdmin
         .from('job_descriptions')
         .select('id, position, company, status')
         .eq('organization_id', organization_id)
         .eq('company', company)
         .eq('position', position)
-        .in('status', ['활성', '대기']) // 활성 또는 대기 중인 JD만 중복 체크
+        .not('status', 'in', '("종료","보류")') // 종료/보류 제외, 나머지는 모두 중복 체크
         .maybeSingle()
 
+      if (dupCheckError) {
+        console.error('[JD POST] Duplicate check error:', dupCheckError)
+      }
+
+      console.log('[JD POST] Duplicate check result:', existingJD ? 'FOUND' : 'NOT FOUND', existingJD)
+
       if (existingJD) {
-        console.log('[JD POST] Duplicate JD found:', existingJD)
+        console.log('[JD POST] ❌ Duplicate JD found:', existingJD)
         return NextResponse.json(
           {
-            error: `동일한 JD가 이미 존재합니다.\n회사: ${company}\n포지션: ${position}\n상태: ${existingJD.status}`,
+            error: `❌ 동일한 JD가 이미 존재합니다.\n\n회사: ${company}\n포지션: ${position}\n상태: ${existingJD.status}\n\n💡 기존 JD를 수정하시거나, 기존 JD를 종료 처리 후 다시 등록해주세요.`,
             existingJdId: existingJD.id
           },
           { status: 409 } // 409 Conflict
         )
       }
+    } else {
+      console.log('[JD POST] ⚠️ Skipping duplicate check - missing required fields')
     }
 
     const { data, error } = await supabaseAdmin
