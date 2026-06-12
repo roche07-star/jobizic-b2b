@@ -128,7 +128,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
-    const { created_by } = body
+    const { created_by, organization_id, company, position } = body
 
     // 권한 체크: PM/owner만 JD 등록 가능
     if (created_by) {
@@ -149,6 +149,29 @@ export async function POST(req: NextRequest) {
         return NextResponse.json(
           { error: '채용사 계정은 JD를 직접 등록할 수 없습니다.' },
           { status: 403 }
+        )
+      }
+    }
+
+    // 중복 체크: 동일 조직 내 동일 회사+포지션 조합 확인
+    if (organization_id && company && position) {
+      const { data: existingJD } = await supabaseAdmin
+        .from('job_descriptions')
+        .select('id, position, company, status')
+        .eq('organization_id', organization_id)
+        .eq('company', company)
+        .eq('position', position)
+        .in('status', ['활성', '대기']) // 활성 또는 대기 중인 JD만 중복 체크
+        .maybeSingle()
+
+      if (existingJD) {
+        console.log('[JD POST] Duplicate JD found:', existingJD)
+        return NextResponse.json(
+          {
+            error: `동일한 JD가 이미 존재합니다.\n회사: ${company}\n포지션: ${position}\n상태: ${existingJD.status}`,
+            existingJdId: existingJD.id
+          },
+          { status: 409 } // 409 Conflict
         )
       }
     }
