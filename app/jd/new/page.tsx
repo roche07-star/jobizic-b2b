@@ -25,6 +25,7 @@ interface ParsedJD {
 export default function JDNewPage() {
   const router = useRouter()
   const [rawText, setRawText] = useState('')
+  const [clientComment, setClientComment] = useState('')
   const [parsing, setParsing] = useState(false)
   const [parsed, setParsed] = useState<ParsedJD | null>(null)
   const [saving, setSaving] = useState(false)
@@ -39,7 +40,10 @@ export default function JDNewPage() {
       const res = await fetch('/api/jd/parse', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: rawText }),
+        body: JSON.stringify({
+          text: rawText,
+          client_comment: clientComment.trim() || undefined
+        }),
       })
       const data = await res.json()
       if (!res.ok) { setError(data.error); return }
@@ -105,10 +109,20 @@ export default function JDNewPage() {
           <div className="form-group">
             <textarea
               className="form-textarea"
-              style={{ minHeight: 320 }}
+              style={{ minHeight: 280 }}
               placeholder="채용공고 전체 내용을 여기에 붙여넣으세요.&#10;&#10;이메일로 받은 JD, 잡플래닛, 원티드, 링크드인 등 어디서든 복사해서 붙여넣으면 됩니다."
               value={rawText}
               onChange={e => setRawText(e.target.value)}
+            />
+          </div>
+          <div className="form-group">
+            <label className="form-label">클라이언트 코멘트 <span style={{ color: 'var(--text-tertiary)', fontWeight: 400 }}>(선택)</span></label>
+            <textarea
+              className="form-textarea"
+              style={{ minHeight: 80 }}
+              placeholder="예: 개발직군 채용 경험 필수, 스타트업 경험자 우대, 영어 실무 가능자만&#10;요건 완화/강화, 우선순위 변경, 기피 프로파일 등을 입력하세요."
+              value={clientComment}
+              onChange={e => setClientComment(e.target.value)}
             />
           </div>
           {error && <div style={{ color: 'var(--danger)', fontSize: 13, marginBottom: 12 }}>{error}</div>}
@@ -121,7 +135,7 @@ export default function JDNewPage() {
               {parsing ? <><div className="spinner" /> 분석 중...</> : '🤖 AI 파싱'}
             </button>
             {parsed && (
-              <button className="btn btn-ghost" onClick={() => { setParsed(null); setRawText('') }}>
+              <button className="btn btn-ghost" onClick={() => { setParsed(null); setRawText(''); setClientComment('') }}>
                 초기화
               </button>
             )}
