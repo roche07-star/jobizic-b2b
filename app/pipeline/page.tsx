@@ -131,6 +131,28 @@ export default function PipelinePage() {
     loadData()
   }, [selectedOrgId])
 
+  // 브라우저 알림 권한 요청
+  useEffect(() => {
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission()
+    }
+  }, [])
+
+  // 브라우저 알림 표시 함수
+  function showNotification(title: string, body: string) {
+    if ('Notification' in window && Notification.permission === 'granted') {
+      const notification = new Notification(title, {
+        body,
+        icon: '/icon-192.png',
+        tag: 'pipeline-match',
+      })
+      notification.onclick = () => {
+        window.focus()
+        notification.close()
+      }
+    }
+  }
+
   async function addToPipeline() {
     if (!selectedJd || !selectedCandidate) return
     setMatching(true)
@@ -270,7 +292,7 @@ export default function PipelinePage() {
   }
 
   async function reanalyzePipeline(id: string) {
-    if (!confirm('AI 매칭 분석을 다시 수행할까요?')) return
+    if (!confirm('AI 매칭 분석을 백그라운드에서 수행합니다.\n완료되면 브라우저 알림으로 안내해드립니다.\n\n계속하시겠습니까?')) return
 
     const profile = await getProfile()
     if (!profile) {
@@ -284,91 +306,109 @@ export default function PipelinePage() {
       return
     }
 
+    const jd = targetPipeline.job_descriptions
+    const candidate = targetPipeline.candidates
+
+    // 백그라운드 분석 시작 안내
+    success('🔄 백그라운드에서 AI 매칭 분석을 시작합니다.\n완료되면 알림으로 안내해드립니다.')
     setReanalyzing(id) // 🔄 재분석 시작
 
-    try {
-      console.log('[Reanalyze] 📊 Step 1/3: JD와 후보자 데이터 준비 중...')
+    // 백그라운드 실행 (await 없이)
+    ;(async () => {
+      try {
+        console.log('[Reanalyze] 📊 Step 1/3: JD와 후보자 데이터 준비 중...')
+        console.log('[Reanalyze] 🤖 Step 2/3: AI 매칭 분석 중...')
+        console.log('[Reanalyze] JD:', jd.position, '/ Candidate:', candidate.name)
 
-      // JD와 후보자 정보 가져오기
-      const jd = targetPipeline.job_descriptions
-      const candidate = targetPipeline.candidates
+        // AI 매칭 분석
+        const matchRes = await fetch('/api/pipeline/match', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            jd,
+            candidate,
+            client_comment: clientComment.trim() || undefined
+          }),
+        })
 
-      console.log('[Reanalyze] 🤖 Step 2/3: AI 매칭 분석 중...')
-      console.log('[Reanalyze] JD:', jd.position, '/ Candidate:', candidate.name)
+        if (!matchRes.ok) {
+          const errorData = await matchRes.json().catch(() => ({ error: 'JSON 파싱 실패' }))
+          console.error('[Reanalyze] ❌ Matching failed. Status:', matchRes.status)
+          console.error('[Reanalyze] ❌ Error data:', JSON.stringify(errorData, null, 2))
+          showNotification(
+            '❌ AI 매칭 분석 실패',
+            `${candidate.name} - ${jd.position} 매칭 분석에 실패했습니다.`
+          )
+          error(`❌ AI 매칭 분석 실패 (${matchRes.status})\n\n${errorData.error || '서버 오류가 발생했습니다.'}\n\n상세: ${errorData.details || '없음'}`)
+          return
+        }
 
-      // AI 매칭 분석
-      const matchRes = await fetch('/api/pipeline/match', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          jd,
-          candidate,
-          client_comment: clientComment.trim() || undefined
-        }),
-      })
+        const matchData = await matchRes.json()
+        console.log('[Reanalyze] ✅ Match score:', matchData.match_score)
+        console.log('[Reanalyze] 💾 Step 3/3: 분석 결과 저장 중...')
 
-      if (!matchRes.ok) {
-        const errorData = await matchRes.json().catch(() => ({ error: 'JSON 파싱 실패' }))
-        console.error('[Reanalyze] ❌ Matching failed. Status:', matchRes.status)
-        console.error('[Reanalyze] ❌ Error data:', JSON.stringify(errorData, null, 2))
-        console.error('[Reanalyze] ❌ JD data sent:', JSON.stringify(jd, null, 2))
-        console.error('[Reanalyze] ❌ Candidate data sent:', JSON.stringify(candidate, null, 2))
-        error(`❌ AI 매칭 분석 실패 (${matchRes.status})\n\n${errorData.error || '서버 오류가 발생했습니다.'}\n\n상세: ${errorData.details || '없음'}`)
-        return
+        // 분석 결과로 업데이트
+        const updateRes = await fetch(`/api/pipeline/${id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            match_score: matchData.match_score,
+            match_reason: matchData.match_reason,
+            skill_match_rate: matchData.skill_match_rate,
+            experience_match: matchData.experience_match,
+            strength_for_jd: matchData.strength_for_jd,
+            concerns: matchData.concerns,
+            updated_by: profile.email
+          }),
+        })
+
+        if (!updateRes.ok) {
+          const errorData = await updateRes.json()
+          showNotification(
+            '❌ 업데이트 실패',
+            `${candidate.name} - ${jd.position} 결과 저장에 실패했습니다.`
+          )
+          error(`업데이트 실패: ${errorData.error || '서버 오류'}`)
+          return
+        }
+
+        // 성공 시 목록 새로고침
+        const params = new URLSearchParams({
+          role: profile.role,
+          user_email: profile.email,
+          ...(profile.role === 'admin' && selectedOrgId !== '전체' && { organization_id: selectedOrgId }),
+          ...(profile.role !== 'admin' && profile.organization_id && { organization_id: profile.organization_id })
+        })
+        const updated = await fetch(`/api/pipeline?${params}`, {
+          cache: 'no-store',
+          headers: { 'Cache-Control': 'no-cache' }
+        }).then(r => r.json())
+        setPipeline(updated.pipeline ?? [])
+
+        // 모달이 열려있으면 선택된 항목도 업데이트
+        if (selected?.id === id) {
+          const updatedItem = updated.pipeline?.find((p: any) => p.id === id)
+          if (updatedItem) setSelected(updatedItem)
+        }
+
+        // 브라우저 알림
+        showNotification(
+          '✅ AI 매칭 분석 완료!',
+          `${candidate.name} - ${jd.position}\n매칭 점수: ${matchData.match_score}%`
+        )
+        success('✅ AI 매칭 분석이 완료되었습니다!')
+        console.log('[Reanalyze] ✅ Success')
+      } catch (e) {
+        console.error('[Reanalyze] ❌ Error:', e)
+        showNotification(
+          '❌ 재분석 오류',
+          '예상치 못한 오류가 발생했습니다.'
+        )
+        error('재분석 중 오류가 발생했습니다.')
+      } finally {
+        setReanalyzing(null) // 🔄 재분석 종료
       }
-
-      const matchData = await matchRes.json()
-      console.log('[Reanalyze] ✅ Match score:', matchData.match_score)
-      console.log('[Reanalyze] 💾 Step 3/3: 분석 결과 저장 중...')
-
-      // 분석 결과로 업데이트
-      const updateRes = await fetch(`/api/pipeline/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          match_score: matchData.match_score,
-          match_reason: matchData.match_reason,
-          skill_match_rate: matchData.skill_match_rate,
-          experience_match: matchData.experience_match,
-          strength_for_jd: matchData.strength_for_jd,
-          concerns: matchData.concerns,
-          updated_by: profile.email
-        }),
-      })
-
-      if (!updateRes.ok) {
-        const errorData = await updateRes.json()
-        error(`업데이트 실패: ${errorData.error || '서버 오류'}`)
-        return
-      }
-
-      // 성공 시 목록 새로고침
-      const params = new URLSearchParams({
-        role: profile.role,
-        user_email: profile.email,
-        ...(profile.role === 'admin' && selectedOrgId !== '전체' && { organization_id: selectedOrgId }),
-        ...(profile.role !== 'admin' && profile.organization_id && { organization_id: profile.organization_id })
-      })
-      const updated = await fetch(`/api/pipeline?${params}`, {
-        cache: 'no-store',
-        headers: { 'Cache-Control': 'no-cache' }
-      }).then(r => r.json())
-      setPipeline(updated.pipeline ?? [])
-
-      // 모달이 열려있으면 선택된 항목도 업데이트
-      if (selected?.id === id) {
-        const updatedItem = updated.pipeline?.find((p: any) => p.id === id)
-        if (updatedItem) setSelected(updatedItem)
-      }
-
-      success('✅ AI 매칭 분석이 완료되었습니다!')
-      console.log('[Reanalyze] ✅ Success')
-    } catch (e) {
-      console.error('[Reanalyze] ❌ Error:', e)
-      error('재분석 중 오류가 발생했습니다.')
-    } finally {
-      setReanalyzing(null) // 🔄 재분석 종료
-    }
+    })()
   }
 
   async function deletePipeline(id: string) {
@@ -664,6 +704,19 @@ export default function PipelinePage() {
                 value={clientComment}
                 onChange={(e) => setClientComment(e.target.value)}
               />
+            </div>
+
+            {/* 백그라운드 분석 안내 */}
+            <div style={{
+              marginBottom: 12,
+              padding: '8px 12px',
+              background: 'rgba(232, 255, 71, 0.1)',
+              border: '1px solid rgba(232, 255, 71, 0.3)',
+              borderRadius: 4,
+              fontSize: 12,
+              color: 'var(--text-secondary)',
+            }}>
+              💡 AI 분석은 백그라운드에서 진행됩니다. 완료되면 브라우저 알림으로 안내해드립니다.
             </div>
 
             <div style={{ display: 'flex', gap: 8, justifyContent: 'space-between' }}>
