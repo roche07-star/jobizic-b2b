@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { getMatchingPrompt } from '@/lib/prompts/base-headhunter'
+import { VALIDATION_PROMPT, ValidationResult } from '@/lib/prompts/validation'
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
@@ -61,6 +62,71 @@ const MATCHING_TOOL: Anthropic.Tool = {
     },
     required: ['match_score', 'match_reason', 'skill_match_rate', 'experience_match', 'strength_for_jd', 'concerns', 'recommendation', 'next_steps']
   }
+}
+
+// 🔍 검증 Tool (하이브리드 하네스 엔지니어링)
+const validationTool: Anthropic.Tool = {
+  name: 'validate_analysis',
+  description: '1차 분석 결과를 검증하고 문제를 찾아 수정합니다.',
+  input_schema: {
+    type: 'object' as const,
+    properties: {
+      career_level_issues: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            original: { type: 'string', description: '원본 우려사항/강점' },
+            reason: { type: 'string', description: '문제 이유 (연차별 기준 위반)' },
+            corrected: { type: 'string', description: '수정된 내용' },
+          },
+          required: ['original', 'reason', 'corrected'],
+        },
+        description: '연차별 비현실적 기대치 문제들',
+      },
+      hallucination_issues: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            original: { type: 'string', description: '원본 우려사항/약점' },
+            reason: { type: 'string', description: '환각 이유 (이력서에 명시된 내용)' },
+            action: { type: 'string', enum: ['remove', 'keep'], description: '삭제 여부' },
+          },
+          required: ['original', 'reason', 'action'],
+        },
+        description: '이력서 명시 내용을 약점으로 지적한 환각들',
+      },
+      generic_phrase_issues: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            original: { type: 'string', description: '원본 강점' },
+            reason: { type: 'string', description: '빈 말 이유 (구체성 없음)' },
+            has_specifics: { type: 'boolean', description: '수치/프로젝트명 포함 여부' },
+          },
+          required: ['original', 'reason', 'has_specifics'],
+        },
+        description: '구체성 없는 빈 말 강점들',
+      },
+      corrected_concerns: {
+        type: 'array',
+        items: { type: 'string' },
+        description: '수정된 우려사항 목록 (문제 없으면 원본 그대로)',
+      },
+      corrected_strengths: {
+        type: 'array',
+        items: { type: 'string' },
+        description: '수정된 강점 목록 (문제 없으면 원본 그대로)',
+      },
+      validation_passed: {
+        type: 'boolean',
+        description: '검증 통과 여부 (문제 없으면 true)',
+      },
+    },
+    required: ['career_level_issues', 'hallucination_issues', 'generic_phrase_issues', 'corrected_concerns', 'corrected_strengths', 'validation_passed'],
+  },
 }
 
 export async function POST(req: NextRequest) {
@@ -215,6 +281,64 @@ ${client_comment}
     const result = toolUseBlock.input as MatchingResult
     console.log('[pipeline/match] ✅ Tool use extracted successfully')
     console.log('[pipeline/match] ✅ Analysis complete. Score:', result.match_score)
+
+    // 하이브리드 하네스 검증 단계
+    try {
+      const candidateResume = `
+현재 포지션: ${candidate.current_position ?? '미상'}
+경력: ${candidate.total_experience_years ? `${candidate.total_experience_years}년` : '미상'}
+스킬: ${safeJoin(candidate.skills)}
+강점 요약: ${candidate.strength_summary ?? '없음'}
+약점 분석: ${candidate.weakness_summary ?? '없음'}
+경력 요약: ${candidate.career_summary ?? '없음'}
+`.trim()
+
+      const validationPrompt = `${VALIDATION_PROMPT}
+
+[1차 분석 결과]
+총 경력: ${candidate.total_experience_years ?? '미상'}년
+우려사항 (concerns): ${JSON.stringify(result.concerns, null, 2)}
+강점 (strength_for_jd): ${JSON.stringify(result.strength_for_jd, null, 2)}
+
+[후보자 이력서 정보]
+${candidateResume}
+
+위 1차 분석 결과를 검증하고, 문제가 있으면 수정하십시오.
+- concerns를 검증하여 corrected_concerns로 반환
+- strength_for_jd를 검증하여 corrected_strengths로 반환`
+
+      const validationMsg = await client.messages.create({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 1500,
+        tool_choice: { type: 'tool', name: 'validate_analysis' },
+        tools: [validationTool],
+        messages: [{ role: 'user', content: validationPrompt }],
+      })
+
+      const validationTU = validationMsg.content.find(c => c.type === 'tool_use')
+      if (validationTU && validationTU.type === 'tool_use') {
+        const validation = validationTU.input as ValidationResult & { corrected_concerns?: string[] }
+        if (!validation.validation_passed) {
+          console.log('[pipeline/match] ⚠️ 검증 실패 - 자동 수정:', {
+            career_level_issues: validation.career_level_issues.length,
+            hallucination_issues: validation.hallucination_issues.length,
+            generic_phrase_issues: validation.generic_phrase_issues.length,
+          })
+          // 문제 발견 시 자동 수정
+          if (validation.corrected_concerns && validation.corrected_concerns.length > 0) {
+            result.concerns = validation.corrected_concerns
+          }
+          if (validation.corrected_strengths.length > 0) {
+            result.strength_for_jd = validation.corrected_strengths
+          }
+        } else {
+          console.log('[pipeline/match] ✅ 검증 통과 - 문제 없음')
+        }
+      }
+    } catch (err) {
+      console.error('[pipeline/match] validation error (non-fatal):', err)
+      // 검증 실패해도 매칭은 계속 진행
+    }
 
     return NextResponse.json(result)
   } catch (e: any) {
