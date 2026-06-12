@@ -65,7 +65,7 @@ const MATCHING_TOOL: Anthropic.Tool = {
 
 export async function POST(req: NextRequest) {
   try {
-    const { jd, candidate } = await req.json()
+    const { jd, candidate, client_comment } = await req.json()
     if (!jd || !candidate) {
       return NextResponse.json({ error: 'JD와 후보자 정보가 필요합니다.' }, { status: 400 })
     }
@@ -135,6 +135,17 @@ export async function POST(req: NextRequest) {
 - 약점 분석: ${candidate.weakness_summary ?? '없음'}
 - 커리어 방향: ${candidate.career_trajectory ?? '없음'}
 - 경력 요약: ${candidate.career_summary ?? '없음'}
+${client_comment ? `
+
+【클라이언트 코멘트】
+${client_comment}
+
+**⚠️ 클라이언트 코멘트를 반드시 반영하여 분석:**
+- 요건 완화/강화 사항 확인
+- 우선순위 변경 사항 반영
+- 기피 프로파일 주의
+- 처우 조건 고려
+- strength_for_jd, concerns에 코멘트 내용 통합` : ''}
 `
     console.log('[pipeline/match] 📝 User prompt:', userPrompt.substring(0, 300) + '...')
 

@@ -74,6 +74,7 @@ export default function PipelinePage() {
   const [selectedCandidate, setSelectedCandidate] = useState('')
   const [matching, setMatching] = useState(false)
   const [reanalyzing, setReanalyzing] = useState<string | null>(null) // 재분석 중인 pipeline ID
+  const [clientComment, setClientComment] = useState('') // 클라이언트 코멘트
   const [isAdmin, setIsAdmin] = useState(false)
   const [isOwner, setIsOwner] = useState(false)
   const [userEmail, setUserEmail] = useState('')
@@ -299,7 +300,11 @@ export default function PipelinePage() {
       const matchRes = await fetch('/api/pipeline/match', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ jd, candidate }),
+        body: JSON.stringify({
+          jd,
+          candidate,
+          client_comment: clientComment.trim() || undefined
+        }),
       })
 
       if (!matchRes.ok) {
@@ -649,6 +654,17 @@ export default function PipelinePage() {
                 </ul>
               </div>
             )}
+
+            <div style={{ marginBottom: 16 }}>
+              <label className="form-label">클라이언트 코멘트 <span style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>(선택)</span></label>
+              <textarea
+                className="form-textarea"
+                style={{ minHeight: 70, fontSize: 13 }}
+                placeholder="예: 개발직군 채용 경험 필수, 스타트업 경험자 우대&#10;요건 완화/강화, 우선순위 변경, 기피 프로파일 등을 입력 후 재분석하세요."
+                value={clientComment}
+                onChange={(e) => setClientComment(e.target.value)}
+              />
+            </div>
 
             <div style={{ display: 'flex', gap: 8, justifyContent: 'space-between' }}>
               <button
