@@ -715,8 +715,12 @@ export default function PipelinePage() {
               borderRadius: 4,
               fontSize: 12,
               color: 'var(--text-secondary)',
+              lineHeight: 1.5,
             }}>
-              💡 AI 분석은 백그라운드에서 진행됩니다. 완료되면 브라우저 알림으로 안내해드립니다.
+              <div style={{ fontWeight: 600, marginBottom: 4, color: 'var(--accent)' }}>💡 백그라운드 분석</div>
+              <div>• 여러 후보자를 동시에 재분석할 수 있습니다</div>
+              <div>• 분석 중에도 다른 작업이 가능합니다</div>
+              <div>• 완료되면 브라우저 알림으로 안내해드립니다</div>
             </div>
 
             <div style={{ display: 'flex', gap: 8, justifyContent: 'space-between' }}>
