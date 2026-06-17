@@ -11,6 +11,8 @@ export async function GET(req: NextRequest) {
     const jdId = req.nextUrl.searchParams.get('jd_id')
     const candidateId = req.nextUrl.searchParams.get('candidate_id')
     const stage = req.nextUrl.searchParams.get('stage')
+    const limit = parseInt(req.nextUrl.searchParams.get('limit') || '50')
+    const offset = parseInt(req.nextUrl.searchParams.get('offset') || '0')
 
     // 필수 파라미터 검증 (보안)
     if (!role || !userEmail) {
@@ -29,19 +31,25 @@ export async function GET(req: NextRequest) {
     let q = supabaseAdmin
       .from('pipeline')
       .select(`
-        *,
+        id,
+        created_at,
+        jd_id,
+        candidate_id,
+        stage,
+        match_score,
+        is_active,
+        priority,
+        next_action,
+        next_action_date,
         job_descriptions (
-          id, company, position, priority, created_by,
-          required_skills, preferred_skills, difficulty,
-          target_profile, search_strategy
+          id, company, position, priority, created_by
         ),
         candidates (
-          id, name, email, current_company, current_position, status,
-          total_experience_years, skills, tech_stack, certifications, education,
-          strength_summary, weakness_summary, career_summary, career_trajectory
+          id, name, email, current_company, current_position, status
         )
-      `)
+      `, { count: 'exact' })
       .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1)
 
     // Role별 필터링: Owner는 조직 전체, PM은 본인 JD만, Searcher는 본인이 생성한 파이프라인만
     // 모든 role에 대해 현재 조직 내 데이터만 조회 (조직 격리)
@@ -112,7 +120,7 @@ export async function GET(req: NextRequest) {
     if (candidateId) q = q.eq('candidate_id', candidateId)
     if (stage) q = q.eq('stage', stage)
 
-    const { data, error } = await q
+    const { data, error, count } = await q
     if (error) {
       console.error('[pipeline GET] Query error:', error)
       return NextResponse.json({ error: error.message }, { status: 500 })
@@ -143,7 +151,13 @@ export async function GET(req: NextRequest) {
           }
         })
 
-        return NextResponse.json({ pipeline: enrichedData }, {
+        return NextResponse.json({
+          pipeline: enrichedData,
+          total: count || 0,
+          hasMore: (offset + limit) < (count || 0),
+          offset,
+          limit
+        }, {
           headers: {
             'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
             'Pragma': 'no-cache',
@@ -153,7 +167,13 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    return NextResponse.json({ pipeline: data ?? [] }, {
+    return NextResponse.json({
+      pipeline: data ?? [],
+      total: count || 0,
+      hasMore: (offset + limit) < (count || 0),
+      offset,
+      limit
+    }, {
       headers: {
         'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
         'Pragma': 'no-cache',

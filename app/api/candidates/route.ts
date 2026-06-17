@@ -9,11 +9,21 @@ export async function GET(req: NextRequest) {
     const userEmail = req.nextUrl.searchParams.get('user_email')
     const status = req.nextUrl.searchParams.get('status')
     const search = req.nextUrl.searchParams.get('search')
+    const limit = parseInt(req.nextUrl.searchParams.get('limit') || '50')
+    const offset = parseInt(req.nextUrl.searchParams.get('offset') || '0')
 
     let q = supabaseAdmin
       .from('candidates')
       .select(`
-        *,
+        id,
+        name,
+        email,
+        current_company,
+        current_position,
+        status,
+        created_at,
+        created_by,
+        organization_id,
         organization:organizations(id, name),
         created_by_user:profiles!fk_candidates_created_by_profile(id, full_name, email),
         pipeline:pipeline!pipeline_candidate_id_fkey(
@@ -22,8 +32,9 @@ export async function GET(req: NextRequest) {
           is_active,
           job_descriptions(company, position)
         )
-      `)
+      `, { count: 'exact' })
       .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1)
 
     // Role별 필터링
     console.log('[candidates] User:', userEmail, 'Role:', role)
@@ -74,7 +85,7 @@ export async function GET(req: NextRequest) {
       q = q.or(`name.ilike.%${search}%,email.ilike.%${search}%,current_company.ilike.%${search}%,current_position.ilike.%${search}%`)
     }
 
-    const { data, error } = await q
+    const { data, error, count } = await q
     if (error) {
       console.error('[candidates] Query error:', error)
       console.error('[candidates] Error details:', JSON.stringify(error, null, 2))
@@ -89,7 +100,13 @@ export async function GET(req: NextRequest) {
     if (data && data.length > 0) {
       console.log('[candidates] Sample created_by values:', data.slice(0, 3).map(c => c.created_by))
     }
-    return NextResponse.json({ candidates: data ?? [] })
+    return NextResponse.json({
+      candidates: data ?? [],
+      total: count || 0,
+      hasMore: (offset + limit) < (count || 0),
+      offset,
+      limit
+    })
   } catch (e) {
     console.error('[api/candidates GET]', e)
     return NextResponse.json({ error: '조회 중 오류가 발생했습니다.' }, { status: 500 })
