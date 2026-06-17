@@ -97,6 +97,8 @@ function getFinalEducation(education: string[] | undefined): string {
 export default function CandidatesPage() {
   const [candidates, setCandidates] = useState<Candidate[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [hasMore, setHasMore] = useState(false)
   const [filter, setFilter] = useState('전체')
   const [search, setSearch] = useState('')
   const [skillSearch, setSkillSearch] = useState('')
@@ -166,7 +168,10 @@ export default function CandidatesPage() {
 
       fetch(`/api/candidates?${params}`)
         .then(r => r.json())
-        .then(d => setCandidates(d.candidates ?? []))
+        .then(d => {
+          setCandidates(d.candidates ?? [])
+          setHasMore(d.hasMore ?? false)
+        })
         .finally(() => setLoading(false))
     }
     loadCandidates()
@@ -190,6 +195,35 @@ export default function CandidatesPage() {
     await fetch(`/api/candidates/${id}`, { method: 'DELETE' })
     setCandidates(prev => prev.filter(c => c.id !== id))
     if (selected?.id === id) closeModal()
+  }
+
+  async function loadMore() {
+    if (loadingMore || !hasMore) return
+    setLoadingMore(true)
+
+    try {
+      const profile = await getProfile()
+      if (!profile) return
+
+      const params = new URLSearchParams({
+        role: profile.role,
+        user_email: profile.email,
+        limit: '50',
+        offset: candidates.length.toString(),
+        ...(profile.role === 'admin' && selectedOrgId !== '전체' && { organization_id: selectedOrgId }),
+        ...(profile.role !== 'admin' && profile.organization_id && { organization_id: profile.organization_id })
+      })
+
+      const res = await fetch(`/api/candidates?${params}`)
+      const data = await res.json()
+
+      setCandidates(prev => [...prev, ...(data.candidates ?? [])])
+      setHasMore(data.hasMore ?? false)
+    } catch (err) {
+      console.error('Failed to load more candidates:', err)
+    } finally {
+      setLoadingMore(false)
+    }
   }
 
   function closeModal() {
@@ -605,6 +639,24 @@ export default function CandidatesPage() {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* 더 보기 버튼 */}
+      {!loading && hasMore && (
+        <div style={{ textAlign: 'center', marginTop: 20 }}>
+          <button
+            onClick={loadMore}
+            disabled={loadingMore}
+            className="btn btn-secondary"
+            style={{
+              padding: '12px 32px',
+              opacity: loadingMore ? 0.6 : 1,
+              cursor: loadingMore ? 'not-allowed' : 'pointer'
+            }}
+          >
+            {loadingMore ? '로딩 중...' : `더 보기 (${candidates.length}개 표시 중)`}
+          </button>
         </div>
       )}
 
