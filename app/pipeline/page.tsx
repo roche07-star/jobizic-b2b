@@ -68,6 +68,9 @@ export default function PipelinePage() {
   const [jds, setJds] = useState<JD[]>([])
   const [candidates, setCandidates] = useState<Candidate[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [hasMorePipeline, setHasMorePipeline] = useState(false)
+  const [hasMoreCandidates, setHasMoreCandidates] = useState(false)
   const [selected, setSelected] = useState<PipelineItem | null>(null)
   const [showAddModal, setShowAddModal] = useState(false)
   const [selectedJd, setSelectedJd] = useState('')
@@ -123,9 +126,15 @@ export default function PipelinePage() {
       }
 
       Promise.all([
-        fetch(`/api/pipeline?${params}`, fetchOptions).then(r => r.json()).then(d => setPipeline(d.pipeline ?? [])),
+        fetch(`/api/pipeline?${params}`, fetchOptions).then(r => r.json()).then(d => {
+          setPipeline(d.pipeline ?? [])
+          setHasMorePipeline(d.hasMore ?? false)
+        }),
         fetch(`/api/jd?${params}`, fetchOptions).then(r => r.json()).then(d => setJds(d.jds ?? [])),
-        fetch(`/api/candidates?${params}`, fetchOptions).then(r => r.json()).then(d => setCandidates(d.candidates ?? []))
+        fetch(`/api/candidates?${params}`, fetchOptions).then(r => r.json()).then(d => {
+          setCandidates(d.candidates ?? [])
+          setHasMoreCandidates(d.hasMore ?? false)
+        })
       ]).finally(() => setLoading(false))
     }
     loadData()
@@ -150,6 +159,65 @@ export default function PipelinePage() {
         window.focus()
         notification.close()
       }
+    }
+  }
+
+  // 더 보기 함수
+  async function loadMorePipeline() {
+    if (loadingMore || !hasMorePipeline) return
+    setLoadingMore(true)
+
+    try {
+      const profile = await getProfile()
+      if (!profile) return
+
+      const params = new URLSearchParams({
+        role: profile.role,
+        user_email: profile.email,
+        limit: '50',
+        offset: pipeline.length.toString(),
+        ...(profile.role === 'admin' && selectedOrgId !== '전체' && { organization_id: selectedOrgId }),
+        ...(profile.role !== 'admin' && profile.organization_id && { organization_id: profile.organization_id })
+      })
+
+      const res = await fetch(`/api/pipeline?${params}`)
+      const data = await res.json()
+
+      setPipeline(prev => [...prev, ...(data.pipeline ?? [])])
+      setHasMorePipeline(data.hasMore ?? false)
+    } catch (err) {
+      console.error('Failed to load more pipeline:', err)
+    } finally {
+      setLoadingMore(false)
+    }
+  }
+
+  async function loadMoreCandidates() {
+    if (loadingMore || !hasMoreCandidates) return
+    setLoadingMore(true)
+
+    try {
+      const profile = await getProfile()
+      if (!profile) return
+
+      const params = new URLSearchParams({
+        role: profile.role,
+        user_email: profile.email,
+        limit: '50',
+        offset: candidates.length.toString(),
+        ...(profile.role === 'admin' && selectedOrgId !== '전체' && { organization_id: selectedOrgId }),
+        ...(profile.role !== 'admin' && profile.organization_id && { organization_id: profile.organization_id })
+      })
+
+      const res = await fetch(`/api/candidates?${params}`)
+      const data = await res.json()
+
+      setCandidates(prev => [...prev, ...(data.candidates ?? [])])
+      setHasMoreCandidates(data.hasMore ?? false)
+    } catch (err) {
+      console.error('Failed to load more candidates:', err)
+    } finally {
+      setLoadingMore(false)
     }
   }
 
@@ -571,6 +639,24 @@ export default function PipelinePage() {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* 더 보기 버튼 */}
+      {!loading && hasMorePipeline && (
+        <div style={{ textAlign: 'center', marginTop: 20 }}>
+          <button
+            onClick={loadMorePipeline}
+            disabled={loadingMore}
+            className="btn btn-secondary"
+            style={{
+              padding: '12px 32px',
+              opacity: loadingMore ? 0.6 : 1,
+              cursor: loadingMore ? 'not-allowed' : 'pointer'
+            }}
+          >
+            {loadingMore ? '로딩 중...' : `더 보기 (${pipeline.length}개 표시 중)`}
+          </button>
         </div>
       )}
 
