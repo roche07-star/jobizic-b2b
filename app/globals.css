@@ -102,14 +102,28 @@ body {
 .jd-tag { font-size: 11px; padding: 2px 8px; border-radius: 20px; border: 1px solid var(--border); color: var(--muted2); }
 .jd-actions { display: flex; gap: 6px; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border); }
 
-.badge { display: inline-flex; align-items: center; font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 20px; }
+.badge { display: inline-flex; align-items: center; font-size: 11px; font-weight: 500; padding: 3px 10px; border-radius: 20px; }
+
+/* 우선순위 배지 */
 .badge-긴급 { background: rgba(255,107,107,0.15); color: var(--danger); }
 .badge-중요 { background: rgba(232,160,32,0.15); color: var(--warn); }
+.badge-높음 { background: rgba(251,146,60,0.15); color: #fb923c; }
+.badge-보통 { background: rgba(255,255,255,0.06); color: var(--muted2); }
 .badge-일반 { background: rgba(255,255,255,0.06); color: var(--muted2); }
+.badge-낮음 { background: rgba(148,163,184,0.12); color: #94a3b8; }
+
+/* 난이도 배지 */
 .badge-상 { background: rgba(255,107,107,0.12); color: var(--danger); }
 .badge-중 { background: rgba(232,160,32,0.12); color: var(--warn); }
 .badge-하 { background: rgba(76,175,134,0.12); color: var(--success); }
+.badge-매우\ 어려움 { background: rgba(255,107,107,0.12); color: var(--danger); }
+.badge-어려움 { background: rgba(232,160,32,0.12); color: var(--warn); }
+.badge-쉬움 { background: rgba(76,175,134,0.12); color: var(--success); }
+
+/* 상태 배지 */
 .badge-검토중 { background: rgba(123,97,255,0.12); color: var(--accent2); }
+.badge-활성 { background: rgba(16,185,129,0.15); color: #10b981; }
+.badge-마감 { background: rgba(59,130,246,0.15); color: #3b82f6; }
 .badge-승인 { background: rgba(76,175,134,0.12); color: var(--success); }
 .badge-보류 { background: rgba(255,255,255,0.06); color: var(--muted2); }
 
