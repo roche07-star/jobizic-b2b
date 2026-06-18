@@ -664,14 +664,14 @@ export default function JDPage() {
                         const nextStatus = statuses[(currentIndex + 1) % statuses.length]
                         updateStatus(jd.id, nextStatus)
                       }}
-                      style={{ cursor: 'pointer', fontWeight: 600, fontSize: 12 }}
+                      style={{ cursor: 'pointer', fontWeight: 600 }}
                       title="클릭하여 상태 변경"
                     >
                       {jd.status === '활성' ? '✅ ' : jd.status === '마감' ? '🎯 ' : jd.status === '보류' ? '⏸️ ' : '🔍 '}
                       {jd.status}
                     </button>
                   ) : (
-                    <span className={`badge badge-${jd.status}`} style={{ fontWeight: 600, fontSize: 12 }}>
+                    <span className={`badge badge-${jd.status}`} style={{ fontWeight: 600 }}>
                       {jd.status === '활성' ? '✅ ' : jd.status === '마감' ? '🎯 ' : jd.status === '보류' ? '⏸️ ' : '🔍 '}
                       {jd.status}
                     </span>
@@ -696,14 +696,14 @@ export default function JDPage() {
                           const nextPriority = priorities[(currentIndex + 1) % priorities.length]
                           updatePriority(jd.id, nextPriority)
                         }}
-                        style={{ cursor: 'pointer' }}
+                        style={{ cursor: 'pointer', fontWeight: 600 }}
                         title="클릭하여 우선순위 변경"
                       >
                         {displayPriority === '긴급' ? '🔥 ' : displayPriority === '높음' ? '⬆️ ' : displayPriority === '낮음' ? '⬇️ ' : ''}
                         {displayPriority}
                       </button>
                     ) : (
-                      <span className={`badge badge-${normalizedPriority}`}>
+                      <span className={`badge badge-${normalizedPriority}`} style={{ fontWeight: 600 }}>
                         {displayPriority === '긴급' ? '🔥 ' : displayPriority === '높음' ? '⬆️ ' : displayPriority === '낮음' ? '⬇️ ' : ''}
                         {displayPriority}
                       </span>
@@ -711,10 +711,7 @@ export default function JDPage() {
                   })()}
                   {/* 담당자 */}
                   {(jd.created_by_user || jd.created_by) && (
-                    <span style={{
-                      fontSize: 11,
-                      padding: '2px 6px',
-                      borderRadius: 3,
+                    <span className="badge" style={{
                       background: 'rgba(136, 136, 128, 0.15)',
                       color: 'var(--muted)',
                       fontWeight: 500
