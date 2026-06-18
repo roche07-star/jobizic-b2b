@@ -419,7 +419,8 @@ export default function CandidatesPage() {
     '보류': 5,
   }
 
-  const finalFiltered = advanced.sort((a, b) => {
+  // 새 배열을 만들어서 정렬 (React 렌더링 트리거를 위해)
+  const finalFiltered = [...advanced].sort((a, b) => {
     const priorityA = statusPriority[a.status] || 999
     const priorityB = statusPriority[b.status] || 999
 
