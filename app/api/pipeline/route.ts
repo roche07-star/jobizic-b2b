@@ -37,15 +37,19 @@ export async function GET(req: NextRequest) {
         candidate_id,
         stage,
         match_score,
+        match_reason,
+        skill_match_rate,
+        strength_for_jd,
+        concerns,
         is_active,
         priority,
         next_action,
         next_action_date,
         job_descriptions (
-          id, company, position, priority, created_by
+          id, company, position, priority, created_by, required_skills, preferred_skills
         ),
         candidates (
-          id, name, email, current_company, current_position, status
+          id, name, email, current_company, current_position, status, skills, tech_stack
         )
       `, { count: 'exact' })
       .order('created_at', { ascending: false })
