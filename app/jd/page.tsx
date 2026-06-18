@@ -253,7 +253,43 @@ export default function JDPage() {
     : jds.filter(j => j.created_by === userEmail || interests.includes(j.id))
 
   const statusFiltered = filter === '전체' ? viewFiltered : viewFiltered.filter(j => j.status === filter)
-  const filtered = priorityFilter === '전체' ? statusFiltered : statusFiltered.filter(j => j.priority === priorityFilter)
+  const priorityFiltered = priorityFilter === '전체' ? statusFiltered : statusFiltered.filter(j => j.priority === priorityFilter)
+
+  // 상태 + 우선순위 정렬 (활성/긴급이 최우선)
+  const statusPriority: Record<string, number> = {
+    '활성': 1,
+    '검토중': 2,
+    '마감': 3,
+    '보류': 4,
+  }
+
+  const jdPriority: Record<string, number> = {
+    '긴급': 1,
+    '높음': 2,
+    '보통': 3,
+    '낮음': 4,
+  }
+
+  const filtered = [...priorityFiltered].sort((a, b) => {
+    const statusA = statusPriority[a.status] || 999
+    const statusB = statusPriority[b.status] || 999
+
+    // 1차: 상태 우선순위
+    if (statusA !== statusB) {
+      return statusA - statusB
+    }
+
+    // 2차: JD 우선순위
+    const priorityA = jdPriority[a.priority] || 999
+    const priorityB = jdPriority[b.priority] || 999
+
+    if (priorityA !== priorityB) {
+      return priorityA - priorityB
+    }
+
+    // 3차: 최신순
+    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+  })
 
   // JD 수정
   async function startEditJD(jd: JD) {
@@ -522,7 +558,29 @@ export default function JDPage() {
       ) : (
         <div className="jd-grid">
           {filtered.map(jd => (
-            <div key={jd.id} className="jd-card" onClick={() => setSelected(jd)}>
+            <div
+              key={jd.id}
+              className="jd-card"
+              onClick={() => setSelected(jd)}
+              style={
+                jd.status === '활성' && jd.priority === '긴급'
+                  ? {
+                      background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(220, 38, 38, 0.05) 100%)',
+                      border: '2px solid rgba(239, 68, 68, 0.3)',
+                    }
+                  : jd.status === '활성'
+                    ? {
+                        background: 'linear-gradient(135deg, rgba(52, 211, 153, 0.08) 0%, rgba(16, 185, 129, 0.05) 100%)',
+                        border: '2px solid rgba(16, 185, 129, 0.2)',
+                      }
+                    : jd.priority === '긴급'
+                      ? {
+                          background: 'linear-gradient(135deg, rgba(251, 146, 60, 0.08) 0%, rgba(249, 115, 22, 0.05) 100%)',
+                          border: '2px solid rgba(251, 146, 60, 0.2)',
+                        }
+                      : undefined
+              }
+            >
               <div className="jd-card-top">
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'space-between', width: '100%' }}>
                   <div className="jd-company">{jd.company ?? '회사명 미상'}</div>
