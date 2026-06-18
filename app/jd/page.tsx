@@ -677,28 +677,38 @@ export default function JDPage() {
                     </span>
                   )}
                   {/* 우선순위 - 클릭해서 변경 */}
-                  {(jd.created_by === userEmail || userRole === 'owner' || userRole === 'admin') ? (
-                    <button
-                      className={`badge badge-${jd.priority}`}
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        const priorities = ['긴급', '높음', '보통', '낮음']
-                        const currentIndex = priorities.indexOf(jd.priority)
-                        const nextPriority = priorities[(currentIndex + 1) % priorities.length]
-                        updatePriority(jd.id, nextPriority)
-                      }}
-                      style={{ cursor: 'pointer' }}
-                      title="클릭하여 우선순위 변경"
-                    >
-                      {jd.priority === '긴급' ? '🔥 ' : jd.priority === '높음' ? '⬆️ ' : jd.priority === '낮음' ? '⬇️ ' : ''}
-                      {jd.priority}
-                    </button>
-                  ) : (
-                    <span className={`badge badge-${jd.priority}`}>
-                      {jd.priority === '긴급' ? '🔥 ' : jd.priority === '높음' ? '⬆️ ' : jd.priority === '낮음' ? '⬇️ ' : ''}
-                      {jd.priority}
-                    </span>
-                  )}
+                  {(() => {
+                    // 기존 "중요", "일반" 데이터 자동 매핑
+                    const priorityMap: Record<string, string> = {
+                      '중요': '긴급',
+                      '일반': '보통',
+                    }
+                    const normalizedPriority = priorityMap[jd.priority] || jd.priority
+                    const displayPriority = normalizedPriority
+
+                    return (jd.created_by === userEmail || userRole === 'owner' || userRole === 'admin') ? (
+                      <button
+                        className={`badge badge-${normalizedPriority}`}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          const priorities = ['긴급', '높음', '보통', '낮음']
+                          const currentIndex = priorities.indexOf(normalizedPriority)
+                          const nextPriority = priorities[(currentIndex + 1) % priorities.length]
+                          updatePriority(jd.id, nextPriority)
+                        }}
+                        style={{ cursor: 'pointer' }}
+                        title="클릭하여 우선순위 변경"
+                      >
+                        {displayPriority === '긴급' ? '🔥 ' : displayPriority === '높음' ? '⬆️ ' : displayPriority === '낮음' ? '⬇️ ' : ''}
+                        {displayPriority}
+                      </button>
+                    ) : (
+                      <span className={`badge badge-${normalizedPriority}`}>
+                        {displayPriority === '긴급' ? '🔥 ' : displayPriority === '높음' ? '⬆️ ' : displayPriority === '낮음' ? '⬇️ ' : ''}
+                        {displayPriority}
+                      </span>
+                    )
+                  })()}
                   {/* 담당자 */}
                   {(jd.created_by_user || jd.created_by) && (
                     <span style={{
@@ -1014,41 +1024,60 @@ export default function JDPage() {
                 ) : (
                   <>
                     <div style={{ display: 'flex', gap: 6, marginBottom: 12, flexWrap: 'wrap' }}>
-                      <span className={`badge badge-${selected.priority}`}>{selected.priority}</span>
-                      <span className={`badge badge-${selected.status}`}>{selected.status}</span>
+                      {(() => {
+                        // 기존 "중요", "일반" 데이터 자동 매핑
+                        const priorityMap: Record<string, string> = { '중요': '긴급', '일반': '보통' }
+                        const displayPriority = priorityMap[selected.priority] || selected.priority
+                        return (
+                          <span className={`badge badge-${displayPriority}`}>
+                            {displayPriority === '긴급' ? '🔥 ' : displayPriority === '높음' ? '⬆️ ' : displayPriority === '낮음' ? '⬇️ ' : ''}
+                            {displayPriority}
+                          </span>
+                        )
+                      })()}
+                      <span className={`badge badge-${selected.status}`}>
+                        {selected.status === '활성' ? '✅ ' : selected.status === '마감' ? '🎯 ' : selected.status === '보류' ? '⏸️ ' : '🔍 '}
+                        {selected.status}
+                      </span>
                       <span className={`badge badge-${selected.difficulty}`}>난이도 {selected.difficulty}</span>
                     </div>
 
                     {/* 빠른 변경 버튼 */}
-                    {(selected.created_by === userEmail || userRole === 'owner' || userRole === 'admin') && (
-                      <div style={{ display: 'flex', gap: 6, marginBottom: 20, flexWrap: 'wrap' }}>
-                        {selected.status === '검토중' && (
-                          <button className="btn btn-success btn-sm" onClick={() => { updateStatus(selected.id, '활성'); setSelected({...selected, status: '활성'}); }}>
-                            ✅ 활성화
-                          </button>
-                        )}
-                        {selected.status === '활성' && (
-                          <button className="btn btn-primary btn-sm" onClick={() => { updateStatus(selected.id, '마감'); setSelected({...selected, status: '마감'}); }}>
-                            🎯 마감
-                          </button>
-                        )}
-                        {selected.status !== '보류' && selected.status !== '마감' && (
-                          <button className="btn btn-ghost btn-sm" onClick={() => { updateStatus(selected.id, '보류'); setSelected({...selected, status: '보류'}); }}>
-                            ⏸️ 보류
-                          </button>
-                        )}
-                        {selected.priority !== '긴급' && (
-                          <button className="btn btn-warning btn-sm" onClick={() => { updatePriority(selected.id, '긴급'); setSelected({...selected, priority: '긴급'}); }}>
-                            🔥 긴급으로
-                          </button>
-                        )}
-                        {selected.priority === '긴급' && (
-                          <button className="btn btn-ghost btn-sm" onClick={() => { updatePriority(selected.id, '보통'); setSelected({...selected, priority: '보통'}); }}>
-                            ↓ 보통으로
-                          </button>
-                        )}
-                      </div>
-                    )}
+                    {(selected.created_by === userEmail || userRole === 'owner' || userRole === 'admin') && (() => {
+                      // 기존 "중요", "일반" 데이터 자동 매핑
+                      const priorityMap: Record<string, string> = { '중요': '긴급', '일반': '보통' }
+                      const normalizedPriority = priorityMap[selected.priority] || selected.priority
+
+                      return (
+                        <div style={{ display: 'flex', gap: 6, marginBottom: 20, flexWrap: 'wrap' }}>
+                          {selected.status === '검토중' && (
+                            <button className="btn btn-success btn-sm" onClick={() => { updateStatus(selected.id, '활성'); setSelected({...selected, status: '활성'}); }}>
+                              ✅ 활성화
+                            </button>
+                          )}
+                          {selected.status === '활성' && (
+                            <button className="btn btn-primary btn-sm" onClick={() => { updateStatus(selected.id, '마감'); setSelected({...selected, status: '마감'}); }}>
+                              🎯 마감
+                            </button>
+                          )}
+                          {selected.status !== '보류' && selected.status !== '마감' && (
+                            <button className="btn btn-ghost btn-sm" onClick={() => { updateStatus(selected.id, '보류'); setSelected({...selected, status: '보류'}); }}>
+                              ⏸️ 보류
+                            </button>
+                          )}
+                          {normalizedPriority !== '긴급' && (
+                            <button className="btn btn-warning btn-sm" onClick={() => { updatePriority(selected.id, '긴급'); setSelected({...selected, priority: '긴급'}); }}>
+                              🔥 긴급으로
+                            </button>
+                          )}
+                          {normalizedPriority === '긴급' && (
+                            <button className="btn btn-ghost btn-sm" onClick={() => { updatePriority(selected.id, '보통'); setSelected({...selected, priority: '보통'}); }}>
+                              ↓ 보통으로
+                            </button>
+                          )}
+                        </div>
+                      )
+                    })()}
 
 
                     {/* 좌우 분할 레이아웃 */}
