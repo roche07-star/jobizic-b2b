@@ -685,7 +685,26 @@ export default function JDPage() {
                   ) : (
                     <span className={`badge badge-${jd.priority}`}>{jd.priority}</span>
                   )}
-                  <span className={`badge badge-${jd.status}`}>{jd.status}</span>
+                  {/* 상태 - 클릭해서 변경 */}
+                  {(jd.created_by === userEmail || userRole === 'owner' || userRole === 'admin') ? (
+                    <button
+                      className={`badge badge-${jd.status}`}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        const statuses = ['검토중', '활성', '마감', '보류']
+                        const currentIndex = statuses.indexOf(jd.status)
+                        const nextStatus = statuses[(currentIndex + 1) % statuses.length]
+                        updateStatus(jd.id, nextStatus)
+                      }}
+                      style={{ cursor: 'pointer', fontWeight: 600 }}
+                      title="클릭하여 상태 변경"
+                    >
+                      {jd.status === '활성' ? '✅ ' : jd.status === '마감' ? '🎯 ' : jd.status === '보류' ? '⏸️ ' : '🔍 '}
+                      {jd.status}
+                    </button>
+                  ) : (
+                    <span className={`badge badge-${jd.status}`}>{jd.status}</span>
+                  )}
                 </div>
               </div>
               <div className="jd-position">{jd.position}</div>
