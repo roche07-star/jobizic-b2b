@@ -580,25 +580,19 @@ export default function CandidatesPage() {
               style={
                 candidate.status === '활성'
                   ? {
-                      background: 'linear-gradient(135deg, rgba(52, 211, 153, 0.15) 0%, rgba(16, 185, 129, 0.1) 100%)',
-                      border: '2px solid rgba(16, 185, 129, 0.4)',
+                      borderLeft: '4px solid #10b981',
+                      boxShadow: '0 0 0 1px rgba(16, 185, 129, 0.1)',
                     }
                   : candidate.status === '제안중'
                     ? {
-                        background: 'linear-gradient(135deg, rgba(96, 165, 250, 0.15) 0%, rgba(59, 130, 246, 0.1) 100%)',
-                        border: '2px solid rgba(96, 165, 250, 0.4)',
+                        borderLeft: '4px solid #3b82f6',
+                        boxShadow: '0 0 0 1px rgba(59, 130, 246, 0.1)',
                       }
                     : undefined
               }
             >
               <div className="jd-card-top">
-                <div className="jd-company">
-                  {candidate.current_company ?? '프리랜서'}
-                  {/* 디버깅: status 값 표시 */}
-                  <span style={{ fontSize: 10, color: 'orange', marginLeft: 8 }}>
-                    [DEBUG: {candidate.status || 'undefined'}]
-                  </span>
-                </div>
+                <div className="jd-company">{candidate.current_company ?? '프리랜서'}</div>
                 <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
                   {candidate.organization && (
                     <span style={{
