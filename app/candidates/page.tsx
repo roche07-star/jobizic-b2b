@@ -573,7 +573,15 @@ export default function CandidatesPage() {
       ) : (
         <div className="jd-grid">
           {finalFiltered.map(candidate => (
-            <div key={candidate.id} className="jd-card" onClick={() => setSelected(candidate)}>
+            <div
+              key={candidate.id}
+              className="jd-card"
+              onClick={() => setSelected(candidate)}
+              style={candidate.status === '활성' ? {
+                background: 'linear-gradient(135deg, rgba(52, 211, 153, 0.08) 0%, rgba(16, 185, 129, 0.05) 100%)',
+                border: '2px solid rgba(16, 185, 129, 0.2)',
+              } : undefined}
+            >
               <div className="jd-card-top">
                 <div className="jd-company">{candidate.current_company ?? '프리랜서'}</div>
                 <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
