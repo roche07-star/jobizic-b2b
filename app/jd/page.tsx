@@ -652,17 +652,28 @@ export default function JDPage() {
                     {(jd.created_by === userEmail || interests.includes(jd.id)) ? '★' : '☆'}
                   </button>
                 </div>
-                <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
-                  {(jd.created_by_user || jd.created_by) && (
-                    <span style={{
-                      fontSize: 11,
-                      padding: '2px 6px',
-                      borderRadius: 3,
-                      background: 'rgba(136, 136, 128, 0.15)',
-                      color: 'var(--muted)',
-                      fontWeight: 500
-                    }}>
-                      👤 {jd.created_by_user?.full_name || (jd.created_by ? jd.created_by.split('@')[0] : 'unknown')}
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
+                  {/* 상태 - 클릭해서 변경 (최우선 표시) */}
+                  {(jd.created_by === userEmail || userRole === 'owner' || userRole === 'admin') ? (
+                    <button
+                      className={`badge badge-${jd.status}`}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        const statuses = ['검토중', '활성', '마감', '보류']
+                        const currentIndex = statuses.indexOf(jd.status)
+                        const nextStatus = statuses[(currentIndex + 1) % statuses.length]
+                        updateStatus(jd.id, nextStatus)
+                      }}
+                      style={{ cursor: 'pointer', fontWeight: 600, fontSize: 12 }}
+                      title="클릭하여 상태 변경"
+                    >
+                      {jd.status === '활성' ? '✅ ' : jd.status === '마감' ? '🎯 ' : jd.status === '보류' ? '⏸️ ' : '🔍 '}
+                      {jd.status}
+                    </button>
+                  ) : (
+                    <span className={`badge badge-${jd.status}`} style={{ fontWeight: 600, fontSize: 12 }}>
+                      {jd.status === '활성' ? '✅ ' : jd.status === '마감' ? '🎯 ' : jd.status === '보류' ? '⏸️ ' : '🔍 '}
+                      {jd.status}
                     </span>
                   )}
                   {/* 우선순위 - 클릭해서 변경 */}
@@ -683,27 +694,23 @@ export default function JDPage() {
                       {jd.priority}
                     </button>
                   ) : (
-                    <span className={`badge badge-${jd.priority}`}>{jd.priority}</span>
+                    <span className={`badge badge-${jd.priority}`}>
+                      {jd.priority === '긴급' ? '🔥 ' : jd.priority === '높음' ? '⬆️ ' : jd.priority === '낮음' ? '⬇️ ' : ''}
+                      {jd.priority}
+                    </span>
                   )}
-                  {/* 상태 - 클릭해서 변경 */}
-                  {(jd.created_by === userEmail || userRole === 'owner' || userRole === 'admin') ? (
-                    <button
-                      className={`badge badge-${jd.status}`}
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        const statuses = ['검토중', '활성', '마감', '보류']
-                        const currentIndex = statuses.indexOf(jd.status)
-                        const nextStatus = statuses[(currentIndex + 1) % statuses.length]
-                        updateStatus(jd.id, nextStatus)
-                      }}
-                      style={{ cursor: 'pointer', fontWeight: 600 }}
-                      title="클릭하여 상태 변경"
-                    >
-                      {jd.status === '활성' ? '✅ ' : jd.status === '마감' ? '🎯 ' : jd.status === '보류' ? '⏸️ ' : '🔍 '}
-                      {jd.status}
-                    </button>
-                  ) : (
-                    <span className={`badge badge-${jd.status}`}>{jd.status}</span>
+                  {/* 담당자 */}
+                  {(jd.created_by_user || jd.created_by) && (
+                    <span style={{
+                      fontSize: 11,
+                      padding: '2px 6px',
+                      borderRadius: 3,
+                      background: 'rgba(136, 136, 128, 0.15)',
+                      color: 'var(--muted)',
+                      fontWeight: 500
+                    }}>
+                      👤 {jd.created_by_user?.full_name || (jd.created_by ? jd.created_by.split('@')[0] : 'unknown')}
+                    </span>
                   )}
                 </div>
               </div>
