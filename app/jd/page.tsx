@@ -611,7 +611,7 @@ export default function JDPage() {
               }
             >
               <div className="jd-card-top">
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'space-between', width: '100%' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                   <div className="jd-company">{jd.company ?? '회사명 미상'}</div>
                   <button
                     onClick={(e) => {
