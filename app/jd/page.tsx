@@ -665,7 +665,26 @@ export default function JDPage() {
                       👤 {jd.created_by_user?.full_name || (jd.created_by ? jd.created_by.split('@')[0] : 'unknown')}
                     </span>
                   )}
-                  <span className={`badge badge-${jd.priority}`}>{jd.priority}</span>
+                  {/* 우선순위 - 클릭해서 변경 */}
+                  {(jd.created_by === userEmail || userRole === 'owner' || userRole === 'admin') ? (
+                    <button
+                      className={`badge badge-${jd.priority}`}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        const priorities = ['긴급', '높음', '보통', '낮음']
+                        const currentIndex = priorities.indexOf(jd.priority)
+                        const nextPriority = priorities[(currentIndex + 1) % priorities.length]
+                        updatePriority(jd.id, nextPriority)
+                      }}
+                      style={{ cursor: 'pointer' }}
+                      title="클릭하여 우선순위 변경"
+                    >
+                      {jd.priority === '긴급' ? '🔥 ' : jd.priority === '높음' ? '⬆️ ' : jd.priority === '낮음' ? '⬇️ ' : ''}
+                      {jd.priority}
+                    </button>
+                  ) : (
+                    <span className={`badge badge-${jd.priority}`}>{jd.priority}</span>
+                  )}
                   <span className={`badge badge-${jd.status}`}>{jd.status}</span>
                 </div>
               </div>
