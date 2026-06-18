@@ -410,7 +410,26 @@ export default function CandidatesPage() {
     advanced = advanced.filter(c => (c.total_experience_years || 0) <= parseInt(maxExperience))
   }
 
-  const finalFiltered = advanced
+  // 상태별 우선순위 정렬 (제안중 > 활성 > 검토중 > 합격 > 보류)
+  const statusPriority: Record<string, number> = {
+    '제안중': 1,
+    '활성': 2,
+    '검토중': 3,
+    '합격': 4,
+    '보류': 5,
+  }
+
+  const finalFiltered = advanced.sort((a, b) => {
+    const priorityA = statusPriority[a.status] || 999
+    const priorityB = statusPriority[b.status] || 999
+
+    // 우선순위가 같으면 최신순 (created_at 내림차순)
+    if (priorityA === priorityB) {
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    }
+
+    return priorityA - priorityB
+  })
 
   return (
     <main className="page">
