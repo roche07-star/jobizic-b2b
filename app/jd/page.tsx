@@ -592,7 +592,11 @@ export default function JDPage() {
               onClick={(e) => {
                 // 버튼이나 자식 요소 클릭은 무시
                 const target = e.target as HTMLElement
-                if (target.tagName === 'BUTTON' || target.closest('button')) return
+                if (target.tagName === 'BUTTON' || target.closest('button')) {
+                  console.log('[카드 클릭] 버튼 클릭으로 무시됨')
+                  return
+                }
+                console.log('[카드 클릭] 모달 열기:', jd.company)
                 setSelected(jd)
               }}
               style={{
@@ -664,11 +668,13 @@ export default function JDPage() {
                     <button
                       className={`badge badge-${jd.status}`}
                       onClick={(e) => {
+                        console.log('[배지 클릭] 상태:', jd.status, 'JD ID:', jd.id)
                         e.preventDefault()
                         e.stopPropagation()
                         const statuses = ['검토중', '활성', '마감', '보류']
                         const currentIndex = statuses.indexOf(jd.status)
                         const nextStatus = statuses[(currentIndex + 1) % statuses.length]
+                        console.log('[배지 클릭] 변경:', jd.status, '→', nextStatus)
                         updateStatus(jd.id, nextStatus)
                       }}
                       style={{ cursor: 'pointer', fontWeight: 600, position: 'relative', zIndex: 10, pointerEvents: 'auto' }}
@@ -697,11 +703,13 @@ export default function JDPage() {
                       <button
                         className={`badge badge-${normalizedPriority}`}
                         onClick={(e) => {
+                          console.log('[배지 클릭] 우선순위:', normalizedPriority, 'JD ID:', jd.id)
                           e.preventDefault()
                           e.stopPropagation()
                           const priorities = ['긴급', '높음', '보통', '낮음']
                           const currentIndex = priorities.indexOf(normalizedPriority)
                           const nextPriority = priorities[(currentIndex + 1) % priorities.length]
+                          console.log('[배지 클릭] 변경:', normalizedPriority, '→', nextPriority)
                           updatePriority(jd.id, nextPriority)
                         }}
                         style={{ cursor: 'pointer', fontWeight: 600, position: 'relative', zIndex: 10, pointerEvents: 'auto' }}
