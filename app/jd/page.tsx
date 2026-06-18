@@ -1023,23 +1023,62 @@ export default function JDPage() {
                   </div>
                 ) : (
                   <>
-                    <div style={{ display: 'flex', gap: 6, marginBottom: 12, flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', gap: 6, marginBottom: 20, flexWrap: 'wrap' }}>
+                      {/* 상태 배지 - 클릭해서 순환 */}
+                      {(selected.created_by === userEmail || userRole === 'owner' || userRole === 'admin') ? (
+                        <button
+                          className={`badge badge-${selected.status}`}
+                          onClick={() => {
+                            const statuses = ['검토중', '활성', '마감', '보류']
+                            const currentIndex = statuses.indexOf(selected.status)
+                            const nextStatus = statuses[(currentIndex + 1) % statuses.length]
+                            updateStatus(selected.id, nextStatus)
+                            setSelected({...selected, status: nextStatus})
+                          }}
+                          style={{ cursor: 'pointer', fontSize: 13, fontWeight: 600 }}
+                          title="클릭하여 상태 변경"
+                        >
+                          {selected.status === '활성' ? '✅ ' : selected.status === '마감' ? '🎯 ' : selected.status === '보류' ? '⏸️ ' : '🔍 '}
+                          {selected.status}
+                        </button>
+                      ) : (
+                        <span className={`badge badge-${selected.status}`} style={{ fontSize: 13, fontWeight: 600 }}>
+                          {selected.status === '활성' ? '✅ ' : selected.status === '마감' ? '🎯 ' : selected.status === '보류' ? '⏸️ ' : '🔍 '}
+                          {selected.status}
+                        </span>
+                      )}
+
+                      {/* 우선순위 배지 - 클릭해서 순환 */}
                       {(() => {
-                        // 기존 "중요", "일반" 데이터 자동 매핑
                         const priorityMap: Record<string, string> = { '중요': '긴급', '일반': '보통' }
                         const displayPriority = priorityMap[selected.priority] || selected.priority
-                        return (
-                          <span className={`badge badge-${displayPriority}`}>
+
+                        return (selected.created_by === userEmail || userRole === 'owner' || userRole === 'admin') ? (
+                          <button
+                            className={`badge badge-${displayPriority}`}
+                            onClick={() => {
+                              const priorities = ['긴급', '높음', '보통', '낮음']
+                              const currentIndex = priorities.indexOf(displayPriority)
+                              const nextPriority = priorities[(currentIndex + 1) % priorities.length]
+                              updatePriority(selected.id, nextPriority)
+                              setSelected({...selected, priority: nextPriority})
+                            }}
+                            style={{ cursor: 'pointer', fontSize: 13, fontWeight: 600 }}
+                            title="클릭하여 우선순위 변경"
+                          >
+                            {displayPriority === '긴급' ? '🔥 ' : displayPriority === '높음' ? '⬆️ ' : displayPriority === '낮음' ? '⬇️ ' : ''}
+                            {displayPriority}
+                          </button>
+                        ) : (
+                          <span className={`badge badge-${displayPriority}`} style={{ fontSize: 13, fontWeight: 600 }}>
                             {displayPriority === '긴급' ? '🔥 ' : displayPriority === '높음' ? '⬆️ ' : displayPriority === '낮음' ? '⬇️ ' : ''}
                             {displayPriority}
                           </span>
                         )
                       })()}
-                      <span className={`badge badge-${selected.status}`}>
-                        {selected.status === '활성' ? '✅ ' : selected.status === '마감' ? '🎯 ' : selected.status === '보류' ? '⏸️ ' : '🔍 '}
-                        {selected.status}
-                      </span>
-                      <span className={`badge badge-${selected.difficulty}`}>난이도 {selected.difficulty}</span>
+
+                      {/* 난이도 배지 - 표시만 */}
+                      <span className={`badge badge-${selected.difficulty}`} style={{ fontSize: 13 }}>난이도 {selected.difficulty}</span>
                     </div>
 
                     {/* 빠른 변경 버튼 */}
