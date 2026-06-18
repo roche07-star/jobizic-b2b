@@ -1,0 +1,10 @@
+echo "🧪 커밋 전 테스트 실행 중..."
+npm test
+
+if [ $? -ne 0 ]; then
+  echo "❌ 테스트 실패! 커밋이 중단되었습니다."
+  echo "💡 'npm test'로 문제를 확인하세요."
+  exit 1
+fi
+
+echo "✅ 테스트 통과! 커밋 진행합니다."
