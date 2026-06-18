@@ -594,9 +594,9 @@ export default function JDPage() {
                 if ((e.target as HTMLElement).closest('button.badge')) return
                 setSelected(jd)
               }}
-              style={{ cursor: 'pointer' }}
-              style={
-                jd.status === '활성' && jd.priority === '긴급'
+              style={{
+                cursor: 'pointer',
+                ...(jd.status === '활성' && jd.priority === '긴급'
                   ? {
                       borderLeft: '4px solid #ef4444',
                       boxShadow: '0 0 0 1px rgba(239, 68, 68, 0.2), 0 0 16px rgba(239, 68, 68, 0.2)',
@@ -612,8 +612,8 @@ export default function JDPage() {
                           borderLeft: '4px solid #f97316',
                           boxShadow: '0 0 0 1px rgba(249, 115, 22, 0.15)',
                         }
-                      : undefined
-              }
+                      : {})
+              }}
             >
               <div className="jd-card-top">
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
