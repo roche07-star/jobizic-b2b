@@ -1,0 +1,116 @@
+name: Security Audit
+
+on:
+  # 매주 월요일 오전 9시 (KST) 실행
+  schedule:
+    - cron: '0 0 * * 1' # UTC 00:00 = KST 09:00
+
+  # 수동 실행 가능
+  workflow_dispatch:
+
+  # Push 시에도 실행
+  push:
+    branches:
+      - main
+
+  # PR 시에도 실행
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  audit:
+    name: npm audit
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run npm audit
+        run: npm audit --json > audit-report.json || true
+
+      - name: Parse audit report
+        id: audit
+        run: |
+          CRITICAL=$(jq '.metadata.vulnerabilities.critical' audit-report.json)
+          HIGH=$(jq '.metadata.vulnerabilities.high' audit-report.json)
+          MODERATE=$(jq '.metadata.vulnerabilities.moderate' audit-report.json)
+          LOW=$(jq '.metadata.vulnerabilities.low' audit-report.json)
+
+          echo "critical=$CRITICAL" >> $GITHUB_OUTPUT
+          echo "high=$HIGH" >> $GITHUB_OUTPUT
+          echo "moderate=$MODERATE" >> $GITHUB_OUTPUT
+          echo "low=$LOW" >> $GITHUB_OUTPUT
+
+          echo "## Security Audit Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Severity | Count |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| 🔴 Critical | $CRITICAL |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🟠 High | $HIGH |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🟡 Moderate | $MODERATE |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🟢 Low | $LOW |" >> $GITHUB_STEP_SUMMARY
+
+      - name: Fail on critical or high vulnerabilities
+        if: steps.audit.outputs.critical > 0 || steps.audit.outputs.high > 0
+        run: |
+          echo "❌ Critical or high severity vulnerabilities found!"
+          echo "Critical: ${{ steps.audit.outputs.critical }}"
+          echo "High: ${{ steps.audit.outputs.high }}"
+          exit 1
+
+      - name: Upload audit report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: npm-audit-report
+          path: audit-report.json
+          retention-days: 30
+
+      - name: Comment PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const critical = ${{ steps.audit.outputs.critical }};
+            const high = ${{ steps.audit.outputs.high }};
+            const moderate = ${{ steps.audit.outputs.moderate }};
+            const low = ${{ steps.audit.outputs.low }};
+
+            let status = '✅ No critical or high vulnerabilities';
+            if (critical > 0 || high > 0) {
+              status = '❌ Critical or high vulnerabilities found!';
+            } else if (moderate > 0) {
+              status = '⚠️ Moderate vulnerabilities found';
+            }
+
+            const body = `## Security Audit Results
+
+            ${status}
+
+            | Severity | Count |
+            |----------|-------|
+            | 🔴 Critical | ${critical} |
+            | 🟠 High | ${high} |
+            | 🟡 Moderate | ${moderate} |
+            | 🟢 Low | ${low} |
+
+            ${critical > 0 || high > 0 ? '⚠️ **Please fix critical and high vulnerabilities before merging!**' : ''}
+            `;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.name,
+              body: body
+            });

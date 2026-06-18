@@ -1,0 +1,30 @@
+# Dependabot 설정
+# 의존성 자동 업데이트 및 보안 취약점 감지
+
+version: 2
+updates:
+  # npm 패키지 자동 업데이트
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Asia/Seoul"
+    # 자동 생성할 PR 개수 제한
+    open-pull-requests-limit: 10
+    # 버전 업데이트 전략
+    versioning-strategy: "increase"
+    # 라벨 추가
+    labels:
+      - "dependencies"
+      - "security"
+    # 커밋 메시지 설정
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+    # 보안 업데이트 우선
+    allow:
+      - dependency-type: "all"
+    # 자동 merge 설정 (보안 패치만)
+    # auto-merge는 GitHub UI에서 설정 필요
