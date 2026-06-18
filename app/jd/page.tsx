@@ -658,6 +658,7 @@ export default function JDPage() {
                     <button
                       className={`badge badge-${jd.status}`}
                       onClick={(e) => {
+                        e.preventDefault()
                         e.stopPropagation()
                         const statuses = ['검토중', '활성', '마감', '보류']
                         const currentIndex = statuses.indexOf(jd.status)
@@ -690,6 +691,7 @@ export default function JDPage() {
                       <button
                         className={`badge badge-${normalizedPriority}`}
                         onClick={(e) => {
+                          e.preventDefault()
                           e.stopPropagation()
                           const priorities = ['긴급', '높음', '보통', '낮음']
                           const currentIndex = priorities.indexOf(normalizedPriority)
