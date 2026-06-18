@@ -147,8 +147,18 @@ export default function JDPage() {
   }, [selectedOrgId])
 
   async function updateStatus(id: string, status: string) {
+    console.log('[updateStatus] ID:', id, '상태:', status)
     await fetch(`/api/jd/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status }) })
-    setJds(prev => prev.map(j => j.id === id ? { ...j, status } : j))
+    setJds(prev => {
+      const updated = prev.map(j => {
+        if (j.id === id) {
+          console.log('[updateStatus] 업데이트:', j.company, j.status, '→', status)
+          return { ...j, status }
+        }
+        return j
+      })
+      return updated
+    })
     if (selected?.id === id) setSelected(prev => prev ? { ...prev, status } : prev)
   }
 
@@ -250,6 +260,7 @@ export default function JDPage() {
   // JD 우선순위 변경
   async function updatePriority(jdId: string, newPriority: string) {
     try {
+      console.log('[updatePriority] ID:', jdId, '우선순위:', newPriority)
       const res = await fetch(`/api/jd/${jdId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -267,7 +278,16 @@ export default function JDPage() {
       }
 
       // 성공 시 JD 목록 갱신
-      setJds(prev => prev.map(j => j.id === jdId ? { ...j, priority: newPriority } : j))
+      setJds(prev => {
+        const updated = prev.map(j => {
+          if (j.id === jdId) {
+            console.log('[updatePriority] 업데이트:', j.company, j.priority, '→', newPriority)
+            return { ...j, priority: newPriority }
+          }
+          return j
+        })
+        return updated
+      })
       success(`✅ 우선순위가 '${newPriority}'로 변경되었습니다!`)
     } catch (err) {
       console.error('[updatePriority] Error:', err)
