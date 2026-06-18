@@ -102,7 +102,7 @@ body {
 .jd-tag { font-size: 11px; padding: 2px 8px; border-radius: 20px; border: 1px solid var(--border); color: var(--muted2); }
 .jd-actions { display: flex; gap: 6px; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border); }
 
-.badge { display: inline-flex; align-items: center; font-size: 11px; font-weight: 500; padding: 3px 10px; border-radius: 20px; }
+.badge { display: inline-flex; align-items: center; font-size: 11px; font-weight: 500; padding: 3px 10px; border-radius: 20px; line-height: 1; vertical-align: middle; }
 
 /* 우선순위 배지 */
 .badge-긴급 { background: rgba(255,107,107,0.15); color: var(--danger); }

@@ -652,7 +652,7 @@ export default function JDPage() {
                     {(jd.created_by === userEmail || interests.includes(jd.id)) ? '★' : '☆'}
                   </button>
                 </div>
-                <div style={{ display: 'flex', gap: 4, alignItems: 'center', overflow: 'hidden' }}>
+                <div style={{ display: 'flex', gap: 4, alignItems: 'center', overflow: 'hidden', lineHeight: 1 }}>
                   {/* 상태 - 클릭해서 변경 (최우선 표시) */}
                   {(jd.created_by === userEmail || userRole === 'owner' || userRole === 'admin') ? (
                     <button
