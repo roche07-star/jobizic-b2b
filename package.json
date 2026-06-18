@@ -11,6 +11,7 @@
     "lint": "eslint",
     "test": "jest",
     "test:watch": "jest --watch",
+    "generate:keys": "node scripts/generate-encryption-keys.js",
     "prepare": "husky"
   },
   "dependencies": {
