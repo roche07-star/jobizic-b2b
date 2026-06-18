@@ -12,6 +12,7 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "generate:keys": "node scripts/generate-encryption-keys.js",
+    "generate:keys:secure": "node scripts/generate-encryption-keys-secure.js",
     "prepare": "husky"
   },
   "dependencies": {
