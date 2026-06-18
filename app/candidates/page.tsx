@@ -578,17 +578,23 @@ export default function CandidatesPage() {
               className="jd-card"
               onClick={() => setSelected(candidate)}
               style={
-                candidate.status === '활성'
+                candidate.status === '합격'
                   ? {
-                      borderLeft: '4px solid #10b981',
-                      boxShadow: '0 0 0 1px rgba(16, 185, 129, 0.1)',
+                      borderLeft: '4px solid #eab308',
+                      boxShadow: '0 0 0 1px rgba(234, 179, 8, 0.2), 0 0 12px rgba(234, 179, 8, 0.15)',
+                      background: 'linear-gradient(135deg, rgba(234, 179, 8, 0.05) 0%, rgba(250, 204, 21, 0.03) 100%)',
                     }
-                  : candidate.status === '제안중'
+                  : candidate.status === '활성'
                     ? {
-                        borderLeft: '4px solid #3b82f6',
-                        boxShadow: '0 0 0 1px rgba(59, 130, 246, 0.1)',
+                        borderLeft: '4px solid #10b981',
+                        boxShadow: '0 0 0 1px rgba(16, 185, 129, 0.1)',
                       }
-                    : undefined
+                    : candidate.status === '제안중'
+                      ? {
+                          borderLeft: '4px solid #3b82f6',
+                          boxShadow: '0 0 0 1px rgba(59, 130, 246, 0.1)',
+                        }
+                      : undefined
               }
             >
               <div className="jd-card-top">
