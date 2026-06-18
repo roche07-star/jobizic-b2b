@@ -580,13 +580,13 @@ export default function CandidatesPage() {
               style={
                 candidate.status === '활성'
                   ? {
-                      background: 'linear-gradient(135deg, rgba(52, 211, 153, 0.08) 0%, rgba(16, 185, 129, 0.05) 100%)',
-                      border: '2px solid rgba(16, 185, 129, 0.2)',
+                      background: 'linear-gradient(135deg, rgba(52, 211, 153, 0.15) 0%, rgba(16, 185, 129, 0.1) 100%)',
+                      border: '2px solid rgba(16, 185, 129, 0.4)',
                     }
                   : candidate.status === '제안중'
                     ? {
-                        background: 'linear-gradient(135deg, rgba(96, 165, 250, 0.08) 0%, rgba(59, 130, 246, 0.05) 100%)',
-                        border: '2px solid rgba(96, 165, 250, 0.2)',
+                        background: 'linear-gradient(135deg, rgba(96, 165, 250, 0.15) 0%, rgba(59, 130, 246, 0.1) 100%)',
+                        border: '2px solid rgba(96, 165, 250, 0.4)',
                       }
                     : undefined
               }
