@@ -589,7 +589,12 @@ export default function JDPage() {
             <div
               key={jd.id}
               className="jd-card"
-              onClick={() => setSelected(jd)}
+              onClick={(e) => {
+                // 배지 버튼 클릭은 무시
+                if ((e.target as HTMLElement).closest('button.badge')) return
+                setSelected(jd)
+              }}
+              style={{ cursor: 'pointer' }}
               style={
                 jd.status === '활성' && jd.priority === '긴급'
                   ? {
