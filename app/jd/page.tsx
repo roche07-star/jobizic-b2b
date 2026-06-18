@@ -565,18 +565,19 @@ export default function JDPage() {
               style={
                 jd.status === '활성' && jd.priority === '긴급'
                   ? {
-                      background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(220, 38, 38, 0.05) 100%)',
-                      border: '2px solid rgba(239, 68, 68, 0.3)',
+                      borderLeft: '4px solid #ef4444',
+                      boxShadow: '0 0 0 1px rgba(239, 68, 68, 0.2), 0 0 16px rgba(239, 68, 68, 0.2)',
+                      background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.05) 0%, rgba(220, 38, 38, 0.03) 100%)',
                     }
                   : jd.status === '활성'
                     ? {
-                        background: 'linear-gradient(135deg, rgba(52, 211, 153, 0.08) 0%, rgba(16, 185, 129, 0.05) 100%)',
-                        border: '2px solid rgba(16, 185, 129, 0.2)',
+                        borderLeft: '4px solid #10b981',
+                        boxShadow: '0 0 0 1px rgba(16, 185, 129, 0.1)',
                       }
                     : jd.priority === '긴급'
                       ? {
-                          background: 'linear-gradient(135deg, rgba(251, 146, 60, 0.08) 0%, rgba(249, 115, 22, 0.05) 100%)',
-                          border: '2px solid rgba(251, 146, 60, 0.2)',
+                          borderLeft: '4px solid #f97316',
+                          boxShadow: '0 0 0 1px rgba(249, 115, 22, 0.15)',
                         }
                       : undefined
               }
