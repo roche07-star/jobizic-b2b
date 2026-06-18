@@ -28,6 +28,8 @@ export async function GET(req: NextRequest) {
       })
     }
 
+    // ⚠️ CRITICAL: 아래 매칭 분석 필드들은 화면 표시에 필수입니다. 절대 삭제하지 마세요!
+    // - match_score, match_reason, skill_match_rate, strength_for_jd, concerns
     let q = supabaseAdmin
       .from('pipeline')
       .select(`

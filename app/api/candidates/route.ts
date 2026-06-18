@@ -12,6 +12,10 @@ export async function GET(req: NextRequest) {
     const limit = parseInt(req.nextUrl.searchParams.get('limit') || '50')
     const offset = parseInt(req.nextUrl.searchParams.get('offset') || '0')
 
+    // ⚠️ CRITICAL: 아래 분석 필드들은 화면 표시에 필수입니다. 절대 삭제하지 마세요!
+    // - career_summary, strength_summary, weakness_summary, career_trajectory
+    // - skills, tech_stack, education, ideal_roles, key_highlights
+    // - phone, birth_year, location, market_value, tags
     let q = supabaseAdmin
       .from('candidates')
       .select(`
