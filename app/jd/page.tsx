@@ -968,11 +968,43 @@ export default function JDPage() {
                   </div>
                 ) : (
                   <>
-                    <div style={{ display: 'flex', gap: 6, marginBottom: 20 }}>
+                    <div style={{ display: 'flex', gap: 6, marginBottom: 12, flexWrap: 'wrap' }}>
                       <span className={`badge badge-${selected.priority}`}>{selected.priority}</span>
                       <span className={`badge badge-${selected.status}`}>{selected.status}</span>
                       <span className={`badge badge-${selected.difficulty}`}>난이도 {selected.difficulty}</span>
                     </div>
+
+                    {/* 빠른 변경 버튼 */}
+                    {(selected.created_by === userEmail || userRole === 'owner' || userRole === 'admin') && (
+                      <div style={{ display: 'flex', gap: 6, marginBottom: 20, flexWrap: 'wrap' }}>
+                        {selected.status === '검토중' && (
+                          <button className="btn btn-success btn-sm" onClick={() => { updateStatus(selected.id, '활성'); setSelected({...selected, status: '활성'}); }}>
+                            ✅ 활성화
+                          </button>
+                        )}
+                        {selected.status === '활성' && (
+                          <button className="btn btn-primary btn-sm" onClick={() => { updateStatus(selected.id, '마감'); setSelected({...selected, status: '마감'}); }}>
+                            🎯 마감
+                          </button>
+                        )}
+                        {selected.status !== '보류' && selected.status !== '마감' && (
+                          <button className="btn btn-ghost btn-sm" onClick={() => { updateStatus(selected.id, '보류'); setSelected({...selected, status: '보류'}); }}>
+                            ⏸️ 보류
+                          </button>
+                        )}
+                        {selected.priority !== '긴급' && (
+                          <button className="btn btn-warning btn-sm" onClick={() => { updatePriority(selected.id, '긴급'); setSelected({...selected, priority: '긴급'}); }}>
+                            🔥 긴급으로
+                          </button>
+                        )}
+                        {selected.priority === '긴급' && (
+                          <button className="btn btn-ghost btn-sm" onClick={() => { updatePriority(selected.id, '보통'); setSelected({...selected, priority: '보통'}); }}>
+                            ↓ 보통으로
+                          </button>
+                        )}
+                      </div>
+                    )}
+
 
                     {/* 좌우 분할 레이아웃 */}
                     <div style={{
