@@ -590,8 +590,9 @@ export default function JDPage() {
               key={jd.id}
               className="jd-card"
               onClick={(e) => {
-                // 배지 버튼 클릭은 무시
-                if ((e.target as HTMLElement).closest('button.badge')) return
+                // 버튼이나 자식 요소 클릭은 무시
+                const target = e.target as HTMLElement
+                if (target.tagName === 'BUTTON' || target.closest('button')) return
                 setSelected(jd)
               }}
               style={{
