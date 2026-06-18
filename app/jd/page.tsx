@@ -247,6 +247,34 @@ export default function JDPage() {
     }
   }
 
+  // JD 우선순위 변경
+  async function updatePriority(jdId: string, newPriority: string) {
+    try {
+      const res = await fetch(`/api/jd/${jdId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          priority: newPriority,
+          user_email: userEmail,
+          user_role: userRole
+        })
+      })
+
+      if (!res.ok) {
+        const errorData = await res.json()
+        error(`우선순위 변경 실패: ${errorData.error || '서버 오류'}`)
+        return
+      }
+
+      // 성공 시 JD 목록 갱신
+      setJds(prev => prev.map(j => j.id === jdId ? { ...j, priority: newPriority } : j))
+      success(`✅ 우선순위가 '${newPriority}'로 변경되었습니다!`)
+    } catch (err) {
+      console.error('[updatePriority] Error:', err)
+      error('❌ 우선순위 변경 중 오류가 발생했습니다.')
+    }
+  }
+
   // 관심 JD 필터링
   const viewFiltered = viewMode === 'all'
     ? jds
@@ -695,8 +723,17 @@ export default function JDPage() {
                     {jd.status === '검토중' && (
                       <button className="btn btn-success btn-sm" onClick={() => updateStatus(jd.id, '활성')}>활성화</button>
                     )}
-                    {jd.status !== '보류' && (
+                    {jd.status === '활성' && (
+                      <button className="btn btn-primary btn-sm" onClick={() => updateStatus(jd.id, '마감')}>마감</button>
+                    )}
+                    {jd.status !== '보류' && jd.status !== '마감' && (
                       <button className="btn btn-ghost btn-sm" onClick={() => updateStatus(jd.id, '보류')}>보류</button>
+                    )}
+                    {jd.priority !== '긴급' && (
+                      <button className="btn btn-warning btn-sm" onClick={() => updatePriority(jd.id, '긴급')}>🔥 긴급</button>
+                    )}
+                    {jd.priority === '긴급' && (
+                      <button className="btn btn-ghost btn-sm" onClick={() => updatePriority(jd.id, '보통')}>↓ 보통</button>
                     )}
                     <button className="btn btn-danger btn-sm" onClick={() => deleteJD(jd.id)}>삭제</button>
                   </>
