@@ -665,7 +665,7 @@ export default function JDPage() {
                         const nextStatus = statuses[(currentIndex + 1) % statuses.length]
                         updateStatus(jd.id, nextStatus)
                       }}
-                      style={{ cursor: 'pointer', fontWeight: 600 }}
+                      style={{ cursor: 'pointer', fontWeight: 600, position: 'relative', zIndex: 10, pointerEvents: 'auto' }}
                       title="클릭하여 상태 변경"
                     >
                       {jd.status === '활성' ? '✅ ' : jd.status === '마감' ? '🎯 ' : jd.status === '보류' ? '⏸️ ' : '🔍 '}
@@ -698,7 +698,7 @@ export default function JDPage() {
                           const nextPriority = priorities[(currentIndex + 1) % priorities.length]
                           updatePriority(jd.id, nextPriority)
                         }}
-                        style={{ cursor: 'pointer', fontWeight: 600 }}
+                        style={{ cursor: 'pointer', fontWeight: 600, position: 'relative', zIndex: 10, pointerEvents: 'auto' }}
                         title="클릭하여 우선순위 변경"
                       >
                         {displayPriority === '긴급' ? '🔥 ' : displayPriority === '높음' ? '⬆️ ' : displayPriority === '낮음' ? '⬇️ ' : ''}
