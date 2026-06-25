@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { supabaseAdmin } from '@/lib/supabase-admin'
 
 export const maxDuration = 60
 
@@ -37,10 +37,8 @@ export async function PUT(
       analysis_result
     } = body
 
-    const supabase = await createClient()
-
     // 기존 후보자 확인
-    const { data: existing } = await supabase
+    const { data: existing } = await supabaseAdmin
       .from('candidates')
       .select('id, metadata')
       .eq('id', id)
@@ -104,7 +102,7 @@ export async function PUT(
     }
 
     // 업데이트 실행
-    const { data: updated, error: updateError } = await supabase
+    const { data: updated, error: updateError } = await supabaseAdmin
       .from('candidates')
       .update(updateData)
       .eq('id', id)
@@ -149,10 +147,8 @@ export async function DELETE(
       return NextResponse.json({ error: 'Invalid API Key' }, { status: 401 })
     }
 
-    const supabase = await createClient()
-
     // 삭제 실행
-    const { error: deleteError } = await supabase
+    const { error: deleteError } = await supabaseAdmin
       .from('candidates')
       .delete()
       .eq('id', id)

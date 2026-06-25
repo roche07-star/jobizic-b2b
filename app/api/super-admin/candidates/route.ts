@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { supabaseAdmin } from '@/lib/supabase-admin'
 
 export const maxDuration = 60
 
@@ -32,10 +32,8 @@ export async function POST(req: NextRequest) {
       }, { status: 400 })
     }
 
-    const supabase = await createClient()
-
     // 중복 체크 (같은 이메일)
-    const { data: existing } = await supabase
+    const { data: existing } = await supabaseAdmin
       .from('candidates')
       .select('id')
       .eq('email', email)
@@ -44,7 +42,7 @@ export async function POST(req: NextRequest) {
 
     if (existing) {
       // 이미 존재하면 업데이트
-      const { data: updated, error: updateError } = await supabase
+      const { data: updated, error: updateError } = await supabaseAdmin
         .from('candidates')
         .update({
           name,
@@ -68,7 +66,7 @@ export async function POST(req: NextRequest) {
     }
 
     // 새로 등록
-    const { data: candidate, error: insertError } = await supabase
+    const { data: candidate, error: insertError } = await supabaseAdmin
       .from('candidates')
       .insert({
         name,
