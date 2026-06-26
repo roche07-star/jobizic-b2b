@@ -31,7 +31,13 @@ export async function GET(_req: NextRequest, context: { params: Promise<{ id: st
 
     const { data: { user } } = await supabase.auth.getUser()
 
+    // 디버깅
+    console.log('[candidate GET] User email:', user?.email)
+    console.log('[candidate GET] Candidate email:', data?.email)
+    console.log('[candidate GET] Candidate data:', { id: data?.id, name: data?.name, email: data?.email })
+
     if (user?.email && data?.email) {
+      console.log('[candidate GET] Logging access to Adam...')
       logCandidateAccess({
         headhunterEmail: user.email,
         candidateEmail: data.email,
@@ -45,6 +51,8 @@ export async function GET(_req: NextRequest, context: { params: Promise<{ id: st
         // 로그 실패해도 메인 기능은 계속
         console.error('[candidate view] Log failed:', err)
       })
+    } else {
+      console.log('[candidate GET] Skipping log: user.email=', user?.email, 'data.email=', data?.email)
     }
 
     return NextResponse.json(data)
