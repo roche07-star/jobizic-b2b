@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
+import { logCandidateAccess } from '@/lib/log-candidate-access'
+import { cookies } from 'next/headers'
+import { createServerClient } from '@supabase/ssr'
 
 export async function GET(_req: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
@@ -10,6 +13,40 @@ export async function GET(_req: NextRequest, context: { params: Promise<{ id: st
       .eq('id', id)
       .single()
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+    // 🔍 Adam 접근 로그 기록
+    const cookieStore = await cookies()
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return cookieStore.getAll()
+          },
+          setAll() {},
+        },
+      }
+    )
+
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (user?.email && data?.email) {
+      logCandidateAccess({
+        headhunterEmail: user.email,
+        candidateEmail: data.email,
+        action: 'view',
+        details: {
+          candidateName: data.name,
+          candidateId: data.id,
+          timestamp: new Date().toISOString()
+        }
+      }).catch(err => {
+        // 로그 실패해도 메인 기능은 계속
+        console.error('[candidate view] Log failed:', err)
+      })
+    }
+
     return NextResponse.json(data)
   } catch (e) {
     console.error('[api/candidates/[id] GET]', e)
