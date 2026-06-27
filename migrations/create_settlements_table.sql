@@ -67,7 +67,7 @@ ON settlements FOR SELECT TO authenticated
 USING (
   headhunter_email = auth.jwt() ->> 'email'
   AND organization_id IN (
-    SELECT organization_id FROM users WHERE email = auth.jwt() ->> 'email'
+    SELECT organization_id FROM profiles WHERE email = auth.jwt() ->> 'email'
   )
 );
 
@@ -77,7 +77,7 @@ ON settlements FOR INSERT TO authenticated
 WITH CHECK (
   headhunter_email = auth.jwt() ->> 'email'
   AND organization_id IN (
-    SELECT organization_id FROM users WHERE email = auth.jwt() ->> 'email'
+    SELECT organization_id FROM profiles WHERE email = auth.jwt() ->> 'email'
   )
 );
 
@@ -87,13 +87,13 @@ ON settlements FOR UPDATE TO authenticated
 USING (
   headhunter_email = auth.jwt() ->> 'email'
   AND organization_id IN (
-    SELECT organization_id FROM users WHERE email = auth.jwt() ->> 'email'
+    SELECT organization_id FROM profiles WHERE email = auth.jwt() ->> 'email'
   )
 )
 WITH CHECK (
   headhunter_email = auth.jwt() ->> 'email'
   AND organization_id IN (
-    SELECT organization_id FROM users WHERE email = auth.jwt() ->> 'email'
+    SELECT organization_id FROM profiles WHERE email = auth.jwt() ->> 'email'
   )
 );
 
@@ -103,7 +103,7 @@ ON settlements FOR DELETE TO authenticated
 USING (
   headhunter_email = auth.jwt() ->> 'email'
   AND organization_id IN (
-    SELECT organization_id FROM users WHERE email = auth.jwt() ->> 'email'
+    SELECT organization_id FROM profiles WHERE email = auth.jwt() ->> 'email'
   )
 );
 
@@ -112,10 +112,10 @@ CREATE POLICY "Owner는 organization 전체 정산 조회 가능"
 ON settlements FOR SELECT TO authenticated
 USING (
   EXISTS (
-    SELECT 1 FROM users
-    WHERE users.email = auth.jwt() ->> 'email'
-    AND users.organization_id = settlements.organization_id
-    AND users.role = 'OWNER'
+    SELECT 1 FROM profiles
+    WHERE profiles.email = auth.jwt() ->> 'email'
+    AND profiles.organization_id = settlements.organization_id
+    AND profiles.role = 'owner'
   )
 );
 
