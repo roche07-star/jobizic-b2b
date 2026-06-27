@@ -1,36 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
-import { getSession, getProfile } from '@/lib/auth'
+import { supabaseAdmin } from '@/lib/supabase-admin'
 
 export const maxDuration = 30
 
 export async function GET(req: NextRequest) {
   try {
-    const session = await getSession()
-    if (!session) {
-      return NextResponse.json({ error: '로그인이 필요합니다.' }, { status: 401 })
-    }
-
-    const profile = await getProfile()
-    if (!profile) {
-      return NextResponse.json({ error: '프로필을 찾을 수 없습니다.' }, { status: 404 })
-    }
-
-    if (!profile.organization_id) {
-      return NextResponse.json({ error: 'Organization이 없습니다.' }, { status: 403 })
-    }
-
     const { searchParams } = new URL(req.url)
     const year = searchParams.get('year')
       ? parseInt(searchParams.get('year')!)
       : new Date().getFullYear()
+    const organizationId = searchParams.get('organization_id')
+    const userEmail = searchParams.get('user_email')
 
-    // RLS로 organization 격리됨
-    const { data, error } = await supabase
+    if (!organizationId || !userEmail) {
+      return NextResponse.json({ error: '필수 파라미터가 없습니다.' }, { status: 400 })
+    }
+
+    // organization_id로 격리
+    const { data, error } = await supabaseAdmin
       .from('settlements')
       .select('*')
-      .eq('headhunter_email', profile.email)
-      .eq('organization_id', profile.organization_id)
+      .eq('headhunter_email', userEmail)
+      .eq('organization_id', organizationId)
       .eq('year', year)
       .order('start_date', { ascending: true }) // 1월부터 순서대로 (오름차순)
 
@@ -48,18 +39,12 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await getSession()
-    if (!session) {
-      return NextResponse.json({ error: '로그인이 필요합니다.' }, { status: 401 })
-    }
+    const { searchParams } = new URL(req.url)
+    const organizationId = searchParams.get('organization_id')
+    const userEmail = searchParams.get('user_email')
 
-    const profile = await getProfile()
-    if (!profile) {
-      return NextResponse.json({ error: '프로필을 찾을 수 없습니다.' }, { status: 404 })
-    }
-
-    if (!profile.organization_id) {
-      return NextResponse.json({ error: 'Organization이 없습니다.' }, { status: 403 })
+    if (!organizationId || !userEmail) {
+      return NextResponse.json({ error: '필수 파라미터가 없습니다.' }, { status: 400 })
     }
 
     const body = await req.json()
@@ -97,7 +82,7 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    const { data, error} = await supabase
+    const { data, error } = await supabaseAdmin
       .from('settlements')
       .insert({
         candidate_name,
@@ -113,8 +98,8 @@ export async function POST(req: NextRequest) {
         my_role,
         partner_name,
         my_ratio,
-        headhunter_email: profile.email,
-        organization_id: profile.organization_id, // Organization 격리
+        headhunter_email: userEmail,
+        organization_id: organizationId, // Organization 격리
       })
       .select()
       .single()

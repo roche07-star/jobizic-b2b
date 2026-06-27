@@ -80,9 +80,16 @@ export default function SettlementsClient() {
   }, [selectedYear, profile])
 
   const loadSettlements = async () => {
+    if (!profile?.organization_id || !profile?.email) return
+
     setLoading(true)
     try {
-      const res = await fetch(`/api/settlements?year=${selectedYear}`)
+      const params = new URLSearchParams({
+        year: String(selectedYear),
+        organization_id: profile.organization_id,
+        user_email: profile.email,
+      })
+      const res = await fetch(`/api/settlements?${params}`)
       const data = await res.json()
       if (res.ok) {
         setSettlements(data.settlements || [])
@@ -111,7 +118,16 @@ export default function SettlementsClient() {
     }
 
     try {
-      const url = editingId ? `/api/settlements/${editingId}` : '/api/settlements'
+      if (!profile?.organization_id || !profile?.email) {
+        alert('프로필 정보가 없습니다.')
+        return
+      }
+
+      const params = new URLSearchParams({
+        organization_id: profile.organization_id,
+        user_email: profile.email,
+      })
+      const url = editingId ? `/api/settlements/${editingId}?${params}` : `/api/settlements?${params}`
       const method = editingId ? 'PATCH' : 'POST'
       const res = await fetch(url, {
         method,
@@ -135,8 +151,17 @@ export default function SettlementsClient() {
 
   const handleDelete = async (id: string) => {
     if (!confirm('정말 삭제하시겠습니까?')) return
+    if (!profile?.organization_id || !profile?.email) {
+      alert('프로필 정보가 없습니다.')
+      return
+    }
+
     try {
-      const res = await fetch(`/api/settlements/${id}`, { method: 'DELETE' })
+      const params = new URLSearchParams({
+        organization_id: profile.organization_id,
+        user_email: profile.email,
+      })
+      const res = await fetch(`/api/settlements/${id}?${params}`, { method: 'DELETE' })
       if (res.ok) {
         alert('삭제되었습니다.')
         loadSettlements()
