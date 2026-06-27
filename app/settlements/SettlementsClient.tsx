@@ -1,8 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
+import { getProfile, type Profile } from '@/lib/auth'
 
 interface Settlement {
   id: string
@@ -22,8 +22,8 @@ interface Settlement {
 }
 
 export default function SettlementsClient() {
-  const { data: session, status } = useSession()
   const router = useRouter()
+  const [profile, setProfile] = useState<Profile | null>(null)
   const [settlements, setSettlements] = useState<Settlement[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
@@ -64,28 +64,20 @@ export default function SettlementsClient() {
   })
 
   useEffect(() => {
-    if (status === 'loading') return
-    if (!session) {
-      router.push('/login')
-      return
-    }
-    if (session.user.userType !== 'HEADHUNTER') {
-      alert('헤드헌터 전용 기능입니다.')
-      router.push('/')
-      return
-    }
-    if (session.user.plan === 'FREE') {
-      alert('PRO 이상 플랜이 필요합니다.')
-      router.push('/pricing')
-      return
-    }
-  }, [session, status, router])
+    getProfile().then(p => {
+      if (!p) {
+        router.push('/login')
+        return
+      }
+      setProfile(p)
+    })
+  }, [router])
 
   useEffect(() => {
-    if (session?.user.userType === 'HEADHUNTER') {
+    if (profile) {
       loadSettlements()
     }
-  }, [selectedYear, session])
+  }, [selectedYear, profile])
 
   const loadSettlements = async () => {
     setLoading(true)
@@ -238,7 +230,7 @@ export default function SettlementsClient() {
   const achievementRate = threshold > 0 ? Math.min(Math.round((stats.totalPersonal / threshold) * 100), 100) : 0
   const remaining = Math.max(threshold - stats.totalPersonal, 0)
 
-  if (status === 'loading' || !session) {
+  if (!profile) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#f5f1e8' }}>
         <div className="text-center">
