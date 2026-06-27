@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@/auth'
 import { supabase } from '@/lib/supabase'
+import { getSession, getProfile } from '@/lib/auth'
 
 export const maxDuration = 30
 
@@ -9,28 +9,27 @@ export async function PATCH(
   context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await auth()
-    if (!session?.user?.email) {
+    const session = await getSession()
+    if (!session) {
       return NextResponse.json({ error: '로그인이 필요합니다.' }, { status: 401 })
     }
 
-    if (session.user.userType !== 'HEADHUNTER') {
-      return NextResponse.json({ error: '헤드헌터 전용 기능입니다.' }, { status: 403 })
+    const profile = await getProfile()
+    if (!profile) {
+      return NextResponse.json({ error: '프로필을 찾을 수 없습니다.' }, { status: 404 })
     }
 
-    if (session.user.plan === 'FREE') {
-      return NextResponse.json(
-        { error: 'PRO 이상 플랜이 필요합니다.', upgrade: true },
-        { status: 402 }
-      )
+    if (!profile.organization_id) {
+      return NextResponse.json({ error: 'Organization이 없습니다.' }, { status: 403 })
     }
 
     const { id } = await context.params
     const body = await req.json()
 
+    // RLS로 organization 격리되므로 조회만 해도 권한 확인됨
     const { data: existing } = await supabase
       .from('settlements')
-      .select('headhunter_email')
+      .select('headhunter_email, organization_id')
       .eq('id', id)
       .single()
 
@@ -38,8 +37,12 @@ export async function PATCH(
       return NextResponse.json({ error: '정산을 찾을 수 없습니다.' }, { status: 404 })
     }
 
-    if (existing.headhunter_email !== session.user.email) {
+    if (existing.headhunter_email !== profile.email) {
       return NextResponse.json({ error: '권한이 없습니다.' }, { status: 403 })
+    }
+
+    if (existing.organization_id !== profile.organization_id) {
+      return NextResponse.json({ error: 'Organization이 일치하지 않습니다.' }, { status: 403 })
     }
 
     const updateData: any = {}
@@ -69,7 +72,8 @@ export async function PATCH(
       .from('settlements')
       .update(updateData)
       .eq('id', id)
-      .eq('headhunter_email', session.user.email)
+      .eq('headhunter_email', profile.email)
+      .eq('organization_id', profile.organization_id)
       .select()
       .single()
 
@@ -90,29 +94,29 @@ export async function DELETE(
   context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await auth()
-    if (!session?.user?.email) {
+    const session = await getSession()
+    if (!session) {
       return NextResponse.json({ error: '로그인이 필요합니다.' }, { status: 401 })
     }
 
-    if (session.user.userType !== 'HEADHUNTER') {
-      return NextResponse.json({ error: '헤드헌터 전용 기능입니다.' }, { status: 403 })
+    const profile = await getProfile()
+    if (!profile) {
+      return NextResponse.json({ error: '프로필을 찾을 수 없습니다.' }, { status: 404 })
     }
 
-    if (session.user.plan === 'FREE') {
-      return NextResponse.json(
-        { error: 'PRO 이상 플랜이 필요합니다.', upgrade: true },
-        { status: 402 }
-      )
+    if (!profile.organization_id) {
+      return NextResponse.json({ error: 'Organization이 없습니다.' }, { status: 403 })
     }
 
     const { id } = await context.params
 
+    // RLS로 organization 격리됨
     const { error } = await supabase
       .from('settlements')
       .delete()
       .eq('id', id)
-      .eq('headhunter_email', session.user.email)
+      .eq('headhunter_email', profile.email)
+      .eq('organization_id', profile.organization_id)
 
     if (error) {
       console.error('[settlements DELETE]', error)

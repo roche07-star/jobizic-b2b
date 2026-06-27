@@ -1,25 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@/auth'
 import { supabase } from '@/lib/supabase'
+import { getSession, getProfile } from '@/lib/auth'
 
 export const maxDuration = 30
 
 export async function GET(req: NextRequest) {
   try {
-    const session = await auth()
-    if (!session?.user?.email) {
+    const session = await getSession()
+    if (!session) {
       return NextResponse.json({ error: '로그인이 필요합니다.' }, { status: 401 })
     }
 
-    if (session.user.userType !== 'HEADHUNTER') {
-      return NextResponse.json({ error: '헤드헌터 전용 기능입니다.' }, { status: 403 })
+    const profile = await getProfile()
+    if (!profile) {
+      return NextResponse.json({ error: '프로필을 찾을 수 없습니다.' }, { status: 404 })
     }
 
-    if (session.user.plan === 'FREE') {
-      return NextResponse.json(
-        { error: 'PRO 이상 플랜이 필요합니다.', upgrade: true },
-        { status: 402 }
-      )
+    if (!profile.organization_id) {
+      return NextResponse.json({ error: 'Organization이 없습니다.' }, { status: 403 })
     }
 
     const { searchParams } = new URL(req.url)
@@ -27,10 +25,12 @@ export async function GET(req: NextRequest) {
       ? parseInt(searchParams.get('year')!)
       : new Date().getFullYear()
 
+    // RLS로 organization 격리됨
     const { data, error } = await supabase
       .from('settlements')
       .select('*')
-      .eq('headhunter_email', session.user.email)
+      .eq('headhunter_email', profile.email)
+      .eq('organization_id', profile.organization_id)
       .eq('year', year)
       .order('start_date', { ascending: true }) // 1월부터 순서대로 (오름차순)
 
@@ -48,20 +48,18 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await auth()
-    if (!session?.user?.email) {
+    const session = await getSession()
+    if (!session) {
       return NextResponse.json({ error: '로그인이 필요합니다.' }, { status: 401 })
     }
 
-    if (session.user.userType !== 'HEADHUNTER') {
-      return NextResponse.json({ error: '헤드헌터 전용 기능입니다.' }, { status: 403 })
+    const profile = await getProfile()
+    if (!profile) {
+      return NextResponse.json({ error: '프로필을 찾을 수 없습니다.' }, { status: 404 })
     }
 
-    if (session.user.plan === 'FREE') {
-      return NextResponse.json(
-        { error: 'PRO 이상 플랜이 필요합니다.', upgrade: true },
-        { status: 402 }
-      )
+    if (!profile.organization_id) {
+      return NextResponse.json({ error: 'Organization이 없습니다.' }, { status: 403 })
     }
 
     const body = await req.json()
@@ -99,7 +97,7 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    const { data, error } = await supabase
+    const { data, error} = await supabase
       .from('settlements')
       .insert({
         candidate_name,
@@ -115,7 +113,8 @@ export async function POST(req: NextRequest) {
         my_role,
         partner_name,
         my_ratio,
-        headhunter_email: session.user.email,
+        headhunter_email: profile.email,
+        organization_id: profile.organization_id, // Organization 격리
       })
       .select()
       .single()
