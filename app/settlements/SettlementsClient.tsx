@@ -267,7 +267,7 @@ export default function SettlementsClient() {
   }
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: '#f5f1e8', padding: '24px' }}>
+    <div className="min-h-screen" style={{ backgroundColor: '#f5f1e8', padding: '16px 12px' }}>
       <div className="mx-auto" style={{ maxWidth: '1600px' }}>
         {/* 뒤로가기 버튼 */}
         <div style={{ marginBottom: '16px' }}>
@@ -437,7 +437,7 @@ export default function SettlementsClient() {
               <span style={{ fontSize: '12px', color: '#78716c' }}>
                 {achievementRate}% 달성 {remaining > 0 && <span style={{ color: '#dc2626', marginLeft: '4px' }}>({remaining.toLocaleString()}만원 남음)</span>}
               </span>
-              <div style={{ width: '200px', height: '8px', background: '#d4c5a9', borderRadius: '4px', overflow: 'hidden' }}>
+              <div style={{ minWidth: '100px', flex: 1, maxWidth: '200px', height: '8px', background: '#d4c5a9', borderRadius: '4px', overflow: 'hidden' }}>
                 <div style={{ width: `${achievementRate}%`, height: '100%', background: '#b8860b', borderRadius: '4px' }} />
               </div>
             </div>
@@ -446,7 +446,7 @@ export default function SettlementsClient() {
 
         {/* 통계 카드 */}
         {settlements.length > 0 && (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '14px', marginBottom: '24px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '14px', marginBottom: '24px' }}>
             {[
               { label: '총 실매출액', val: `${stats.totalSales.toLocaleString()} 만원`, sub: `${settlements.length}건 합산`, color: '#b8860b' },
               { label: '개인 매출액', val: `${stats.totalPersonal.toLocaleString()} 만원`, sub: '내 몫 합계', color: '#3b82f6' },
@@ -523,7 +523,7 @@ export default function SettlementsClient() {
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '10px', alignItems: 'end' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '10px', alignItems: 'end' }}>
                 {[
                   ['합격자 *', 'candidate_name', 'text', '홍길동'],
                   ['입사일', 'start_date', 'date', ''],
