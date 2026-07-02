@@ -255,6 +255,39 @@ export async function POST(
 
     if (createError) {
       console.error('[Eve] Candidate creation error:', createError)
+
+      // UNIQUE 제약 위반 (중복 이메일)
+      if (createError.code === '23505') {
+        console.log('[Eve] 🔒 UNIQUE 제약 위반 - 중복 이메일 감지')
+
+        // 기존 후보자 다시 찾기
+        const { data: existing } = await supabaseAdmin
+          .from('candidates')
+          .select('id')
+          .eq('email', request.email)
+          .eq('status', 'active')
+          .single()
+
+        if (existing) {
+          // job_requests 연결
+          await supabaseAdmin
+            .from('job_requests')
+            .update({
+              status: 'saved',
+              candidate_id: existing.id,
+              saved_by: savedBy,
+              saved_at: new Date().toISOString()
+            })
+            .eq('id', id)
+
+          return NextResponse.json({
+            success: true,
+            candidate_id: existing.id,
+            message: '중복 방지: 기존 후보자와 연결되었습니다.'
+          })
+        }
+      }
+
       return NextResponse.json({ error: 'Failed to create candidate' }, { status: 500 })
     }
 
