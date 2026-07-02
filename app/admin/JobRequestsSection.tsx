@@ -65,6 +65,28 @@ export default function JobRequestsSection() {
     }
   }
 
+  async function deleteRequest(requestId: string) {
+    if (!confirm('이 구직 요청을 삭제하시겠습니까?')) return
+
+    try {
+      const res = await fetch(`/api/admin/job-requests/${requestId}`, {
+        method: 'DELETE'
+      })
+
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error || '삭제 실패')
+      }
+
+      alert('✅ 구직 요청이 삭제되었습니다')
+
+      // 목록에서 제거
+      setRequests(prev => prev.filter(r => r.id !== requestId))
+    } catch (error: any) {
+      alert('❌ ' + error.message)
+    }
+  }
+
   if (loading) {
     return (
       <div className="card" style={{ marginBottom: 20 }}>
@@ -110,14 +132,24 @@ export default function JobRequestsSection() {
                     {request.message}
                   </td>
                   <td style={{ padding: '12px 16px', textAlign: 'center' }}>
-                    <button
-                      className="btn btn-primary btn-sm"
-                      onClick={() => saveToCandidate(request.id)}
-                      disabled={!!saving}
-                      style={{ fontSize: 12, whiteSpace: 'nowrap' }}
-                    >
-                      {saving === request.id ? '저장 중...' : '후보자 저장'}
-                    </button>
+                    <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
+                      <button
+                        className="btn btn-primary btn-sm"
+                        onClick={() => saveToCandidate(request.id)}
+                        disabled={!!saving}
+                        style={{ fontSize: 12, whiteSpace: 'nowrap' }}
+                      >
+                        {saving === request.id ? '저장 중...' : '후보자 저장'}
+                      </button>
+                      <button
+                        className="btn btn-danger btn-sm"
+                        onClick={() => deleteRequest(request.id)}
+                        disabled={!!saving}
+                        style={{ fontSize: 12, whiteSpace: 'nowrap' }}
+                      >
+                        삭제
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
