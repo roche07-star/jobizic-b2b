@@ -53,7 +53,7 @@ export async function POST(
       .eq('email', request.email)
       .eq('source', 'adam_job_request')
       .eq('status', 'active')
-      .single()
+      .maybeSingle()
 
     if (existingCandidate) {
       // 기존 candidate가 있으면 job_requests 상태만 업데이트
