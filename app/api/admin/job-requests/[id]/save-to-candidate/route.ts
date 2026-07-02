@@ -17,11 +17,11 @@ export async function POST(
 
     // 관리자 권한 확인
     const profile = await getProfile()
-    if (!profile || (profile.role !== 'admin' && profile.role !== 'owner')) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
+    if (!profile) {
+      return NextResponse.json({ error: 'Not logged in' }, { status: 401 })
     }
 
-    console.log('[Eve] 후보자 저장 시작:', id)
+    console.log('[Eve] 후보자 저장 시작:', { id, role: profile.role })
 
     // 1. 구직 요청 조회
     const { data: request, error: fetchError } = await supabaseAdmin
