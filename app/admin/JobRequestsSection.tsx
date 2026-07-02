@@ -51,7 +51,10 @@ export default function JobRequestsSection() {
       const data = await res.json()
 
       if (!res.ok) {
-        throw new Error(data.error || '후보자 저장 실패')
+        const errorMsg = data.details
+          ? `${data.error}\n\n상세: ${data.details}\n코드: ${data.code || 'N/A'}`
+          : data.error || '후보자 저장 실패'
+        throw new Error(errorMsg)
       }
 
       alert('✅ ' + data.message)
@@ -59,6 +62,7 @@ export default function JobRequestsSection() {
       // 목록에서 제거
       setRequests(prev => prev.filter(r => r.id !== requestId))
     } catch (error: any) {
+      console.error('후보자 저장 에러:', error)
       alert('❌ ' + error.message)
     } finally {
       setSaving(null)

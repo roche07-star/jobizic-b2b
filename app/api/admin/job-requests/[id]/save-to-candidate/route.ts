@@ -288,7 +288,12 @@ export async function POST(
         }
       }
 
-      return NextResponse.json({ error: 'Failed to create candidate' }, { status: 500 })
+      return NextResponse.json({
+        error: 'Failed to create candidate',
+        details: createError.message,
+        code: createError.code,
+        hint: createError.hint
+      }, { status: 500 })
     }
 
     // 3. 구직 요청 상태 업데이트
