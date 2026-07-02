@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { getProfile } from '@/lib/auth'
 import { useRouter } from 'next/navigation'
+import JobRequestsSection from './JobRequestsSection'
 
 interface Organization {
   id: string
@@ -423,6 +424,9 @@ export default function AdminPage() {
           </div>
         </div>
       )}
+
+      {/* 구직자 관리 (Adam에서 전송) */}
+      {profile.role === 'admin' && <JobRequestsSection />}
 
       {/* 조직 관리 */}
       <div className="card" style={{ marginBottom: 20 }}>
