@@ -17,7 +17,7 @@ export async function POST(
 
     // 관리자 권한 확인
     const profile = await getProfile()
-    if (!profile || profile.role !== 'admin') {
+    if (!profile || (profile.role !== 'admin' && profile.role !== 'owner')) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
     }
 
