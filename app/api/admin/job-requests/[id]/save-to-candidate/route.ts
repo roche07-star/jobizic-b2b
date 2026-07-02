@@ -46,12 +46,13 @@ export async function POST(
       }, { status: 400 })
     }
 
-    // 중복 생성 방지: 같은 이메일의 candidate가 이미 있는지 확인
+    // 중복 생성 방지: 같은 이메일의 활성 candidate가 이미 있는지 확인
     const { data: existingCandidate } = await supabaseAdmin
       .from('candidates')
       .select('id')
       .eq('email', request.email)
       .eq('source', 'adam_job_request')
+      .eq('status', 'active')
       .single()
 
     if (existingCandidate) {
