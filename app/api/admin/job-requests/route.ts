@@ -66,7 +66,10 @@ export async function POST(req: NextRequest) {
       name,
       email,
       position,
-      adam_application_id
+      adam_application_id,
+      has_analysis_data: !!adam_analysis_data,
+      analysis_data_type: typeof adam_analysis_data,
+      analysis_data_keys: adam_analysis_data ? Object.keys(adam_analysis_data) : null
     })
 
     // job_requests 테이블에 저장

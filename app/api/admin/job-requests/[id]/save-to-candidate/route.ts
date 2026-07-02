@@ -101,12 +101,41 @@ export async function POST(
     }
 
     // Adam 분석 데이터가 있으면 추가 정보 설정
-    if (request.adam_analysis_data) {
-      const analysis = request.adam_analysis_data as any
+    console.log('[Eve] Adam 분석 데이터 확인:', {
+      has_data: !!request.adam_analysis_data,
+      data_type: typeof request.adam_analysis_data,
+      data_keys: request.adam_analysis_data ? Object.keys(request.adam_analysis_data) : [],
+      raw_data: request.adam_analysis_data
+    })
 
-      // 경력 연수
-      if (analysis.total_experience_years) {
+    if (request.adam_analysis_data) {
+      // 문자열인 경우 파싱 시도
+      let analysis = request.adam_analysis_data as any
+      if (typeof analysis === 'string') {
+        try {
+          analysis = JSON.parse(analysis)
+          console.log('[Eve] ✅ JSON 파싱 완료')
+        } catch (parseError) {
+          console.error('[Eve] ❌ JSON 파싱 실패:', parseError)
+          analysis = null
+        }
+      }
+
+      if (!analysis) {
+        console.log('[Eve] ⚠️ 분석 데이터가 없거나 파싱 실패')
+      } else {
+        console.log('[Eve] 🎯 분석 데이터 매핑 시작:', {
+          job_title: analysis.job_title,
+          total_experience_years: analysis.total_experience_years,
+          has_strengths: !!analysis.strengths,
+          has_keywords: !!analysis.keywords,
+          has_career_paths: !!analysis.career_paths
+        })
+
+        // 경력 연수
+        if (analysis.total_experience_years) {
         candidateData['total_experience_years'] = analysis.total_experience_years
+        console.log('[Eve] ✅ 경력 연수 설정:', analysis.total_experience_years)
       }
 
       // 학력
@@ -183,6 +212,14 @@ export async function POST(
           (analysis.scores.job_fit + analysis.scores.market_competitiveness + analysis.scores.growth_potential) / 3
         )
         candidateData['market_value'] = `평균 ${avgScore}점\n• 직무 적합도: ${analysis.scores.job_fit}점\n• 시장 경쟁력: ${analysis.scores.market_competitiveness}점\n• 성장 가능성: ${analysis.scores.growth_potential}점`
+      }
+
+        console.log('[Eve] ✅ 분석 데이터 매핑 완료:', {
+          total_fields_set: Object.keys(candidateData).length,
+          has_skills: !!candidateData.skills,
+          has_strengths: !!candidateData.key_highlights,
+          has_career_summary: !!candidateData.career_summary
+        })
       }
     }
 
