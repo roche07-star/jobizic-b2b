@@ -162,9 +162,11 @@ export async function POST(
         console.log('[Eve] ✅ 경력 연수 설정:', analysis.total_experience_years)
       }
 
-      // 학력
+      // 학력 (문자열이면 배열로 변환)
       if (analysis.education) {
-        candidateData['education'] = analysis.education
+        candidateData['education'] = Array.isArray(analysis.education)
+          ? analysis.education
+          : [analysis.education]
       }
 
       // 거주지
