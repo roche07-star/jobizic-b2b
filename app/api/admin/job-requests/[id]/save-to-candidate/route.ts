@@ -46,6 +46,33 @@ export async function POST(
       }, { status: 400 })
     }
 
+    // 중복 생성 방지: 같은 이메일의 candidate가 이미 있는지 확인
+    const { data: existingCandidate } = await supabaseAdmin
+      .from('candidates')
+      .select('id')
+      .eq('email', request.email)
+      .eq('source', 'adam_job_request')
+      .single()
+
+    if (existingCandidate) {
+      // 기존 candidate가 있으면 job_requests 상태만 업데이트
+      await supabaseAdmin
+        .from('job_requests')
+        .update({
+          status: 'saved',
+          candidate_id: existingCandidate.id,
+          saved_by: savedBy,
+          saved_at: new Date().toISOString()
+        })
+        .eq('id', id)
+
+      return NextResponse.json({
+        success: true,
+        candidate_id: existingCandidate.id,
+        message: '기존 후보자와 연결되었습니다.'
+      })
+    }
+
     // 2. 후보자 생성
     const candidateData: any = {
       name: request.name,
@@ -63,7 +90,8 @@ export async function POST(
         job_request: {
           position: request.position,
           message: request.message,
-          requested_at: request.created_at
+          requested_at: request.created_at,
+          has_active_request: true
         }
       }
     }
