@@ -92,45 +92,22 @@ export default function JobRequestsSection() {
             <thead>
               <tr style={{ borderBottom: '2px solid var(--border)' }}>
                 <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: 13, fontWeight: 600, color: 'var(--muted)' }}>이름</th>
-                <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: 13, fontWeight: 600, color: 'var(--muted)' }}>이메일</th>
                 <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: 13, fontWeight: 600, color: 'var(--muted)' }}>포지션</th>
                 <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: 13, fontWeight: 600, color: 'var(--muted)' }}>메시지</th>
-                <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: 13, fontWeight: 600, color: 'var(--muted)' }}>요청일</th>
                 <th style={{ padding: '12px 16px', textAlign: 'center', fontSize: 13, fontWeight: 600, color: 'var(--muted)' }}>작업</th>
               </tr>
             </thead>
             <tbody>
               {requests.map(request => (
                 <tr key={request.id} style={{ borderBottom: '1px solid var(--border)' }}>
-                  <td style={{ padding: '12px 16px', fontSize: 14 }}>
-                    <div style={{ fontWeight: 600 }}>{request.name}</div>
-                    {request.phone && (
-                      <div style={{ fontSize: 11, color: 'var(--muted2)', marginTop: 2 }}>{request.phone}</div>
-                    )}
-                  </td>
-                  <td style={{ padding: '12px 16px', fontSize: 13, color: 'var(--muted2)' }}>
-                    {request.email}
+                  <td style={{ padding: '12px 16px', fontSize: 14, fontWeight: 600 }}>
+                    {request.name}
                   </td>
                   <td style={{ padding: '12px 16px', fontSize: 14, fontWeight: 500 }}>
                     {request.position}
                   </td>
-                  <td style={{ padding: '12px 16px', fontSize: 13, maxWidth: 300 }}>
-                    <div style={{
-                      whiteSpace: 'nowrap',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      color: 'var(--text)'
-                    }}>
-                      {request.message}
-                    </div>
-                  </td>
-                  <td style={{ padding: '12px 16px', fontSize: 12, color: 'var(--muted2)' }}>
-                    {new Date(request.created_at).toLocaleDateString('ko-KR', {
-                      month: '2-digit',
-                      day: '2-digit',
-                      hour: '2-digit',
-                      minute: '2-digit'
-                    })}
+                  <td style={{ padding: '12px 16px', fontSize: 13 }}>
+                    {request.message}
                   </td>
                   <td style={{ padding: '12px 16px', textAlign: 'center' }}>
                     <button
