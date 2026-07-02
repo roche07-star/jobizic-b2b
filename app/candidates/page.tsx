@@ -53,6 +53,14 @@ interface Candidate {
     id: string
     name: string
   }
+  metadata?: {
+    job_request?: {
+      position?: string
+      message?: string
+      requested_at?: string
+      has_active_request?: boolean
+    }
+  }
 }
 
 const STATUS_FILTERS = ['전체', '검토중', '활성', '제안중', '합격', '보류']
@@ -622,6 +630,15 @@ export default function CandidatesPage() {
                       fontWeight: 500
                     }}>
                       👤 {candidate.created_by_user?.full_name || (candidate.created_by ? candidate.created_by.split('@')[0] : 'unknown')}
+                    </span>
+                  )}
+                  {candidate.metadata?.job_request?.has_active_request && (
+                    <span className="badge" style={{
+                      background: 'rgba(239, 68, 68, 0.15)',
+                      color: '#ef4444',
+                      border: '1px solid rgba(239, 68, 68, 0.3)'
+                    }}>
+                      🔴 구직요청
                     </span>
                   )}
                   <span className={`badge badge-${candidate.status}`}>{candidate.status}</span>
