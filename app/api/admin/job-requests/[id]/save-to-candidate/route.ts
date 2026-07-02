@@ -106,15 +106,35 @@ export async function POST(
         candidateData['total_experience_years'] = analysis.total_experience_years
       }
 
-      // 강점 → key_highlights
+      // 학력
+      if (analysis.education) {
+        candidateData['education'] = analysis.education
+      }
+
+      // 거주지
+      if (analysis.address) {
+        candidateData['location'] = analysis.address
+      }
+
+      // 현재/희망 연봉
+      if (analysis.current_salary) {
+        candidateData['current_salary'] = analysis.current_salary
+      }
+
+      // 직무명 → current_position
+      if (analysis.job_title) {
+        candidateData['current_position'] = analysis.job_title
+      }
+
+      // 강점 → key_highlights + strength_summary
       if (analysis.strengths && Array.isArray(analysis.strengths)) {
         candidateData['key_highlights'] = analysis.strengths
-        candidateData['strength_summary'] = analysis.strengths.join(' • ')
+        candidateData['strength_summary'] = analysis.strengths.join('\n\n')
       }
 
       // 개선점 → weakness_summary
       if (analysis.improvements && Array.isArray(analysis.improvements)) {
-        candidateData['weakness_summary'] = analysis.improvements.join(' • ')
+        candidateData['weakness_summary'] = analysis.improvements.join('\n\n')
       }
 
       // keywords → skills + tech_stack
@@ -123,14 +143,35 @@ export async function POST(
         candidateData['tech_stack'] = analysis.keywords
       }
 
-      // summary → career_summary
+      // summary → career_summary (파싱해서 구조화)
       if (analysis.summary) {
         candidateData['career_summary'] = analysis.summary
+
+        // summary를 파싱해서 career_trajectory 추출
+        const lines = analysis.summary.split('\n').filter((l: string) => l.trim())
+        if (lines.length >= 3) {
+          // 세 번째 줄이 보통 커리어 패턴
+          const careerPattern = lines[2]
+          if (careerPattern) {
+            candidateData['career_trajectory'] = careerPattern
+          }
+        }
       }
 
-      // 학력
-      if (analysis.education) {
-        candidateData['education'] = analysis.education
+      // career_paths → ideal_roles
+      if (analysis.career_paths && Array.isArray(analysis.career_paths)) {
+        const roles = analysis.career_paths.map((path: any) => {
+          const salaryInfo = path.salary_range || ''
+          const points = path.points?.join(' • ') || ''
+          return `${path.title} (${salaryInfo})\n${points}`
+        }).join('\n\n')
+
+        candidateData['ideal_roles'] = roles || null
+
+        // 첫 번째 career_path의 title을 current_position으로 사용 (더 구체적)
+        if (analysis.career_paths[0]?.title) {
+          candidateData['current_position'] = analysis.career_paths[0].title
+        }
       }
 
       // 점수 → market_value
@@ -138,12 +179,7 @@ export async function POST(
         const avgScore = Math.round(
           (analysis.scores.job_fit + analysis.scores.market_competitiveness + analysis.scores.growth_potential) / 3
         )
-        candidateData['market_value'] = `${avgScore}점 (적합도: ${analysis.scores.job_fit}, 경쟁력: ${analysis.scores.market_competitiveness}, 성장성: ${analysis.scores.growth_potential})`
-      }
-
-      // 직무명 → current_position (이미 설정되어 있지만 분석 결과로 override)
-      if (analysis.job_title) {
-        candidateData['current_position'] = analysis.job_title
+        candidateData['market_value'] = `평균 ${avgScore}점\n• 직무 적합도: ${analysis.scores.job_fit}점\n• 시장 경쟁력: ${analysis.scores.market_competitiveness}점\n• 성장 가능성: ${analysis.scores.growth_potential}점`
       }
     }
 
