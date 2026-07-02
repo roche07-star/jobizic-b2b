@@ -60,6 +60,7 @@ interface Candidate {
       requested_at?: string
       has_active_request?: boolean
     }
+    adam_analysis_data?: any
   }
 }
 
@@ -941,6 +942,33 @@ export default function CandidatesPage() {
                 </>
               )}
             </div>
+
+            {/* 🔍 디버그: Adam 분석 데이터 */}
+            {selected.metadata?.adam_analysis_data && (
+              <details style={{
+                marginTop: 24,
+                padding: 16,
+                background: 'rgba(255, 200, 0, 0.05)',
+                border: '1px solid rgba(255, 200, 0, 0.3)',
+                borderRadius: 8
+              }}>
+                <summary style={{ cursor: 'pointer', fontWeight: 600, color: '#f59e0b' }}>
+                  🔍 디버그: Adam 분석 데이터
+                </summary>
+                <pre style={{
+                  marginTop: 12,
+                  padding: 12,
+                  background: '#000',
+                  color: '#0f0',
+                  fontSize: 11,
+                  borderRadius: 4,
+                  overflow: 'auto',
+                  maxHeight: 300
+                }}>
+                  {JSON.stringify(selected.metadata.adam_analysis_data, null, 2)}
+                </pre>
+              </details>
+            )}
 
             {/* 코멘트 섹션 */}
             <div style={{
