@@ -200,9 +200,23 @@ export default function CandidatesPage() {
 
   async function deleteCandidate(id: string) {
     if (!confirm('이 후보자를 삭제할까요?')) return
-    await fetch(`/api/candidates/${id}`, { method: 'DELETE' })
-    setCandidates(prev => prev.filter(c => c.id !== id))
-    if (selected?.id === id) closeModal()
+
+    try {
+      const res = await fetch(`/api/candidates/${id}`, { method: 'DELETE' })
+      const data = await res.json()
+
+      if (!res.ok) {
+        alert('❌ 삭제 실패: ' + (data.error || '알 수 없는 오류'))
+        return
+      }
+
+      setCandidates(prev => prev.filter(c => c.id !== id))
+      if (selected?.id === id) closeModal()
+      alert('✅ 후보자가 삭제되었습니다')
+    } catch (error) {
+      console.error('삭제 중 오류:', error)
+      alert('❌ 삭제 중 오류가 발생했습니다')
+    }
   }
 
   async function loadMore() {

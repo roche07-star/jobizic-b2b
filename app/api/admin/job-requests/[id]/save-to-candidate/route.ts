@@ -46,12 +46,11 @@ export async function POST(
       }, { status: 400 })
     }
 
-    // 중복 생성 방지: 같은 이메일의 활성 candidate가 이미 있는지 확인
+    // 중복 생성 방지: 같은 이메일의 활성 candidate가 이미 있는지 확인 (source 무관)
     const { data: existingCandidate } = await supabaseAdmin
       .from('candidates')
-      .select('id')
+      .select('id, source')
       .eq('email', request.email)
-      .eq('source', 'adam_job_request')
       .eq('status', 'active')
       .maybeSingle()
 
@@ -67,10 +66,14 @@ export async function POST(
         })
         .eq('id', id)
 
+      const isFromAdam = existingCandidate.source === 'adam_job_request'
+
       return NextResponse.json({
         success: true,
         candidate_id: existingCandidate.id,
-        message: '기존 후보자와 연결되었습니다.'
+        message: isFromAdam
+          ? '기존 후보자와 연결되었습니다.'
+          : '이미 등록된 후보자입니다. 기존 카드로 연결합니다.'
       })
     }
 
