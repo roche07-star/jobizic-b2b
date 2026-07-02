@@ -10,7 +10,7 @@ const supabase = createClient(
 // 헤드헌터 할당
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // 권한 확인 (Admin만 가능)
@@ -19,7 +19,7 @@ export async function PATCH(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
     }
 
-    const { id } = params
+    const { id } = await params
     const body = await request.json()
     const { headhunter_id, headhunter_email, headhunter_name } = body
 
