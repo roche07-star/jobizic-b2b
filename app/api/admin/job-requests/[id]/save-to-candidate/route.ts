@@ -115,6 +115,31 @@ export async function POST(
       // 후보자는 생성되었으므로 경고만 로그
     }
 
+    // 4. Adam job_applications 상태 업데이트 (🔴 구직요청 → 🔵 헤드헌터접수)
+    if (request.adam_application_id) {
+      try {
+        const { error: adamUpdateError } = await supabaseAdmin
+          .from('job_applications')
+          .update({
+            status: '헤드헌터접수',
+            headhunter_status: 'assigned',
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', request.adam_application_id)
+
+        if (adamUpdateError) {
+          console.error('[Eve] Adam job_applications update error:', adamUpdateError)
+        } else {
+          console.log('[Eve] ✅ Adam 상태 업데이트 완료:', {
+            application_id: request.adam_application_id,
+            status: '헤드헌터접수'
+          })
+        }
+      } catch (adamError) {
+        console.error('[Eve] Adam 상태 업데이트 실패 (non-fatal):', adamError)
+      }
+    }
+
     console.log('[Eve] ✅ 후보자 저장 완료:', {
       request_id: id,
       candidate_id: candidate.id,
