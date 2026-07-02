@@ -100,23 +100,49 @@ export async function POST(
     if (request.adam_analysis_data) {
       const analysis = request.adam_analysis_data as any
 
+      // 경력 연수
       if (analysis.total_experience_years) {
         candidateData['total_experience_years'] = analysis.total_experience_years
       }
-      if (analysis.current_company) {
-        candidateData['current_company'] = analysis.current_company
-      }
-      if (analysis.skills && Array.isArray(analysis.skills)) {
-        candidateData['skills'] = analysis.skills
-      }
+
+      // 강점 → key_highlights
       if (analysis.strengths && Array.isArray(analysis.strengths)) {
         candidateData['key_highlights'] = analysis.strengths
+        candidateData['strength_summary'] = analysis.strengths.join(' • ')
       }
-      if (analysis.career_summary) {
-        candidateData['career_summary'] = analysis.career_summary
+
+      // 개선점 → weakness_summary
+      if (analysis.improvements && Array.isArray(analysis.improvements)) {
+        candidateData['weakness_summary'] = analysis.improvements.join(' • ')
       }
-      if (analysis.education && Array.isArray(analysis.education)) {
+
+      // keywords → skills + tech_stack
+      if (analysis.keywords && Array.isArray(analysis.keywords)) {
+        candidateData['skills'] = analysis.keywords
+        candidateData['tech_stack'] = analysis.keywords
+      }
+
+      // summary → career_summary
+      if (analysis.summary) {
+        candidateData['career_summary'] = analysis.summary
+      }
+
+      // 학력
+      if (analysis.education) {
         candidateData['education'] = analysis.education
+      }
+
+      // 점수 → market_value
+      if (analysis.scores) {
+        const avgScore = Math.round(
+          (analysis.scores.job_fit + analysis.scores.market_competitiveness + analysis.scores.growth_potential) / 3
+        )
+        candidateData['market_value'] = `${avgScore}점 (적합도: ${analysis.scores.job_fit}, 경쟁력: ${analysis.scores.market_competitiveness}, 성장성: ${analysis.scores.growth_potential})`
+      }
+
+      // 직무명 → current_position (이미 설정되어 있지만 분석 결과로 override)
+      if (analysis.job_title) {
+        candidateData['current_position'] = analysis.job_title
       }
     }
 
