@@ -1,8 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { getProfile } from '@/lib/auth'
+import { createClient } from '@supabase/supabase-js'
 
 export const maxDuration = 60
+
+// Adam Supabase 연결 (환경변수 필요)
+const adamSupabase = process.env.ADAM_SUPABASE_URL && process.env.ADAM_SUPABASE_SERVICE_ROLE_KEY
+  ? createClient(process.env.ADAM_SUPABASE_URL, process.env.ADAM_SUPABASE_SERVICE_ROLE_KEY)
+  : null
 
 /**
  * POST /api/admin/job-requests/:id/save-to-candidate
@@ -114,9 +120,9 @@ export async function POST(
     }
 
     // 4. Adam job_applications 상태 업데이트 (🔴 구직요청 → 🔵 헤드헌터접수)
-    if (request.adam_application_id) {
+    if (request.adam_application_id && adamSupabase) {
       try {
-        const { error: adamUpdateError } = await supabaseAdmin
+        const { error: adamUpdateError } = await adamSupabase
           .from('job_applications')
           .update({
             status: '헤드헌터접수',
@@ -136,6 +142,8 @@ export async function POST(
       } catch (adamError) {
         console.error('[Eve] Adam 상태 업데이트 실패 (non-fatal):', adamError)
       }
+    } else if (request.adam_application_id && !adamSupabase) {
+      console.warn('[Eve] Adam Supabase 연결 없음 - 환경변수 확인 필요')
     }
 
     console.log('[Eve] ✅ 후보자 저장 완료:', {
