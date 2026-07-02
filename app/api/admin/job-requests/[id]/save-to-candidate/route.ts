@@ -47,34 +47,58 @@ export async function POST(
     }
 
     // 중복 생성 방지: 같은 이메일의 활성 candidate가 이미 있는지 확인 (source 무관)
-    const { data: existingCandidate } = await supabaseAdmin
-      .from('candidates')
-      .select('id, source')
-      .eq('email', request.email)
-      .eq('status', 'active')
-      .maybeSingle()
+    console.log('[Eve] 중복 체크 시작:', {
+      request_email: request.email,
+      email_type: typeof request.email,
+      email_length: request.email?.length,
+      is_valid_email: /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(request.email || '')
+    })
 
-    if (existingCandidate) {
-      // 기존 candidate가 있으면 job_requests 상태만 업데이트
-      await supabaseAdmin
-        .from('job_requests')
-        .update({
-          status: 'saved',
-          candidate_id: existingCandidate.id,
-          saved_by: savedBy,
-          saved_at: new Date().toISOString()
-        })
-        .eq('id', id)
+    // 이메일이 없으면 중복 체크 불가
+    if (!request.email || !request.email.trim()) {
+      console.warn('[Eve] ⚠️ 이메일 없음 - 중복 체크 스킵')
+    } else {
+      const { data: existingCandidate, error: checkError } = await supabaseAdmin
+        .from('candidates')
+        .select('id, source, name')
+        .eq('email', request.email.trim())
+        .eq('status', 'active')
+        .maybeSingle()
 
-      const isFromAdam = existingCandidate.source === 'adam_job_request'
-
-      return NextResponse.json({
-        success: true,
-        candidate_id: existingCandidate.id,
-        message: isFromAdam
-          ? '기존 후보자와 연결되었습니다.'
-          : '이미 등록된 후보자입니다. 기존 카드로 연결합니다.'
+      console.log('[Eve] 중복 체크 결과:', {
+        found: !!existingCandidate,
+        existing_id: existingCandidate?.id,
+        existing_name: existingCandidate?.name,
+        existing_source: existingCandidate?.source,
+        check_error: checkError?.message
       })
+
+      if (existingCandidate) {
+        console.log('[Eve] ✅ 기존 후보자 발견 - 재사용:', existingCandidate.id)
+
+        // 기존 candidate가 있으면 job_requests 상태만 업데이트
+        await supabaseAdmin
+          .from('job_requests')
+          .update({
+            status: 'saved',
+            candidate_id: existingCandidate.id,
+            saved_by: savedBy,
+            saved_at: new Date().toISOString()
+          })
+          .eq('id', id)
+
+        const isFromAdam = existingCandidate.source === 'adam_job_request'
+
+        return NextResponse.json({
+          success: true,
+          candidate_id: existingCandidate.id,
+          message: isFromAdam
+            ? '기존 후보자와 연결되었습니다.'
+            : '이미 등록된 후보자입니다. 기존 카드로 연결합니다.'
+        })
+      }
+
+      console.log('[Eve] 중복 없음 - 새 후보자 생성')
     }
 
     // 2. 후보자 생성

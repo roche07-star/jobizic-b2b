@@ -121,11 +121,34 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
 export async function DELETE(_req: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await context.params
+
+    console.log('[DELETE candidate] 시작:', id)
+
+    // 1. 먼저 job_requests에서 이 candidate를 참조하는 것들을 정리
+    const { error: jobRequestError } = await supabaseAdmin
+      .from('job_requests')
+      .update({ candidate_id: null, status: 'pending' })
+      .eq('candidate_id', id)
+
+    if (jobRequestError) {
+      console.error('[DELETE candidate] job_requests 업데이트 실패:', jobRequestError)
+      // 치명적이지 않으므로 계속 진행
+    } else {
+      console.log('[DELETE candidate] job_requests 정리 완료')
+    }
+
+    // 2. 후보자 삭제
     const { error } = await supabaseAdmin
       .from('candidates')
       .delete()
       .eq('id', id)
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+    if (error) {
+      console.error('[DELETE candidate] 삭제 실패:', error)
+      return NextResponse.json({ error: error.message }, { status: 500 })
+    }
+
+    console.log('[DELETE candidate] ✅ 삭제 완료:', id)
     return NextResponse.json({ ok: true })
   } catch (e) {
     console.error('[api/candidates/[id] DELETE]', e)
