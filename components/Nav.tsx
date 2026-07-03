@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { getProfile, signOut, type Profile } from '@/lib/auth'
-import { createClient } from '@supabase/supabase-js'
+import { getSupabaseBrowser } from '@/lib/supabase-browser'
 
 interface Notification {
   id: string
@@ -63,10 +63,7 @@ export default function Nav() {
   // 알림 로드
   async function loadNotifications() {
     try {
-      const supabase = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-      )
+      const supabase = getSupabaseBrowser()
 
       // 알림 목록 조회 (RLS 적용)
       const { data: notifications } = await supabase
@@ -91,10 +88,7 @@ export default function Nav() {
   // 알림 읽음 처리
   async function markAsRead(id: string) {
     try {
-      const supabase = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-      )
+      const supabase = getSupabaseBrowser()
 
       await supabase
         .from('notifications')
@@ -113,10 +107,7 @@ export default function Nav() {
   // 전체 읽음 처리
   async function markAllAsRead() {
     try {
-      const supabase = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-      )
+      const supabase = getSupabaseBrowser()
 
       const { data: user } = await supabase.auth.getUser()
       if (!user?.user?.id) return
@@ -139,10 +130,7 @@ export default function Nav() {
   // 알림 삭제
   async function deleteNotification(id: string) {
     try {
-      const supabase = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-      )
+      const supabase = getSupabaseBrowser()
 
       await supabase
         .from('notifications')

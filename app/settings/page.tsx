@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 import TelegramLink from '@/components/TelegramLink'
 import { useToast } from '@/hooks/useToast'
 import ToastContainer from '@/components/ToastContainer'
-import { createClient } from '@supabase/supabase-js'
+import { getSupabaseBrowser } from '@/lib/supabase-browser'
 
 interface Member {
   id: string
@@ -132,10 +132,7 @@ export default function SettingsPage() {
 
     setChangingPassword(true)
     try {
-      const supabase = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-      )
+      const supabase = getSupabaseBrowser()
 
       // 세션 토큰 가져오기
       const { data: { session } } = await supabase.auth.getSession()
