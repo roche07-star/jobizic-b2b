@@ -35,44 +35,66 @@ export default function JobRequestsSection() {
       Notification.requestPermission()
     }
 
-    // Supabase Realtime 구독
+    // Supabase Realtime 구독 (상세 디버깅)
     console.log('🔌 Realtime 구독 시작...')
+    console.log('📍 Supabase URL:', process.env.NEXT_PUBLIC_SUPABASE_URL)
 
     const channel = supabase
-      .channel('job-requests-changes')
+      .channel('job-requests-realtime-debug', {
+        config: {
+          broadcast: { self: true }
+        }
+      })
       .on(
         'postgres_changes',
         {
-          event: 'INSERT',
+          event: '*',  // 모든 이벤트 (INSERT, UPDATE, DELETE)
           schema: 'public',
           table: 'job_requests'
-          // 필터 제거 - 모든 INSERT 이벤트 수신
         },
         (payload: any) => {
-          console.log('🔔 새 구직 요청:', payload)
+          console.log('🔔 DB 변경 감지!', {
+            event: payload.eventType,
+            table: payload.table,
+            schema: payload.schema,
+            new: payload.new,
+            old: payload.old,
+            timestamp: new Date().toISOString()
+          })
 
-          // 알림 표시
-          if ('Notification' in window && Notification.permission === 'granted') {
-            const request = payload.new as JobRequest
-            new Notification('🔴 새 구직 요청!', {
-              body: `${request.name} - ${request.position}`,
-              icon: '/icon.png',
-              badge: '/badge.png',
-              tag: request.id,
-              requireInteraction: true
-            })
+          // INSERT 이벤트만 알림
+          if (payload.eventType === 'INSERT') {
+            console.log('✅ INSERT 이벤트 확인!')
+
+            // 알림 표시
+            if ('Notification' in window && Notification.permission === 'granted') {
+              const request = payload.new as JobRequest
+              new Notification('🔴 새 구직 요청!', {
+                body: `${request.name} - ${request.position}`,
+                icon: '/icon.png',
+                badge: '/badge.png',
+                tag: request.id,
+                requireInteraction: true
+              })
+            }
+
+            // 목록 새로고침
+            loadRequests()
           }
-
-          // 목록 새로고침
-          loadRequests()
         }
       )
       .subscribe((status, error) => {
         console.log('📡 Realtime 구독 상태:', status)
+        if (status === 'SUBSCRIBED') {
+          console.log('✅ Realtime 구독 완료! 이벤트 대기 중...')
+        }
         if (error) {
           console.error('❌ Realtime 구독 에러:', error)
         }
       })
+
+    // Channel 정보 확인
+    console.log('📻 Channel:', channel)
 
     return () => {
       supabase.removeChannel(channel)
