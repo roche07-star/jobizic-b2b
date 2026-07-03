@@ -216,15 +216,15 @@ export async function POST(
         }
       }
 
-      // career_paths → ideal_roles
+      // career_paths → ideal_roles (배열로 저장)
       if (analysis.career_paths && Array.isArray(analysis.career_paths)) {
         const roles = analysis.career_paths.map((path: any) => {
           const salaryInfo = path.salary_range || ''
           const points = path.points?.join(' • ') || ''
           return `${path.title} (${salaryInfo})\n${points}`
-        }).join('\n\n')
+        })
 
-        candidateData['ideal_roles'] = roles || null
+        candidateData['ideal_roles'] = roles  // 배열로 저장
 
         // 첫 번째 career_path의 title을 current_position으로 사용 (더 구체적)
         if (analysis.career_paths[0]?.title) {
