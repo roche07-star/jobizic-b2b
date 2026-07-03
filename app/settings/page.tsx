@@ -27,6 +27,10 @@ export default function SettingsPage() {
   const [confirmPassword, setConfirmPassword] = useState('')
   const [changingPassword, setChangingPassword] = useState(false)
 
+  // 브라우저 알림 설정
+  const [browserNotifEnabled, setBrowserNotifEnabled] = useState(true)
+  const [savingNotifSettings, setSavingNotifSettings] = useState(false)
+
   const { toasts, success, error, removeToast } = useToast()
 
   useEffect(() => {
@@ -36,6 +40,8 @@ export default function SettingsPage() {
         return
       }
       setProfile(p)
+      // 브라우저 알림 설정 로드
+      setBrowserNotifEnabled(p.browser_notifications_enabled !== false)
     })
   }, [])
 
@@ -75,6 +81,36 @@ export default function SettingsPage() {
       'client_searcher': '고객사 Searcher',
     }
     return roleLabels[role] || role
+  }
+
+  async function toggleBrowserNotifications(enabled: boolean) {
+    setSavingNotifSettings(true)
+    try {
+      const res = await fetch('/api/settings/notifications', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ browser_notifications_enabled: enabled })
+      })
+
+      if (!res.ok) {
+        throw new Error('Failed to update settings')
+      }
+
+      setBrowserNotifEnabled(enabled)
+
+      // 브라우저 알림 권한 요청 (enable인 경우)
+      if (enabled && 'Notification' in window && Notification.permission === 'default') {
+        await Notification.requestPermission()
+      }
+
+      success(enabled ? '✅ 브라우저 알림이 활성화되었습니다!' : '✅ 브라우저 알림이 비활성화되었습니다!')
+    } catch (e) {
+      error('설정 변경 중 오류가 발생했습니다.')
+      // 실패 시 되돌리기
+      setBrowserNotifEnabled(!enabled)
+    } finally {
+      setSavingNotifSettings(false)
+    }
   }
 
   async function handleChangePassword() {
@@ -345,6 +381,55 @@ export default function SettingsPage() {
           </div>
         </div>
       </div>
+
+      {/* 브라우저 알림 설정 */}
+      {profile.role === 'admin' && (
+        <div className="card" style={{ marginBottom: 20 }}>
+          <div className="card-title">🔔 브라우저 알림</div>
+          <p style={{ fontSize: 14, color: 'var(--muted2)', marginBottom: 16 }}>
+            새 구직 요청 시 브라우저 알림을 받습니다.
+          </p>
+          <label style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 12,
+            cursor: 'pointer',
+            width: 'fit-content',
+            padding: '8px 12px',
+            borderRadius: 8,
+            transition: 'background 0.2s',
+            background: browserNotifEnabled ? 'rgba(232, 255, 71, 0.1)' : 'transparent'
+          }}>
+            <input
+              type="checkbox"
+              checked={browserNotifEnabled}
+              onChange={(e) => toggleBrowserNotifications(e.target.checked)}
+              disabled={savingNotifSettings}
+              style={{ width: 18, height: 18, cursor: 'pointer' }}
+            />
+            <span style={{
+              fontSize: 14,
+              fontWeight: 500,
+              color: browserNotifEnabled ? 'var(--text)' : 'var(--muted)'
+            }}>
+              {savingNotifSettings ? '저장 중...' : browserNotifEnabled ? '브라우저 알림 켜짐 ✅' : '브라우저 알림 꺼짐'}
+            </span>
+          </label>
+          {browserNotifEnabled && 'Notification' in window && Notification.permission !== 'granted' && (
+            <div style={{
+              marginTop: 12,
+              padding: 12,
+              background: 'rgba(255, 193, 7, 0.1)',
+              border: '1px solid rgba(255, 193, 7, 0.3)',
+              borderRadius: 8,
+              fontSize: 13,
+              color: '#ffc107'
+            }}>
+              ⚠️ 브라우저 알림 권한이 필요합니다. 설정에서 허용해주세요.
+            </div>
+          )}
+        </div>
+      )}
 
       {/* 텔레그램 연동 */}
       <div className="card">

@@ -18,6 +18,8 @@ export interface Profile {
   telegram_chat_id?: number | null
   telegram_username?: string | null
   telegram_verified_at?: string | null
+  // Browser Notifications
+  browser_notifications_enabled?: boolean
 }
 
 export async function signIn(email: string, password: string) {

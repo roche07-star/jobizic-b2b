@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { getProfile } from '@/lib/auth'
 
 interface JobRequest {
   id: string
@@ -22,7 +23,13 @@ export default function JobRequestsSection() {
   const [requests, setRequests] = useState<JobRequest[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState<string | null>(null)
-  const [seenIds, setSeenIds] = useState<Set<string>>(new Set())
+
+  // localStorage에서 본 ID들 불러오기
+  const [seenIds, setSeenIds] = useState<Set<string>>(() => {
+    if (typeof window === 'undefined') return new Set()
+    const saved = localStorage.getItem('eve-seen-job-requests')
+    return saved ? new Set(JSON.parse(saved)) : new Set()
+  })
 
   useEffect(() => {
     loadRequests()
@@ -56,8 +63,25 @@ export default function JobRequestsSection() {
       if (newOnes.length > 0) {
         console.log(`🔔 새 구직 요청 ${newOnes.length}건 발견!`)
 
-        // 브라우저 알림
-        if ('Notification' in window && Notification.permission === 'granted') {
+        // 1. 페이지 내 알림 (notifications 테이블)
+        newOnes.forEach(async (request: JobRequest) => {
+          await fetch('/api/admin/notifications', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              type: 'job_request',
+              title: '🔴 새 구직 요청!',
+              message: `${request.name} - ${request.position}`,
+              action_url: '/admin',
+              metadata: { job_request_id: request.id }
+            })
+          })
+        })
+
+        // 2. 브라우저 알림 (설정에서 enable한 경우)
+        const profile = await getProfile()
+        const browserNotifEnabled = profile?.browser_notifications_enabled !== false
+        if (browserNotifEnabled && 'Notification' in window && Notification.permission === 'granted') {
           newOnes.forEach((request: JobRequest) => {
             new Notification('🔴 새 구직 요청!', {
               body: `${request.name} - ${request.position}`,
@@ -68,8 +92,10 @@ export default function JobRequestsSection() {
         }
       }
 
-      // 본 ID들 업데이트
-      setSeenIds(new Set([...seenIds, ...newRequests.map((r: JobRequest) => r.id)]))
+      // 본 ID들 업데이트 (localStorage에 저장)
+      const newSeenIds = new Set([...seenIds, ...newRequests.map((r: JobRequest) => r.id)])
+      setSeenIds(newSeenIds)
+      localStorage.setItem('eve-seen-job-requests', JSON.stringify([...newSeenIds]))
       setRequests(newRequests)
     } catch (error) {
       console.error('구직 요청 조회 실패:', error)
