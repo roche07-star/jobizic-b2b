@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { createBrowserClient } from '@supabase/ssr'
 
 interface JobRequest {
   id: string
@@ -18,6 +19,12 @@ interface JobRequest {
   created_at: string
 }
 
+// Supabase 클라이언트 생성
+const supabase = createBrowserClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+)
+
 export default function JobRequestsSection() {
   const [requests, setRequests] = useState<JobRequest[]>([])
   const [loading, setLoading] = useState(true)
@@ -25,6 +32,47 @@ export default function JobRequestsSection() {
 
   useEffect(() => {
     loadRequests()
+
+    // 브라우저 알림 권한 요청
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission()
+    }
+
+    // Supabase Realtime 구독
+    const channel = supabase
+      .channel('job-requests-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'job_requests',
+          filter: 'status=eq.pending'
+        },
+        (payload: any) => {
+          console.log('🔔 새 구직 요청:', payload)
+
+          // 알림 표시
+          if ('Notification' in window && Notification.permission === 'granted') {
+            const request = payload.new as JobRequest
+            new Notification('🔴 새 구직 요청!', {
+              body: `${request.name} - ${request.position}`,
+              icon: '/icon.png',
+              badge: '/badge.png',
+              tag: request.id,
+              requireInteraction: true
+            })
+          }
+
+          // 목록 새로고침
+          loadRequests()
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
   }, [])
 
   async function loadRequests() {
