@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { getProfile } from '@/lib/auth'
-import { supabase } from '@/lib/supabase'
+import { getSupabaseBrowser } from '@/lib/supabase-browser'
 
 export default function TelegramLink() {
   const [profile, setProfile] = useState<any>(null)
@@ -37,7 +37,7 @@ export default function TelegramLink() {
 
     try {
       // Supabase 세션에서 access token 가져오기
-      const { data: { session } } = await supabase.auth.getSession()
+      const { data: { session } } = await getSupabaseBrowser().auth.getSession()
       if (!session) {
         setError('세션이 만료되었습니다. 다시 로그인해주세요.')
         setLoading(false)

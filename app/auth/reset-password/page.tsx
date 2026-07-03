@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { supabase } from '@/lib/supabase'
+import { getSupabaseBrowser } from '@/lib/supabase-browser'
 
 export default function ResetPasswordPage() {
   const router = useRouter()
@@ -28,7 +28,7 @@ export default function ResetPasswordPage() {
     setError(null)
 
     try {
-      const { error: updateError } = await supabase.auth.updateUser({
+      const { error: updateError } = await getSupabaseBrowser().auth.updateUser({
         password: password,
       })
 
@@ -37,7 +37,7 @@ export default function ResetPasswordPage() {
       alert('✅ 비밀번호가 재설정되었습니다! 새 비밀번호로 로그인하세요.')
       
       // 로그아웃 후 로그인 페이지로
-      await supabase.auth.signOut()
+      await getSupabaseBrowser().auth.signOut()
       router.push('/')
     } catch (err: any) {
       setError(err.message)

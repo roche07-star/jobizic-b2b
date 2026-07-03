@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { getProfile } from '@/lib/auth'
-import { supabase } from '@/lib/supabase'
+import { getSupabaseBrowser } from '@/lib/supabase-browser'
 import { useRouter } from 'next/navigation'
 
 export default function TelegramAdminPage() {
@@ -31,7 +31,7 @@ export default function TelegramAdminPage() {
   async function checkStatus() {
     setCheckingStatus(true)
     try {
-      const { data: { session } } = await supabase.auth.getSession()
+      const { data: { session } } = await getSupabaseBrowser().auth.getSession()
       if (!session) {
         setError('세션이 만료되었습니다. 다시 로그인해주세요.')
         return
@@ -64,7 +64,7 @@ export default function TelegramAdminPage() {
     setResult(null)
 
     try {
-      const { data: { session } } = await supabase.auth.getSession()
+      const { data: { session } } = await getSupabaseBrowser().auth.getSession()
       if (!session) {
         setError('세션이 만료되었습니다. 페이지를 새로고침해주세요.')
         setLoading(false)

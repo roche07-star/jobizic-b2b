@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { supabase } from '@/lib/supabase'
+import { getSupabaseBrowser } from '@/lib/supabase-browser'
 
 export default function SetPasswordPage() {
   const router = useRouter()
@@ -15,7 +15,7 @@ export default function SetPasswordPage() {
   // 세션 확인
   useEffect(() => {
     async function checkSession() {
-      const { data: { session } } = await supabase.auth.getSession()
+      const { data: { session } } = await getSupabaseBrowser().auth.getSession()
 
       if (!session) {
         console.error('[SET PASSWORD] No session found, redirecting to login')
@@ -48,16 +48,16 @@ export default function SetPasswordPage() {
 
     try {
       // 비밀번호 설정
-      const { error: updateError } = await supabase.auth.updateUser({
+      const { error: updateError } = await getSupabaseBrowser().auth.updateUser({
         password: password,
       })
 
       if (updateError) throw updateError
 
       // profiles 테이블의 password_set을 true로 변경
-      const { data: { user } } = await supabase.auth.getUser()
+      const { data: { user } } = await getSupabaseBrowser().auth.getUser()
       if (user) {
-        await supabase
+        await getSupabaseBrowser()
           .from('profiles')
           .update({ password_set: true })
           .eq('id', user.id)
