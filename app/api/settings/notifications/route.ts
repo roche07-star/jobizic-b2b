@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
-import { getProfile } from '@/lib/auth'
+import { createServerClient } from '@supabase/ssr'
+import { cookies } from 'next/headers'
 
 /**
  * PATCH /api/settings/notifications
@@ -8,8 +9,27 @@ import { getProfile } from '@/lib/auth'
  */
 export async function PATCH(req: NextRequest) {
   try {
-    const profile = await getProfile()
-    if (!profile) {
+    // 서버에서 세션 가져오기
+    const cookieStore = await cookies()
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return cookieStore.getAll()
+          },
+          setAll(cookiesToSet) {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options)
+            )
+          },
+        },
+      }
+    )
+
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -19,14 +39,14 @@ export async function PATCH(req: NextRequest) {
     const { error } = await supabaseAdmin
       .from('profiles')
       .update({ browser_notifications_enabled })
-      .eq('id', profile.id)
+      .eq('id', user.id)
 
     if (error) {
       console.error('[settings] Update error:', error)
       throw new Error(error.message)
     }
 
-    console.log(`[settings] ✅ Browser notifications ${browser_notifications_enabled ? 'enabled' : 'disabled'} for ${profile.email}`)
+    console.log(`[settings] ✅ Browser notifications ${browser_notifications_enabled ? 'enabled' : 'disabled'} for ${user.email}`)
 
     return NextResponse.json({
       success: true,
