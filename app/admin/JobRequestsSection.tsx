@@ -45,8 +45,8 @@ export default function JobRequestsSection() {
         {
           event: 'INSERT',
           schema: 'public',
-          table: 'job_requests',
-          filter: 'status=eq.pending'
+          table: 'job_requests'
+          // 필터 제거 - 모든 INSERT 이벤트 수신
         },
         (payload: any) => {
           console.log('🔔 새 구직 요청:', payload)
