@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
-import { createBrowserClient } from '@supabase/ssr'
+import { useState, useEffect } from 'react'
+import { getSupabaseBrowser } from '@/lib/supabase-browser'
 
 interface JobRequest {
   id: string
@@ -24,15 +24,8 @@ export default function JobRequestsSection() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState<string | null>(null)
 
-  // Supabase 클라이언트 (Singleton)
-  const supabase = useMemo(
-    () =>
-      createBrowserClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-      ),
-    []
-  )
+  // Supabase 클라이언트 (전역 Singleton)
+  const supabase = getSupabaseBrowser()
 
   useEffect(() => {
     loadRequests()
