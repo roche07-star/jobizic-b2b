@@ -601,6 +601,30 @@ export default function PipelinePage() {
                     style={{ padding: 14, cursor: 'pointer' }}
                     onClick={() => setSelected(item)}
                   >
+                    {/* 후보자 이름 - 최상단 강조 */}
+                    <div style={{
+                      fontSize: 15,
+                      fontWeight: 700,
+                      color: '#fff',
+                      marginBottom: 8,
+                      padding: '6px 10px',
+                      background: 'linear-gradient(135deg, rgba(167, 139, 250, 0.2) 0%, rgba(139, 92, 246, 0.1) 100%)',
+                      borderRadius: '6px',
+                      border: '1px solid rgba(167, 139, 250, 0.3)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6
+                    }}>
+                      <span>👤</span>
+                      <span>{item.candidates.name}</span>
+                      {item.created_by_user && (
+                        <span style={{ fontSize: 10, color: 'var(--muted)', marginLeft: 'auto' }}>
+                          추천: {item.created_by_user.full_name || item.created_by_user.email.split('@')[0]}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* 회사명 */}
                     <div style={{ fontSize: 10, color: 'var(--muted2)', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
                       <span>{item.job_descriptions.company ?? '회사명 미상'}</span>
                       {item.jd_owner_user && (
@@ -609,16 +633,10 @@ export default function PipelinePage() {
                         </span>
                       )}
                     </div>
-                    <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 6 }}>
+
+                    {/* 포지션 */}
+                    <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8 }}>
                       {item.job_descriptions.position}
-                    </div>
-                    <div style={{ fontSize: 12, color: 'var(--text)', marginBottom: 8 }}>
-                      👤 {item.candidates.name}
-                      {item.created_by_user && (
-                        <span style={{ fontSize: 10, color: 'var(--muted)', marginLeft: 4 }}>
-                          (추천: {item.created_by_user.full_name || item.created_by_user.email.split('@')[0]})
-                        </span>
-                      )}
                     </div>
                     {item.match_score !== null && (
                       <div style={{
