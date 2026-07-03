@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { getSupabaseBrowser } from '@/lib/supabase-browser'
 
 interface JobRequest {
   id: string
@@ -23,9 +22,7 @@ export default function JobRequestsSection() {
   const [requests, setRequests] = useState<JobRequest[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState<string | null>(null)
-
-  // Supabase 클라이언트 (전역 Singleton)
-  const supabase = getSupabaseBrowser()
+  const [prevCount, setPrevCount] = useState(0)
 
   useEffect(() => {
     loadRequests()
@@ -35,69 +32,15 @@ export default function JobRequestsSection() {
       Notification.requestPermission()
     }
 
-    // Supabase Realtime 구독 (상세 디버깅)
-    console.log('🔌 Realtime 구독 시작...')
-    console.log('📍 Supabase URL:', process.env.NEXT_PUBLIC_SUPABASE_URL)
+    // 🔄 Polling: 10초마다 새 구직 요청 확인
+    console.log('🔄 Polling 시작 (10초 간격)')
 
-    const channel = supabase
-      .channel('job-requests-realtime-debug', {
-        config: {
-          broadcast: { self: true }
-        }
-      })
-      .on(
-        'postgres_changes',
-        {
-          event: '*',  // 모든 이벤트 (INSERT, UPDATE, DELETE)
-          schema: 'public',
-          table: 'job_requests'
-        },
-        (payload: any) => {
-          console.log('🔔 DB 변경 감지!', {
-            event: payload.eventType,
-            table: payload.table,
-            schema: payload.schema,
-            new: payload.new,
-            old: payload.old,
-            timestamp: new Date().toISOString()
-          })
-
-          // INSERT 이벤트만 알림
-          if (payload.eventType === 'INSERT') {
-            console.log('✅ INSERT 이벤트 확인!')
-
-            // 알림 표시
-            if ('Notification' in window && Notification.permission === 'granted') {
-              const request = payload.new as JobRequest
-              new Notification('🔴 새 구직 요청!', {
-                body: `${request.name} - ${request.position}`,
-                icon: '/icon.png',
-                badge: '/badge.png',
-                tag: request.id,
-                requireInteraction: true
-              })
-            }
-
-            // 목록 새로고침
-            loadRequests()
-          }
-        }
-      )
-      .subscribe((status, error) => {
-        console.log('📡 Realtime 구독 상태:', status)
-        if (status === 'SUBSCRIBED') {
-          console.log('✅ Realtime 구독 완료! 이벤트 대기 중...')
-        }
-        if (error) {
-          console.error('❌ Realtime 구독 에러:', error)
-        }
-      })
-
-    // Channel 정보 확인
-    console.log('📻 Channel:', channel)
+    const interval = setInterval(() => {
+      loadRequests()
+    }, 10000)
 
     return () => {
-      supabase.removeChannel(channel)
+      clearInterval(interval)
     }
   }, [])
 
@@ -105,7 +48,26 @@ export default function JobRequestsSection() {
     try {
       const res = await fetch('/api/admin/job-requests?status=pending')
       const data = await res.json()
-      setRequests(data.requests || [])
+      const newRequests = data.requests || []
+
+      // 🔔 새 요청 감지 (개수가 증가한 경우)
+      if (prevCount > 0 && newRequests.length > prevCount) {
+        const newCount = newRequests.length - prevCount
+        console.log(`🔔 새 구직 요청 ${newCount}건 발견!`)
+
+        // 브라우저 알림 (가장 최신 요청)
+        if ('Notification' in window && Notification.permission === 'granted') {
+          const latestRequest = newRequests[0]
+          new Notification('🔴 새 구직 요청!', {
+            body: `${latestRequest.name} - ${latestRequest.position}`,
+            tag: latestRequest.id,
+            requireInteraction: true
+          })
+        }
+      }
+
+      setPrevCount(newRequests.length)
+      setRequests(newRequests)
     } catch (error) {
       console.error('구직 요청 조회 실패:', error)
     } finally {
