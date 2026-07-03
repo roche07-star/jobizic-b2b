@@ -36,6 +36,8 @@ export default function JobRequestsSection() {
     }
 
     // Supabase Realtime 구독
+    console.log('🔌 Realtime 구독 시작...')
+
     const channel = supabase
       .channel('job-requests-changes')
       .on(
@@ -65,7 +67,12 @@ export default function JobRequestsSection() {
           loadRequests()
         }
       )
-      .subscribe()
+      .subscribe((status, error) => {
+        console.log('📡 Realtime 구독 상태:', status)
+        if (error) {
+          console.error('❌ Realtime 구독 에러:', error)
+        }
+      })
 
     return () => {
       supabase.removeChannel(channel)
