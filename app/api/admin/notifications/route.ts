@@ -16,11 +16,11 @@ export async function POST(req: NextRequest) {
     const body = await req.json()
     const { type, title, message, action_url, metadata } = body
 
-    // 모든 admin 사용자 조회
+    // 모든 admin + owner 사용자 조회
     const { data: adminUsers } = await supabaseAdmin
       .from('profiles')
       .select('id')
-      .eq('role', 'admin')
+      .in('role', ['admin', 'owner'])
 
     if (!adminUsers || adminUsers.length === 0) {
       console.warn('[notifications] No admin users found')
