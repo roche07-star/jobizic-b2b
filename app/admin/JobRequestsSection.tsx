@@ -22,7 +22,7 @@ export default function JobRequestsSection() {
   const [requests, setRequests] = useState<JobRequest[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState<string | null>(null)
-  const [prevCount, setPrevCount] = useState(0)
+  const [seenIds, setSeenIds] = useState<Set<string>>(new Set())
 
   useEffect(() => {
     loadRequests()
@@ -50,23 +50,26 @@ export default function JobRequestsSection() {
       const data = await res.json()
       const newRequests = data.requests || []
 
-      // 🔔 새 요청 감지 (개수가 증가한 경우)
-      if (prevCount > 0 && newRequests.length > prevCount) {
-        const newCount = newRequests.length - prevCount
-        console.log(`🔔 새 구직 요청 ${newCount}건 발견!`)
+      // 🔔 새 요청 감지 (ID 기반)
+      const newOnes = newRequests.filter((r: JobRequest) => !seenIds.has(r.id))
 
-        // 브라우저 알림 (가장 최신 요청)
+      if (newOnes.length > 0) {
+        console.log(`🔔 새 구직 요청 ${newOnes.length}건 발견!`)
+
+        // 브라우저 알림
         if ('Notification' in window && Notification.permission === 'granted') {
-          const latestRequest = newRequests[0]
-          new Notification('🔴 새 구직 요청!', {
-            body: `${latestRequest.name} - ${latestRequest.position}`,
-            tag: latestRequest.id,
-            requireInteraction: true
+          newOnes.forEach((request: JobRequest) => {
+            new Notification('🔴 새 구직 요청!', {
+              body: `${request.name} - ${request.position}`,
+              tag: request.id,
+              requireInteraction: true
+            })
           })
         }
       }
 
-      setPrevCount(newRequests.length)
+      // 본 ID들 업데이트
+      setSeenIds(new Set([...seenIds, ...newRequests.map((r: JobRequest) => r.id)]))
       setRequests(newRequests)
     } catch (error) {
       console.error('구직 요청 조회 실패:', error)
