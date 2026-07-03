@@ -1,4 +1,4 @@
-import { supabase } from './supabase'
+import { getSupabaseBrowser } from './supabase-browser'
 
 export interface Profile {
   id: string
@@ -23,7 +23,7 @@ export interface Profile {
 }
 
 export async function signIn(email: string, password: string) {
-  const { data, error } = await supabase.auth.signInWithPassword({
+  const { data, error } = await getSupabaseBrowser().auth.signInWithPassword({
     email,
     password,
   })
@@ -44,12 +44,12 @@ export async function signOut() {
   localStorage.clear()
   sessionStorage.clear()
 
-  const { error } = await supabase.auth.signOut()
+  const { error } = await getSupabaseBrowser().auth.signOut()
   if (error) throw error
 }
 
 export async function getSession() {
-  const { data } = await supabase.auth.getSession()
+  const { data } = await getSupabaseBrowser().auth.getSession()
   return data.session
 }
 
@@ -57,7 +57,7 @@ export async function getProfile(): Promise<Profile | null> {
   const session = await getSession()
   if (!session) return null
 
-  const { data, error } = await supabase
+  const { data, error} = await getSupabaseBrowser()
     .from('profiles')
     .select(`
       *,

@@ -1,3 +1,12 @@
+echo "🔍 타입 체크 실행 중..."
+npm run type-check
+
+if [ $? -ne 0 ]; then
+  echo "❌ 타입 에러! 커밋이 중단되었습니다."
+  echo "💡 'npm run type-check'로 문제를 확인하세요."
+  exit 1
+fi
+
 echo "🧪 커밋 전 테스트 실행 중..."
 npm test
 
