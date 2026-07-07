@@ -12,7 +12,7 @@ export default function RefundPage() {
       <main className="privacy-page">
         <div className="privacy-container">
           <h1 className="privacy-title">환불 정책</h1>
-          <p className="privacy-date">시행일: 2026년 7월 1일</p>
+          <p className="privacy-date">시행일: 2026년 7월 7일</p>
 
           <div className="privacy-section">
             <h2>1. 환불 가능 기간</h2>
