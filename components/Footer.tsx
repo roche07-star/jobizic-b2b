@@ -11,18 +11,41 @@ const JobizicLogoSmall = () => (
 export default function Footer() {
   return (
     <footer>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20 }}>
         <JobizicLogoSmall />
         <span style={{ fontFamily: 'Outfit, sans-serif', fontWeight: 700, fontSize: 15, letterSpacing: 2, color: '#e8ff47', textTransform: 'uppercase' }}>
           JOBIZIC B2B
         </span>
       </div>
-      <div className="footer-copy">© 2026 Jobizic. All rights reserved.</div>
-      <div className="footer-links">
+
+      {/* 사업자 정보 */}
+      <div style={{
+        fontSize: 12,
+        color: 'var(--muted2)',
+        lineHeight: 1.6,
+        marginBottom: 16
+      }}>
+        <div style={{ marginBottom: 6 }}>
+          JOBIZIC | 대표: 박영철 | 사업자등록번호: 566-18-02615
+        </div>
+        <div style={{ marginBottom: 6 }}>
+          주소: 경기도 수원시 장안구 화산로 87, 404호
+        </div>
+        <div style={{ marginBottom: 6 }}>
+          전화: 070-8095-5546 | 이메일: jobizic.biz@gmail.com
+        </div>
+      </div>
+
+      <div className="footer-links" style={{ marginBottom: 16 }}>
         <a href="/terms">이용약관</a>
         <a href="/privacy">개인정보처리방침</a>
+        <a href="/refund">환불정책</a>
         <a href="/licenses">오픈소스 라이선스</a>
         <a href="mailto:support@jobizic.io">문의하기</a>
+      </div>
+
+      <div className="footer-copy" style={{ fontSize: 12, color: 'var(--muted2)' }}>
+        © 2026 Jobizic. All rights reserved.
       </div>
     </footer>
   )
