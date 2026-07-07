@@ -92,7 +92,6 @@ export default function RefundPage() {
             <ul>
               <li><strong>이메일:</strong> jobizic.biz@gmail.com</li>
               <li><strong>전화:</strong> 070-8095-5546 (평일 10:00~18:00)</li>
-              <li><strong>주소:</strong> 경기도 수원시 장안구 화산로 87, 404호</li>
             </ul>
           </div>
         </div>
