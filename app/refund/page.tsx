@@ -27,7 +27,7 @@ export default function RefundPage() {
             <h2>2. 환불 신청 방법</h2>
             <p>다음 방법으로 환불을 신청하실 수 있습니다.</p>
             <ul>
-              <li><strong>이메일:</strong> jobizic.biz@gmail.com</li>
+              <li><strong>이메일:</strong> roche@jobizic.com</li>
               <li><strong>전화:</strong> 070-8095-5546 (평일 10:00~18:00)</li>
             </ul>
             <p style={{ marginTop: 12 }}>신청 시 다음 정보를 포함해 주세요:</p>
@@ -90,7 +90,7 @@ export default function RefundPage() {
             <h2>8. 문의</h2>
             <p>환불 정책에 대한 문의사항은 다음으로 연락 주세요.</p>
             <ul>
-              <li><strong>이메일:</strong> jobizic.biz@gmail.com</li>
+              <li><strong>이메일:</strong> roche@jobizic.com</li>
               <li><strong>전화:</strong> 070-8095-5546 (평일 10:00~18:00)</li>
             </ul>
           </div>

@@ -32,7 +32,7 @@ export default function Footer() {
           주소: 경기도 수원시 장안구 화산로 87, 404호
         </div>
         <div style={{ marginBottom: 6 }}>
-          전화: 070-8095-5546 | 이메일: jobizic.biz@gmail.com
+          전화: 070-8095-5546 | 이메일: roche@jobizic.com
         </div>
       </div>
 
