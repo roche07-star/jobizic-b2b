@@ -576,9 +576,17 @@ export default function PipelinePage() {
           <div className="empty-sub">JD와 후보자를 매칭하여 채용을 시작하세요</div>
         </div>
       ) : (
-        <div style={{ display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 16 }}>
-          {groupedByStage.map(({ stage, items }) => (
-            <div key={stage} style={{ minWidth: 280, flex: '0 0 auto' }}>
+        <div style={{ position: 'relative' }}>
+          <div
+            className="pipeline-scroll"
+            style={{
+              display: 'flex',
+              gap: 4,
+              overflowX: 'scroll',
+              paddingBottom: 8
+            }}>
+            {groupedByStage.map(({ stage, items }) => (
+            <div key={stage} style={{ minWidth: 200, flex: '0 0 auto' }}>
               <div style={{
                 fontSize: 11,
                 fontWeight: 600,
@@ -593,7 +601,7 @@ export default function PipelinePage() {
                 <span>{stage}</span>
                 <span style={{ opacity: 0.6 }}>{items.length}</span>
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 'calc(100vh - 320px)', overflowY: 'auto' }} className="pipeline-stage-items">
                 {items.map(item => (
                   <div
                     key={item.id}
@@ -657,6 +665,17 @@ export default function PipelinePage() {
               </div>
             </div>
           ))}
+          </div>
+          {/* 우측 스크롤 힌트 */}
+          <div style={{
+            position: 'absolute',
+            top: 0,
+            right: 0,
+            bottom: 16,
+            width: 80,
+            background: 'linear-gradient(to left, var(--bg) 0%, transparent 100%)',
+            pointerEvents: 'none'
+          }} />
         </div>
       )}
 

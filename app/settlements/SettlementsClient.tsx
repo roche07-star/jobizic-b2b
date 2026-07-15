@@ -30,20 +30,8 @@ export default function SettlementsClient() {
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear())
   const [years, setYears] = useState([2025, 2026]) // 2025년, 2026년
   const [editingId, setEditingId] = useState<string | null>(null)
-  const [goalAmount, setGoalAmount] = useState(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('settlements_goalAmount')
-      return saved ? parseInt(saved) : 5000
-    }
-    return 5000
-  })
-  const [carryover, setCarryover] = useState(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('settlements_carryover')
-      return saved ? parseInt(saved) : 0
-    }
-    return 0
-  })
+  const [goalAmount, setGoalAmount] = useState(5000)
+  const [carryover, setCarryover] = useState(0)
   const [editingGoal, setEditingGoal] = useState(false)
   const [editingCarryover, setEditingCarryover] = useState(false)
   const [tempGoal, setTempGoal] = useState('')
@@ -78,6 +66,27 @@ export default function SettlementsClient() {
       loadSettlements()
     }
   }, [selectedYear, profile])
+
+  // 사용자별 + 연도별 전환액/미수금 로드
+  useEffect(() => {
+    if (profile?.email && typeof window !== 'undefined') {
+      const userEmail = profile.email
+      const savedGoal = localStorage.getItem(`settlements_goalAmount_${userEmail}_${selectedYear}`)
+      const savedCarryover = localStorage.getItem(`settlements_carryover_${userEmail}_${selectedYear}`)
+
+      if (savedGoal) {
+        setGoalAmount(parseInt(savedGoal))
+      } else {
+        setGoalAmount(5000) // 기본값
+      }
+
+      if (savedCarryover) {
+        setCarryover(parseInt(savedCarryover))
+      } else {
+        setCarryover(0) // 기본값
+      }
+    }
+  }, [profile?.email, selectedYear])
 
   const loadSettlements = async () => {
     if (!profile?.organization_id || !profile?.email) return
@@ -224,14 +233,32 @@ export default function SettlementsClient() {
   const stats = (() => {
     let totalSales = 0, totalPersonal = 0, totalIncentive = 0, totalTax = 0, totalNet = 0, rateSum = 0, rateCount = 0
     let cumPersonal = 0
-    const threshold = goalAmount
+    const threshold = goalAmount + carryover
 
     settlements.forEach((s, idx) => {
       const sales = calculateCommission(s.salary, s.commission_rate) // 실매출액
       const myRatio = s.my_ratio || 50 // 내 비율
       const personal = calculatePersonalCommission(sales, myRatio) // 개인 매출액 (실매출액 × my_ratio)
-      const ir = threshold > 0 && cumPersonal >= threshold ? 100 : s.incentive_rate
-      const incentive = f(personal * ir / 100) // 인센티브 (개인 매출액 × 요율)
+
+      // 전환 체크
+      const alreadyConverted = threshold > 0 && cumPersonal >= threshold
+      const willConvert = threshold > 0 && !alreadyConverted && (cumPersonal + personal) >= threshold
+
+      // 인센티브 계산 (테이블과 동일한 로직)
+      let incentive
+      if (willConvert) {
+        // 전환 시점: 분할 계산
+        const seventyPart = f(threshold - cumPersonal)
+        const hundredPart = f(personal - seventyPart)
+        const incentiveSeventyPart = f(seventyPart * s.incentive_rate / 100)
+        const incentiveHundredPart = f(hundredPart * 100 / 100)
+        incentive = f(incentiveSeventyPart + incentiveHundredPart)
+      } else {
+        // 전환 전/후: 단순 계산
+        const ir = alreadyConverted ? 100 : s.incentive_rate
+        incentive = f(personal * ir / 100)
+      }
+
       cumPersonal += personal
       const tax = f(incentive * 0.033)
       const net = f(incentive - tax)
@@ -351,7 +378,9 @@ export default function SettlementsClient() {
                   onClick={() => {
                     const newGoal = parseInt(tempGoal) || 0
                     setGoalAmount(newGoal)
-                    localStorage.setItem('settlements_goalAmount', String(newGoal))
+                    if (profile?.email) {
+                      localStorage.setItem(`settlements_goalAmount_${profile.email}_${selectedYear}`, String(newGoal))
+                    }
                     setEditingGoal(false)
                   }}
                   style={{ fontSize: '11px', padding: '4px 12px', background: '#b8860b', color: '#1c1917', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 600 }}
@@ -396,7 +425,9 @@ export default function SettlementsClient() {
                   onClick={() => {
                     const newCarryover = parseInt(tempCarryover) || 0
                     setCarryover(newCarryover)
-                    localStorage.setItem('settlements_carryover', String(newCarryover))
+                    if (profile?.email) {
+                      localStorage.setItem(`settlements_carryover_${profile.email}_${selectedYear}`, String(newCarryover))
+                    }
                     setEditingCarryover(false)
                   }}
                   style={{ fontSize: '11px', padding: '4px 10px', background: '#3b82f6', color: '#1c1917', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 600 }}
@@ -601,8 +632,8 @@ export default function SettlementsClient() {
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px', background: '#fff', borderRadius: '12px', overflow: 'hidden' }}>
               <thead>
                 <tr style={{ background: '#f5f5f4', borderBottom: '2px solid #d6d3d1' }}>
-                  {['No', '합격자', '입사일', '연봉(만)', '수수료율%', '실매출액(만)', '개인매출액(만)', '누적 개인매출', '요율', '인센티브(만)', '세금(3.3%)', '실수령(만)', '고객사', '포지션', '요율'].map(h => (
-                    <th key={h} style={{ padding: '9px 10px', textAlign: 'center', fontSize: '10px', fontWeight: 700, color: '#1c1917', whiteSpace: 'nowrap' }}>{h}</th>
+                  {['No', '합격자', '입사일', '연봉(만)', '수수료율%', '실매출액(만)', '개인매출액(만)', '누적 개인매출', '요율', '인센티브(만)', '세금(3.3%)', '실수령(만)', '고객사', '포지션'].map((h, i) => (
+                    <th key={`header-${i}`} style={{ padding: '9px 10px', textAlign: 'center', fontSize: '10px', fontWeight: 700, color: '#1c1917', whiteSpace: 'nowrap' }}>{h}</th>
                   ))}
                 </tr>
               </thead>

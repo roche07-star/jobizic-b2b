@@ -274,18 +274,25 @@ export default function Dashboard() {
               </Link>
             </div>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: '260px', overflowY: 'auto' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12, maxHeight: '260px', overflowY: 'auto' }}>
               {recentJDs.map(jd => (
                 <Link key={jd.id} href={`/jd`}>
                   <div style={{
-                    padding: '10px 12px',
+                    padding: '12px 14px',
                     borderRadius: 8,
-                    background: 'var(--bg3)',
+                    border: '1px solid var(--border)',
+                    background: 'var(--bg-2)',
                     cursor: 'pointer',
-                    transition: 'background 0.2s'
+                    transition: 'all 0.2s ease'
                   }}
-                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.08)'}
-                  onMouseLeave={e => e.currentTarget.style.background = 'var(--bg3)'}
+                  onMouseEnter={e => {
+                    e.currentTarget.style.borderColor = 'var(--border-hover)'
+                    e.currentTarget.style.background = 'var(--bg-3)'
+                  }}
+                  onMouseLeave={e => {
+                    e.currentTarget.style.borderColor = 'var(--border)'
+                    e.currentTarget.style.background = 'var(--bg-2)'
+                  }}
                   >
                     <div style={{ fontSize: 10, color: 'var(--muted2)', marginBottom: 2 }}>
                       {jd.company ?? '회사명 미상'}
