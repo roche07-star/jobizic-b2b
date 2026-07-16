@@ -227,7 +227,7 @@ export default function Nav() {
             border: '2px solid var(--border)',
             borderRadius: 12,
             boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
-            zIndex: 1000,
+            zIndex: 9999,
             overflow: 'hidden',
           }}>
             {allLinks.map(l => (
@@ -314,7 +314,7 @@ export default function Nav() {
                 border: '2px solid var(--border)',
                 borderRadius: 10,
                 boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
-                zIndex: 1000,
+                zIndex: 9999,
                 overflow: 'hidden',
               }}>
                 <div style={{
