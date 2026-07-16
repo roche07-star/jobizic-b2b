@@ -4,7 +4,7 @@ import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
 
 export const metadata: Metadata = {
-  title: 'Jobizic B2B — AI 헤드헌터 플랫폼',
+  title: 'Jobizic Biz - AI ATS 플랫폼',
   description: '헤드헌터를 위한 AI 기반 JD 파싱 · 후보자 매칭 · 채용 파이프라인',
 }
 
