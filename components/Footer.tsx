@@ -41,7 +41,7 @@ export default function Footer() {
       <div className="footer-bottom">
         <div className="footer-logo-section">
           <JobizicLogoSmall />
-          <span className="footer-brand">BIZ</span>
+          <span className="footer-brand">JOBIZIC BIZ</span>
         </div>
 
         <div className="footer-links">
