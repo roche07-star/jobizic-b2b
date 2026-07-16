@@ -432,9 +432,11 @@ export default function AdminPage() {
       <div className="card" style={{ marginBottom: 20 }}>
         <div className="card-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span>조직 관리 ({organizations.length})</span>
-          <button className="btn btn-primary btn-sm" onClick={() => setShowOrgForm(!showOrgForm)}>
-            + 조직 생성
-          </button>
+          {profile?.role === 'admin' && (
+            <button className="btn btn-primary btn-sm" onClick={() => setShowOrgForm(!showOrgForm)}>
+              + 조직 생성
+            </button>
+          )}
         </div>
 
         {showOrgForm && (
