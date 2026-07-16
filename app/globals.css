@@ -39,7 +39,7 @@ body {
   background: var(--bg);
   color: var(--text);
   font-family: 'Pretendard', 'Noto Sans KR', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
-  font-size: 14px;
+  font-size: 15px;
   line-height: 1.6;
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
@@ -107,13 +107,13 @@ body {
 .page { padding: 96px 32px 64px; max-width: 1280px; margin: 0 auto; }
 .page-header { margin-bottom: 32px; display: flex; justify-content: space-between; align-items: flex-end; }
 .page-title {
-  font-size: 28px;
+  font-size: 32px;
   font-weight: 700;
   color: var(--text);
   letter-spacing: -0.5px;
 }
 .page-sub {
-  font-size: 14px;
+  font-size: 16px;
   color: var(--muted);
   margin-top: 6px;
   font-weight: 500;
@@ -130,7 +130,7 @@ body {
   border-color: var(--border-hover);
 }
 .card-title {
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 600;
   letter-spacing: 0.5px;
   color: var(--muted);
@@ -689,13 +689,13 @@ body {
   .nav-profile span { margin: 0 2px !important; }
 
   /* 타이틀 & 헤더 */
-  .page-title { font-size: 22px; }
-  .page-sub { font-size: 13px; }
+  .page-title { font-size: 24px; }
+  .page-sub { font-size: 15px; }
   .page-header { margin-bottom: 24px; flex-direction: column; align-items: flex-start; gap: 16px; }
 
   /* 카드 */
   .card { padding: 18px; border-radius: 12px; }
-  .card-title { font-size: 11px; margin-bottom: 12px; }
+  .card-title { font-size: 13px; margin-bottom: 12px; }
 
   /* 통계 카드 */
   .stat-card { padding: 18px; border-radius: 12px; }
