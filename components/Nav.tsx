@@ -363,11 +363,12 @@ export default function Nav() {
                           position: 'relative',
                         }}
                         onClick={() => {
-                          if (!notif.is_read) markAsRead(notif.id)
+                          // 알람 확인 시 바로 삭제
+                          deleteNotification(notif.id)
                           if (notif.action_url) {
                             router.push(notif.action_url)
-                            setShowNotifications(false)
                           }
+                          setShowNotifications(false)
                         }}
                       >
                         <div style={{
@@ -376,7 +377,7 @@ export default function Nav() {
                           alignItems: 'flex-start',
                           marginBottom: 3,
                         }}>
-                          <div style={{ fontWeight: 600, fontSize: 12, flex: 1, paddingRight: '20px' }}>
+                          <div style={{ fontWeight: 600, fontSize: 12, flex: 1, paddingRight: '20px', color: '#ffffff' }}>
                             {notif.title}
                           </div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -414,13 +415,13 @@ export default function Nav() {
                         {notif.message && (
                           <div style={{
                             fontSize: 11,
-                            color: 'var(--muted)',
+                            color: '#d0d0d0',
                             marginBottom: 3,
                           }}>
                             {notif.message}
                           </div>
                         )}
-                        <div style={{ fontSize: 10, color: 'var(--muted2)' }}>
+                        <div style={{ fontSize: 10, color: '#999999' }}>
                           {new Date(notif.created_at).toLocaleString('ko-KR')}
                         </div>
                       </div>
