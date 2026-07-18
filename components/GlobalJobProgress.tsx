@@ -16,6 +16,15 @@ export default function GlobalJobProgress() {
 
       try {
         const res = await fetch(`/api/jobs/${jobId}`)
+
+        // 404나 500 에러 시 localStorage 정리
+        if (!res.ok) {
+          console.error('[GlobalJobProgress] API error:', res.status)
+          localStorage.removeItem('processing_job_id')
+          setJob(null)
+          return
+        }
+
         const data = await res.json()
 
         if (data.status === 'completed' || data.status === 'failed') {
@@ -34,6 +43,9 @@ export default function GlobalJobProgress() {
         }
       } catch (err) {
         console.error('[GlobalJobProgress] Error:', err)
+        // 에러 발생 시 localStorage 정리
+        localStorage.removeItem('processing_job_id')
+        setJob(null)
       }
     }
 
