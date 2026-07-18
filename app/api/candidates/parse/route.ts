@@ -1,8 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { getCandidateParsePrompt } from '@/lib/prompts/base-headhunter'
+import { createClient } from '@supabase/supabase-js'
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+)
 
 // 📝 후보자 분석 결과 타입 정의
 interface CandidateParseResult {
@@ -194,7 +199,12 @@ function maskPersonalInfo(text: string): string {
 }
 
 export async function POST(req: NextRequest) {
+  let jobId: string | null = null
+
   try {
+    // 사용자 정보 (쿼리 파라미터에서 가져옴)
+    const userEmail = req.nextUrl.searchParams.get('user_email') || 'unknown'
+
     let resumeText: string
     let filename: string | undefined
 
@@ -246,106 +256,38 @@ export async function POST(req: NextRequest) {
 
     // 🔒 개인정보 마스킹
     const maskedText = maskPersonalInfo(resumeText)
-    console.log('[candidates/parse] Personal info masked. Calling Claude API...')
+    console.log('[candidates/parse] Personal info masked.')
 
-    console.log('[candidates/parse] Calling Claude API with Tool Calling...')
-
-    // 현재 날짜 (경력 계산용)
-    const today = new Date()
-    const currentDate = `${today.getFullYear()}년 ${today.getMonth() + 1}월 ${today.getDate()}일`
-
-    const message = await client.messages.create({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 4096,
-      system: [{
-        type: 'text',
-        text: getCandidateParsePrompt(), // ✨ Enhanced prompt from ADAM
-        cache_control: { type: 'ephemeral' }
-      }],
-      tools: [CANDIDATE_PARSE_TOOL],
-      tool_choice: { type: 'tool', name: 'analyze_candidate_resume' },
-      messages: [{
-        role: 'user',
-        content: `**중요: 오늘은 ${currentDate}입니다. 경력 기간 계산 시 이 날짜를 기준으로 정확히 계산해주세요. 예: 2023년 10월 ~ 현재 = 약 2년 8개월**\n\n다음 이력서를 분석해주세요:\n\n${maskedText}`
-      }],
-    })
-
-    console.log('[candidates/parse] ✅ Claude API response received')
-
-    // 📊 Prompt Caching Usage 로깅
-    if (message.usage) {
-      console.log('[candidates/parse] 💰 Token Usage:', {
-        input_tokens: message.usage.input_tokens,
-        output_tokens: message.usage.output_tokens,
-        cache_creation_input_tokens: message.usage.cache_creation_input_tokens || 0,
-        cache_read_input_tokens: message.usage.cache_read_input_tokens || 0
+    // 📝 Job 생성
+    const { data: job, error: jobError } = await supabase
+      .from('jobs')
+      .insert({
+        job_type: 'candidate_parse',
+        status: 'processing',
+        input: { resumeText, filename, maskedText, personalInfo },
+        user_email: userEmail,
+        progress: 10,
+        message: '이력서 분석 중...'
       })
+      .select()
+      .single()
 
-      const cacheHitRate = message.usage.cache_read_input_tokens
-        ? (message.usage.cache_read_input_tokens / (message.usage.input_tokens + message.usage.cache_read_input_tokens) * 100).toFixed(1)
-        : 0
-      console.log('[candidates/parse] 📈 Cache Hit Rate:', `${cacheHitRate}%`)
+    if (jobError || !job) {
+      console.error('[candidates/parse] Job creation failed:', jobError)
+      return NextResponse.json({ error: 'Job 생성 실패' }, { status: 500 })
     }
 
-    // 🎯 Tool Use 블록 추출
-    const toolUseBlock = message.content.find((block): block is Anthropic.ToolUseBlock => block.type === 'tool_use')
+    jobId = job.id
+    console.log('[candidates/parse] Job created:', job.id)
 
-    if (!toolUseBlock) {
-      console.error('[candidates/parse] ❌ No tool_use block found')
-      return NextResponse.json({ error: '파싱 실패. 다시 시도해 주세요.' }, { status: 500 })
-    }
-
-    const parsed = toolUseBlock.input as CandidateParseResult
-    console.log('[candidates/parse] ✅ Tool use extracted successfully')
-    console.log('[candidates/parse] Parsed fields:', Object.keys(parsed))
-
-    // 🔧 VARCHAR(100) 제한 필드 자르기 (DB 에러 방지)
-    const truncate = (str: string | null, maxLength: number = 100): string | null => {
-      if (!str) return str
-      if (str.length > maxLength) {
-        console.warn(`[candidates/parse] ⚠️ Truncating field (${str.length} → ${maxLength}):`, str.substring(0, 50) + '...')
-      }
-      return str.length > maxLength ? str.substring(0, maxLength) : str
-    }
-
-    // 🔒 모든 string 필드를 자동으로 truncate (더 이상 누락 없음!)
-    const applyTruncateToAllStrings = (obj: any): any => {
-      const result: any = {}
-      for (const key in obj) {
-        const value = obj[key]
-        if (value === null || value === undefined) {
-          result[key] = value
-        } else if (typeof value === 'string') {
-          // 길이가 긴 필드(summary, trajectory 등)는 제외, 일반 필드만 truncate
-          const isLongTextField = ['career_summary', 'strength_summary', 'weakness_summary', 'career_trajectory'].includes(key)
-          result[key] = isLongTextField ? value : truncate(value, 100)
-        } else {
-          result[key] = value
-        }
-      }
-      return result
-    }
-
-    // ✅ 추출한 개인정보를 Claude 응답과 합치고, 모든 string 필드 truncate
-    const merged = {
-      ...parsed,
-      name: personalInfo.name || parsed.name,
-      email: personalInfo.email || parsed.email,
-      phone: personalInfo.phone || parsed.phone,
-      birth_year: personalInfo.birth_year || parsed.birth_year,
-      location: personalInfo.location || parsed.location,
-    }
-
-    const result = applyTruncateToAllStrings(merged)
-
-    console.log('[candidates/parse] Final result with personal info:', {
-      hasName: !!result.name,
-      hasEmail: !!result.email,
-      hasPhone: !!result.phone,
-      hasBirthYear: !!result.birth_year
+    // ⚡ 비동기 모드: 즉시 jobId 반환, 처리는 별도 API로
+    // 클라이언트는 /api/jobs/{jobId}/process를 호출해서 처리 시작
+    return NextResponse.json({
+      jobId: job.id,
+      status: 'pending',
+      message: '분석 대기 중... process API를 호출하세요'
     })
 
-    return NextResponse.json(result)
   } catch (e: any) {
     console.error('[candidates/parse] ❌❌❌ FATAL ERROR ❌❌❌')
     console.error('[candidates/parse] Error name:', e.name)
@@ -358,7 +300,23 @@ export async function POST(req: NextRequest) {
       console.error('[candidates/parse] Anthropic API error:', e.error)
     }
 
+    // Job 실패 처리
+    if (jobId) {
+      await supabase
+        .from('jobs')
+        .update({
+          status: 'failed',
+          error: e.message || 'Unknown error',
+          progress: 0,
+          message: '분석 실패',
+          completed_at: new Date().toISOString()
+        })
+        .eq('id', jobId)
+    }
+
     return NextResponse.json({
+      jobId,
+      status: 'failed',
       error: '서버 오류가 발생했습니다.',
       details: e.message || 'Unknown error'
     }, { status: 500 })

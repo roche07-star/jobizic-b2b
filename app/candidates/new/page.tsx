@@ -83,16 +83,57 @@ export default function CandidateNewPage() {
       // ✅ 응답을 먼저 받고
       const data = await res.json()
 
-      // ✅ 그 다음 Step 3으로 전환 (정확한 타이밍!)
-      setAnalysisStep(2) // Step 3: 결과 생성 중
-
       if (!res.ok) { setError(data.error); return }
-      setParsed(data)
+
+      // ✅ 비동기 처리: jobId 받음
+      const { jobId } = data
+      console.log('[parse] Job created:', jobId)
+
+      // ✅ Step 2: 처리 시작
+      setAnalysisStep(2) // Step 3: AI 분석 중
+
+      // 처리 API 호출 (fire-and-forget)
+      fetch(`/api/jobs/${jobId}/process`, { method: 'POST' })
+        .catch(err => console.error('[process] Error:', err))
+
+      // Polling으로 상태 확인
+      const pollInterval = setInterval(async () => {
+        try {
+          const statusRes = await fetch(`/api/jobs/${jobId}`)
+          const jobData = await statusRes.json()
+
+          console.log('[poll] Status:', jobData.status, jobData.progress)
+
+          if (jobData.status === 'completed') {
+            clearInterval(pollInterval)
+            setParsed(jobData.result)
+            setParsing(false)
+            setAnalysisStep(0)
+          } else if (jobData.status === 'failed') {
+            clearInterval(pollInterval)
+            setError(jobData.error || '분석 실패')
+            setParsing(false)
+            setAnalysisStep(0)
+          }
+        } catch (err) {
+          console.error('[poll] Error:', err)
+        }
+      }, 2000) // 2초마다 확인
+
+      // 5분 후 타임아웃
+      setTimeout(() => {
+        clearInterval(pollInterval)
+        if (parsing) {
+          setError('분석 시간 초과')
+          setParsing(false)
+          setAnalysisStep(0)
+        }
+      }, 300000)
+
     } catch {
       setError('서버 오류가 발생했습니다.')
-    } finally {
       setParsing(false)
-      setAnalysisStep(0) // 초기화
+      setAnalysisStep(0)
     }
   }
 
