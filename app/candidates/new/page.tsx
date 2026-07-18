@@ -89,6 +89,9 @@ export default function CandidateNewPage() {
       const { jobId } = data
       console.log('[parse] Job created:', jobId)
 
+      // ✅ localStorage에 저장 (전역 진행 표시용)
+      localStorage.setItem('processing_job_id', jobId)
+
       // ✅ Step 2: 처리 시작
       setAnalysisStep(2) // Step 3: AI 분석 중
 

@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import './globals.css'
 import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
+import GlobalJobProgress from '@/components/GlobalJobProgress'
 
 export const metadata: Metadata = {
   title: 'Jobizic Biz - AI ATS 플랫폼',
@@ -17,6 +18,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet" />
       </head>
       <body>
+        <GlobalJobProgress />
         <Nav />
         {children}
         <Footer />
