@@ -2,8 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { getCandidateParsePrompt } from '@/lib/prompts/base-headhunter'
 import { createClient } from '@supabase/supabase-js'
-
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+import { callClaude } from '@/lib/claude-client'
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -91,8 +90,7 @@ export async function POST(
 
     console.log('[jobs/process] Calling Claude API...')
 
-    const message = await client.messages.create({
-      model: 'claude-haiku-4-5-20251001',
+    const message = await callClaude({
       max_tokens: 4096,
       system: [{
         type: 'text',

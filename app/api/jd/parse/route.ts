@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { getJDParsePrompt } from '@/lib/prompts/base-headhunter'
-
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+import { callClaude } from '@/lib/claude-client'
 
 // 📝 JD 분석 결과 타입 정의
 interface JDParseResult {
@@ -123,8 +122,7 @@ export async function POST(req: NextRequest) {
 
     console.log('[jd/parse] Calling Claude API with Tool Calling...')
 
-    const message = await client.messages.create({
-      model: 'claude-haiku-4-5-20251001',
+    const message = await callClaude({
       max_tokens: 4000,
       system: [{
         type: 'text',
