@@ -56,7 +56,7 @@ interface PipelineItem {
   }
 }
 
-const STAGES = ['신규', '서류검토', '1차면접', '2차면접', '최종면접', '처우협의', '합격', '불합격']
+const STAGES = ['추천', '신규', '서류검토', '1차면접', '2차면접', '최종면접', '처우협의', '합격', '불합격']
 
 interface Organization {
   id: string
