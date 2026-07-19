@@ -40,10 +40,25 @@ export default function RecommendationsPage() {
   const [selected, setSelected] = useState<Recommendation | null>(null)
   const [responding, setResponding] = useState(false)
   const [commentText, setCommentText] = useState('')
+  const [userRole, setUserRole] = useState<string>('')
+  const [activeTab, setActiveTab] = useState<'received' | 'manage'>('received')
 
   useEffect(() => {
-    loadRecommendations()
+    checkAuth()
   }, [])
+
+  useEffect(() => {
+    if (userRole) {
+      loadRecommendations()
+    }
+  }, [userRole])
+
+  async function checkAuth() {
+    const profile = await getProfile()
+    if (profile) {
+      setUserRole(profile.role)
+    }
+  }
 
   async function loadRecommendations() {
     try {
@@ -98,10 +113,32 @@ export default function RecommendationsPage() {
 
       <div className="page-header">
         <div>
-          <div className="page-title">내가 받은 추천</div>
-          <div className="page-sub">관리자가 추천한 후보자를 확인하고 수락/거절하세요</div>
+          <div className="page-title">추천</div>
+          <div className="page-sub">
+            {userRole === 'admin'
+              ? 'AI 후보 추천 관리 및 내가 받은 추천을 확인하세요'
+              : '관리자가 추천한 후보자를 확인하고 수락/거절하세요'}
+          </div>
         </div>
       </div>
+
+      {/* Super Admin 탭 */}
+      {userRole === 'admin' && (
+        <div style={{ display: 'flex', gap: 12, marginBottom: 20 }}>
+          <button
+            className={`btn${activeTab === 'manage' ? ' btn-primary' : ' btn-ghost'}`}
+            onClick={() => window.location.href = '/admin/recommendations'}
+          >
+            후보자 추천 관리
+          </button>
+          <button
+            className={`btn${activeTab === 'received' ? ' btn-primary' : ' btn-ghost'}`}
+            onClick={() => setActiveTab('received')}
+          >
+            내가 받은 추천
+          </button>
+        </div>
+      )}
 
       {loading ? (
         <div className="empty">
