@@ -60,7 +60,6 @@ interface BoardPost {
 }
 
 const STATUS_FILTERS = ['전체', '검토중', '활성', '마감', '보류']
-const PRIORITY_FILTERS = ['긴급', '보통']
 
 interface Organization {
   id: string
@@ -72,7 +71,6 @@ export default function JDPage() {
   const [jds, setJds] = useState<JD[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('전체')
-  const [priorityFilter, setPriorityFilter] = useState('긴급')
   const [selected, setSelected] = useState<JD | null>(null)
   const [isAdmin, setIsAdmin] = useState(false)
   const [userEmail, setUserEmail] = useState<string>('')
@@ -305,7 +303,6 @@ export default function JDPage() {
     : jds.filter(j => j.created_by === userEmail || interests.includes(j.id))
 
   const statusFiltered = filter === '전체' ? viewFiltered : viewFiltered.filter(j => j.status === filter)
-  const priorityFiltered = statusFiltered.filter(j => j.priority === priorityFilter)
 
   // 상태 + 우선순위 정렬 (활성/긴급이 최우선)
   const statusPriority: Record<string, number> = {
@@ -322,7 +319,7 @@ export default function JDPage() {
     '낮음': 4,
   }
 
-  const filtered = [...priorityFiltered].sort((a, b) => {
+  const filtered = [...statusFiltered].sort((a, b) => {
     const statusA = statusPriority[a.status] || 999
     const statusB = statusPriority[b.status] || 999
 
@@ -586,15 +583,6 @@ export default function JDPage() {
         {STATUS_FILTERS.map(f => (
           <button key={f} className={`filter-btn${filter === f ? ' active' : ''}`} onClick={() => setFilter(f)}>
             {f} {f !== '전체' && <span style={{ opacity: 0.6 }}>({viewFiltered.filter(j => j.status === f).length})</span>}
-          </button>
-        ))}
-      </div>
-
-      <div className="filter-bar" style={{ marginTop: 8 }}>
-        <span style={{ fontSize: 12, color: 'var(--muted2)', marginRight: 8 }}>우선순위:</span>
-        {PRIORITY_FILTERS.map(f => (
-          <button key={f} className={`filter-btn${priorityFilter === f ? ' active' : ''}`} onClick={() => setPriorityFilter(f)}>
-            {f} {f !== '전체' && <span style={{ opacity: 0.6 }}>({statusFiltered.filter(j => j.priority === f).length})</span>}
           </button>
         ))}
       </div>
