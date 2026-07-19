@@ -174,7 +174,9 @@ export default function JDPage() {
                 })
 
                 if (!saveRes.ok) {
-                  throw new Error('JD 저장 실패')
+                  const errorData = await saveRes.json()
+                  console.error('[jd] Save error response:', errorData)
+                  throw new Error(errorData.error || 'JD 저장 실패')
                 }
 
                 // 목록 새로고침

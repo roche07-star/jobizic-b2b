@@ -91,6 +91,12 @@ export async function POST(
       const today = new Date()
       const currentDate = `${today.getFullYear()}년 ${today.getMonth() + 1}월 ${today.getDate()}일`
 
+      // 35% - Claude API 호출 전
+      await supabase
+        .from('jobs')
+        .update({ progress: 35, message: '이력서 읽는 중...' })
+        .eq('id', jobId)
+
       console.log('[jobs/process] Candidate parsing - Calling Claude API...')
 
       const message = await callClaude({
@@ -108,6 +114,12 @@ export async function POST(
         }],
       })
 
+      // 70% - Claude API 응답 받음
+      await supabase
+        .from('jobs')
+        .update({ progress: 70, message: 'AI 분석 완료, 결과 생성 중...' })
+        .eq('id', jobId)
+
       const toolUseBlock = message.content.find(
         (block): block is Anthropic.ToolUseBlock => block.type === 'tool_use'
       )
@@ -117,6 +129,12 @@ export async function POST(
       }
 
       const parsed = toolUseBlock.input as any
+
+      // 85% - 파싱 완료
+      await supabase
+        .from('jobs')
+        .update({ progress: 85, message: '결과 정리 중...' })
+        .eq('id', jobId)
 
       result = {
         ...parsed,
@@ -134,6 +152,12 @@ export async function POST(
         company_url?: string
         client_comment?: string
       }
+
+      // 35% - Claude API 호출 전
+      await supabase
+        .from('jobs')
+        .update({ progress: 35, message: 'JD 읽는 중...' })
+        .eq('id', jobId)
 
       console.log('[jobs/process] JD parsing - Calling Claude API...')
 
@@ -154,6 +178,12 @@ export async function POST(
           content: userContent
         }],
       })
+
+      // 70% - Claude API 응답 받음
+      await supabase
+        .from('jobs')
+        .update({ progress: 70, message: 'AI 분석 완료, 결과 생성 중...' })
+        .eq('id', jobId)
 
       // JSON 파싱
       const textBlock = message.content.find(block => block.type === 'text')
@@ -187,6 +217,12 @@ export async function POST(
       }
 
       const jsonText = rawText.substring(firstBrace, lastBrace + 1)
+
+      // 85% - JSON 파싱 중
+      await supabase
+        .from('jobs')
+        .update({ progress: 85, message: '결과 정리 중...' })
+        .eq('id', jobId)
 
       try {
         result = JSON.parse(jsonText)
