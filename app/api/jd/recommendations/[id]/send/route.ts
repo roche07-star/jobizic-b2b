@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
-import { getProfile } from '@/lib/auth'
+import { getServerProfile } from '@/lib/supabase-server'
 import { sendTelegramMessage } from '@/lib/telegram'
 
 export async function POST(req: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await context.params
-    const profile = await getProfile()
+    const profile = await getServerProfile()
 
     if (!profile) {
       return NextResponse.json({ error: '인증이 필요합니다.' }, { status: 401 })

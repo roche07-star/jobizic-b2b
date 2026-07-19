@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
-import { getProfile } from '@/lib/auth'
+import { getServerProfile } from '@/lib/supabase-server'
 
 export async function GET(req: NextRequest) {
   try {
-    const profile = await getProfile()
+    const profile = await getServerProfile()
     if (!profile) {
       return NextResponse.json({ error: '인증이 필요합니다.' }, { status: 401 })
     }
@@ -20,12 +20,17 @@ export async function GET(req: NextRequest) {
         job_descriptions!inner(id, company, position, created_by),
         candidates!inner(id, name, email, current_position, total_experience_years)
       `)
-      .eq('organization_id', profile.organization_id)
       .order('match_score', { ascending: false })
 
     // 역할별 필터링
-    if (role === 'owner' || role === 'admin') {
-      // 관리자: 모든 추천 조회 가능
+    if (role === 'admin') {
+      // Super Admin: 모든 조직의 추천 조회 가능
+      if (status) {
+        query = query.eq('status', status)
+      }
+    } else if (role === 'owner') {
+      // Owner: 본인 조직의 추천만
+      query = query.eq('organization_id', profile.organization_id)
       if (status) {
         query = query.eq('status', status)
       }

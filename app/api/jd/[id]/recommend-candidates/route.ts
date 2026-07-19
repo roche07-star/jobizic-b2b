@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
-import { getProfile } from '@/lib/auth'
+import { getServerProfile } from '@/lib/supabase-server'
 import Anthropic from '@anthropic-ai/sdk'
 import { getMatchingPrompt } from '@/lib/prompts/base-headhunter'
 
@@ -40,7 +40,7 @@ const MATCHING_TOOL: Anthropic.Tool = {
 export async function POST(req: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
     const { id: jdId } = await context.params
-    const profile = await getProfile()
+    const profile = await getServerProfile()
 
     if (!profile) {
       return NextResponse.json({ error: '인증이 필요합니다.' }, { status: 401 })
