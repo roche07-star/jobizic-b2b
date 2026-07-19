@@ -11,18 +11,30 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ id: 
       return NextResponse.json({ error: '인증이 필요합니다.' }, { status: 401 })
     }
 
-    console.log('[recommendation delete] ID:', id, 'by:', profile.email)
+    console.log('[recommendation delete] ID:', id, 'by:', profile.email, 'role:', profile.role)
 
-    // 추천 정보 조회 (본인에게 추천된 것만)
-    const { data: recommendation, error: fetchError } = await supabaseAdmin
+    // 추천 정보 조회
+    let query = supabaseAdmin
       .from('jd_recommendations')
       .select('*')
       .eq('id', id)
-      .eq('recommended_to', profile.email)
-      .single()
+
+    // 권한 체크: PM은 본인에게 추천된 것만, Admin/Owner는 본인이 추천한 것 또는 조직 내 모든 추천
+    if (profile.role === 'admin') {
+      // Admin: 모든 추천 삭제 가능 (추가 필터 없음)
+    } else if (profile.role === 'owner') {
+      // Owner: 본인 조직의 추천만
+      query = query.eq('organization_id', profile.organization_id)
+    } else {
+      // PM/Searcher: 본인에게 추천된 것만
+      query = query.eq('recommended_to', profile.email)
+    }
+
+    const { data: recommendation, error: fetchError } = await query.single()
 
     if (fetchError || !recommendation) {
       console.error('[recommendation delete] Fetch error:', fetchError)
+      console.error('[recommendation delete] Not found for user:', profile.email, 'role:', profile.role)
       return NextResponse.json({ error: '추천을 찾을 수 없습니다.' }, { status: 404 })
     }
 
