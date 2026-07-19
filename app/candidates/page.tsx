@@ -131,8 +131,62 @@ export default function CandidatesPage() {
   const [comments, setComments] = useState<any[]>([])
   const [commentContent, setCommentContent] = useState('')
   const [showCommentForm, setShowCommentForm] = useState(false)
+  const [processingJobId, setProcessingJobId] = useState<string | null>(null)
+  const [processingProgress, setProcessingProgress] = useState(0)
 
   const { toasts, success, error, info, removeToast } = useToast()
+
+  // 백그라운드 처리 중인 job 확인
+  useEffect(() => {
+    const jobId = localStorage.getItem('processing_job_id')
+    const jobType = localStorage.getItem('processing_job_type')
+
+    if (jobId && jobType === 'candidate') {
+      setProcessingJobId(jobId)
+
+      // Polling으로 상태 확인
+      const pollInterval = setInterval(async () => {
+        try {
+          const res = await fetch(`/api/jobs/${jobId}`)
+          const data = await res.json()
+
+          setProcessingProgress(data.progress || 0)
+
+          if (data.status === 'completed') {
+            clearInterval(pollInterval)
+            localStorage.removeItem('processing_job_id')
+            localStorage.removeItem('processing_job_type')
+            setProcessingJobId(null)
+
+            // 목록 새로고침
+            const profile = await getProfile()
+            if (profile) {
+              const params = new URLSearchParams({
+                role: profile.role,
+                user_email: profile.email,
+                ...(profile.role === 'admin' && selectedOrgId !== '전체' && { organization_id: selectedOrgId }),
+                ...(profile.role !== 'admin' && profile.organization_id && { organization_id: profile.organization_id })
+              })
+              const refreshRes = await fetch(`/api/candidates?${params}`)
+              const refreshData = await refreshRes.json()
+              setCandidates(refreshData.candidates ?? [])
+              success('✅ 후보자 분석이 완료되었습니다!')
+            }
+          } else if (data.status === 'failed') {
+            clearInterval(pollInterval)
+            localStorage.removeItem('processing_job_id')
+            localStorage.removeItem('processing_job_type')
+            setProcessingJobId(null)
+            error('❌ 후보자 분석 실패')
+          }
+        } catch (err) {
+          console.error('[poll] Error:', err)
+        }
+      }, 2000)
+
+      return () => clearInterval(pollInterval)
+    }
+  }, [selectedOrgId])
 
   useEffect(() => {
     async function loadOrganizations() {
@@ -457,6 +511,30 @@ export default function CandidatesPage() {
 
   return (
     <main className="page">
+      {/* 백그라운드 처리 중 표시 */}
+      {processingJobId && (
+        <div style={{
+          position: 'fixed',
+          top: 80,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          zIndex: 1000,
+          background: 'var(--primary)',
+          color: 'var(--bg)',
+          padding: '12px 24px',
+          borderRadius: 24,
+          boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 12,
+          fontSize: 14,
+          fontWeight: 500
+        }}>
+          <div className="spinner" style={{ width: 16, height: 16, borderWidth: 2 }} />
+          🔄 이력서 분석 중... {processingProgress}%
+        </div>
+      )}
+
       <div className="page-header">
         <div>
           <div className="page-title">후보자 관리</div>
