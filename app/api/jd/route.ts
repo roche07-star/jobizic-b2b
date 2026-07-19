@@ -226,15 +226,24 @@ export async function POST(req: NextRequest) {
 
         // 2. 텔레그램 알림 (신규)
         // 조직 내 텔레그램 연동된 멤버 조회 (본인 제외)
-        const { data: telegramMembers } = await supabaseAdmin
+        console.log('[JD POST] Telegram: Looking for members in organization:', data.organization_id, 'excluding creator:', creator.id)
+        const { data: telegramMembers, error: telegramError } = await supabaseAdmin
           .from('profiles')
           .select('id, full_name, email, telegram_chat_id')
           .eq('organization_id', data.organization_id)
           .not('telegram_chat_id', 'is', null)
           .neq('id', creator.id)
 
+        if (telegramError) {
+          console.error('[JD POST] Telegram members query error:', telegramError)
+        }
+
+        console.log('[JD POST] Telegram members found:', telegramMembers?.length || 0, telegramMembers?.map(m => ({ email: m.email, hasChat: !!m.telegram_chat_id })))
+
         if (telegramMembers && telegramMembers.length > 0) {
           console.log('[JD POST] Sending Telegram notifications to', telegramMembers.length, 'members')
+          console.log('[JD POST] TELEGRAM_BOT_TOKEN configured:', !!process.env.TELEGRAM_BOT_TOKEN)
+          console.log('[JD POST] NEXT_PUBLIC_APP_URL:', process.env.NEXT_PUBLIC_APP_URL || 'https://jobizic-biz.vercel.app')
 
           const creatorName = creator.full_name || creator.email.split('@')[0]
           const telegramMessage = `🆕 <b>[신규 JD]</b>
@@ -248,7 +257,8 @@ export async function POST(req: NextRequest) {
           // 모든 멤버에게 텔레그램 메시지 전송
           for (const member of telegramMembers) {
             try {
-              await sendTelegramMessage({
+              console.log('[JD POST] Sending Telegram to:', member.email, 'chat_id:', member.telegram_chat_id)
+              const success = await sendTelegramMessage({
                 chatId: member.telegram_chat_id!,
                 text: telegramMessage,
                 parseMode: 'HTML',
@@ -258,7 +268,7 @@ export async function POST(req: NextRequest) {
                   ]]
                 }
               })
-              console.log('[JD POST] Telegram sent to:', member.email)
+              console.log('[JD POST] Telegram result for', member.email, ':', success ? '✅ SUCCESS' : '❌ FAILED')
             } catch (err) {
               console.error('[JD POST] Telegram send failed for', member.email, err)
             }
