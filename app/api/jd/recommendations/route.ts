@@ -19,7 +19,10 @@ export async function GET(req: NextRequest) {
       .select(`
         *,
         job_descriptions!inner(id, company, position, created_by),
-        candidates!inner(id, name, email, current_position, total_experience_years)
+        candidates!inner(
+          id, name, email, current_position, total_experience_years,
+          education, career_summary, desired_salary, metadata
+        )
       `)
       .order('match_score', { ascending: false })
 

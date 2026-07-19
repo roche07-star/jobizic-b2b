@@ -45,6 +45,10 @@ interface Recommendation {
     email?: string | null
     current_position: string | null
     total_experience_years: number | null
+    education?: string[] | null
+    career_summary?: string | null
+    desired_salary?: string | null
+    metadata?: any
   }
   created_at: string
 }
@@ -547,7 +551,17 @@ export default function RecommendationsPage() {
                       👨‍💼 {adminSelected.candidates.name} ({adminSelected.candidates.current_position || '포지션 미상'})
                       {adminSelected.candidates.total_experience_years && ` · 경력 ${adminSelected.candidates.total_experience_years}년`}
                     </div>
-                    <div style={{ fontSize: 12, color: 'var(--text-tertiary)' }}>
+                    {adminSelected.candidates.education && adminSelected.candidates.education.length > 0 && (
+                      <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 4 }}>
+                        🎓 {adminSelected.candidates.education[adminSelected.candidates.education.length - 1]}
+                      </div>
+                    )}
+                    {adminSelected.candidates.career_summary && (
+                      <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 4 }}>
+                        💼 {adminSelected.candidates.career_summary}
+                      </div>
+                    )}
+                    <div style={{ fontSize: 12, color: 'var(--text-tertiary)', marginTop: 8 }}>
                       PM: {adminSelected.recommended_to}
                     </div>
                   </div>
@@ -603,6 +617,25 @@ export default function RecommendationsPage() {
 
                   {adminSelected.status === 'pending' && (
                     <>
+                      {/* 연봉 정보 */}
+                      <div style={{ marginBottom: 20, padding: 12, background: 'var(--surface-secondary)', borderRadius: 6 }}>
+                        <div className="form-label" style={{ marginBottom: 8 }}>💰 연봉 정보</div>
+                        <div style={{ display: 'flex', gap: 16, fontSize: 13 }}>
+                          <div>
+                            <span style={{ color: 'var(--text-tertiary)' }}>직전연봉: </span>
+                            <span style={{ fontWeight: 500 }}>
+                              {adminSelected.candidates.metadata?.current_salary || '미입력'}
+                            </span>
+                          </div>
+                          <div>
+                            <span style={{ color: 'var(--text-tertiary)' }}>희망연봉: </span>
+                            <span style={{ fontWeight: 500 }}>
+                              {adminSelected.candidates.desired_salary || '미입력'}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
                       {/* 관리자 코멘트 입력 */}
                       <div style={{ marginBottom: 20 }}>
                         <div className="form-label">PM에게 전달할 코멘트 (선택)</div>
@@ -749,8 +782,32 @@ export default function RecommendationsPage() {
                   👨‍💼 {selected.candidates.name} ({selected.candidates.current_position || '포지션 미상'})
                   {selected.candidates.total_experience_years && ` · 경력 ${selected.candidates.total_experience_years}년`}
                 </div>
+                {selected.candidates.education && selected.candidates.education.length > 0 && (
+                  <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 4 }}>
+                    🎓 {selected.candidates.education[selected.candidates.education.length - 1]}
+                  </div>
+                )}
+                {selected.candidates.career_summary && (
+                  <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 4 }}>
+                    💼 {selected.candidates.career_summary}
+                  </div>
+                )}
+                <div style={{ fontSize: 13, marginTop: 8, display: 'flex', gap: 16 }}>
+                  <div>
+                    <span style={{ color: 'var(--text-tertiary)' }}>직전연봉: </span>
+                    <span style={{ fontWeight: 500 }}>
+                      {selected.candidates.metadata?.current_salary || '미입력'}
+                    </span>
+                  </div>
+                  <div>
+                    <span style={{ color: 'var(--text-tertiary)' }}>희망연봉: </span>
+                    <span style={{ fontWeight: 500 }}>
+                      {selected.candidates.desired_salary || '미입력'}
+                    </span>
+                  </div>
+                </div>
                 {selected.recommended_by && (
-                  <div style={{ fontSize: 12, color: 'var(--text-tertiary)' }}>
+                  <div style={{ fontSize: 12, color: 'var(--text-tertiary)', marginTop: 8 }}>
                     추천자: {selected.recommended_by}
                   </div>
                 )}
