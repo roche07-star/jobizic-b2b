@@ -140,14 +140,17 @@ export default function JDPage() {
                 const result = data.result
 
                 // DB 테이블에 맞는 필드만 추출
+                const rawPriority = result.metadata?.priority || '일반'
+                const rawDifficulty = result.metadata?.difficulty || '중'
+
                 const jdData = {
                   company: meta.company,
                   position: meta.position,
                   location: meta.location || result.metadata?.location || null,
                   salary_estimate: result.metadata?.salary || null,
-                  priority: result.metadata?.priority || '일반',
-                  difficulty: result.metadata?.difficulty || '중',
-                  difficulty_reason: `난이도 ${result.metadata?.difficulty || '중'}`,
+                  priority: rawPriority.substring(0, 10), // varchar(10) 제한
+                  difficulty: rawDifficulty.substring(0, 10), // varchar(10) 제한
+                  difficulty_reason: result.metadata?.difficulty_reason || `난이도 ${rawDifficulty}`,
                   target_profile: result.step3_headhunter_insight?.core_profile || '',
                   search_strategy: result.step3_headhunter_insight?.search_direction || '',
                   required_skills: result.step2_requirements?.must_have || [],
