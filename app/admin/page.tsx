@@ -413,13 +413,20 @@ export default function AdminPage() {
       {profile.role === 'admin' && (
         <div className="card" style={{ marginBottom: 20 }}>
           <div className="card-title">시스템 설정</div>
-          <div style={{ display: 'flex', gap: 12 }}>
+          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
             <button
               className="btn btn-primary"
+              onClick={() => router.push('/admin/recommendations')}
+              style={{ display: 'flex', alignItems: 'center', gap: 8 }}
+            >
+              🤖 후보자 추천 관리
+            </button>
+            <button
+              className="btn btn-ghost"
               onClick={() => router.push('/admin/telegram')}
               style={{ display: 'flex', alignItems: 'center', gap: 8 }}
             >
-              🤖 텔레그램 봇 설정
+              📱 텔레그램 봇 설정
             </button>
           </div>
         </div>
