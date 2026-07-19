@@ -757,7 +757,7 @@ export default function JDPage() {
               <div className="jd-meta">
                 {jd.location && <span className="jd-tag">📍 {jd.location}</span>}
                 {jd.salary_estimate && <span className="jd-tag">💰 {jd.salary_estimate}</span>}
-                <span className={`jd-tag badge-${jd.difficulty}`}>난이도 {jd.difficulty}</span>
+                {jd.fee_rate && <span className="jd-tag" style={{ background: 'rgba(74, 158, 255, 0.15)', color: '#4a9eff', fontWeight: 600 }}>💎 {jd.fee_rate}</span>}
               </div>
               {jd.required_skills?.length > 0 && (
                 <div className="skills-wrap" style={{ marginTop: 10 }}>
@@ -1105,9 +1105,6 @@ export default function JDPage() {
                           </span>
                         )
                       })()}
-
-                      {/* 난이도 배지 - 표시만 */}
-                      <span className={`badge badge-${selected.difficulty}`} style={{ fontSize: 13 }}>난이도 {selected.difficulty}</span>
                     </div>
 
                     {/* 빠른 변경 버튼 */}
@@ -1250,11 +1247,44 @@ export default function JDPage() {
                           </div>
                         )}
 
-                        <div className="analysis-box" style={{ marginBottom: 16 }}>
-                          <div className="analysis-row">
-                            <span className="analysis-label">난이도</span>
-                            <span className="analysis-value">{selected.difficulty_reason}</span>
+                        {/* 입력 필드 정보 */}
+                        <div style={{ marginBottom: 16 }}>
+                          <div className="form-label">JD 기본 정보</div>
+                          <div className="analysis-box" style={{ background: 'var(--surface-secondary)' }}>
+                            <div className="analysis-row">
+                              <span className="analysis-label">회사명</span>
+                              <span className="analysis-value">{selected.company || '-'}</span>
+                            </div>
+                            <div className="analysis-row">
+                              <span className="analysis-label">포지션명</span>
+                              <span className="analysis-value">{selected.position}</span>
+                            </div>
+                            {selected.fee_rate && (
+                              <div className="analysis-row">
+                                <span className="analysis-label">수수료율</span>
+                                <span className="analysis-value" style={{ color: '#4a9eff', fontWeight: 600 }}>{selected.fee_rate}</span>
+                              </div>
+                            )}
+                            {selected.location && (
+                              <div className="analysis-row">
+                                <span className="analysis-label">근무지</span>
+                                <span className="analysis-value">{selected.location}</span>
+                              </div>
+                            )}
+                            {selected.company_url && (
+                              <div className="analysis-row">
+                                <span className="analysis-label">회사 URL</span>
+                                <span className="analysis-value">
+                                  <a href={selected.company_url} target="_blank" rel="noopener noreferrer" style={{ color: '#4a9eff', textDecoration: 'underline' }}>
+                                    {selected.company_url}
+                                  </a>
+                                </span>
+                              </div>
+                            )}
                           </div>
+                        </div>
+
+                        <div className="analysis-box" style={{ marginBottom: 16 }}>
                           <div className="analysis-row">
                             <span className="analysis-label">타깃 프로파일</span>
                             <span className="analysis-value">{selected.target_profile}</span>
