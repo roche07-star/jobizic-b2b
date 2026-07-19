@@ -156,13 +156,20 @@ export default function RecommendationsPage() {
         body: JSON.stringify({ action, pm_comment: commentText.trim() || null })
       })
 
-      const data = await res.json()
-
       if (!res.ok) {
-        error(`❌ ${data.error || '처리 실패'}`)
+        let errorMessage = '처리 실패'
+        try {
+          const data = await res.json()
+          errorMessage = data.error || errorMessage
+        } catch (parseError) {
+          console.error('[recommendations] Failed to parse error response:', parseError)
+          errorMessage = `서버 오류 (${res.status})`
+        }
+        error(`❌ ${errorMessage}`)
         return
       }
 
+      const data = await res.json()
       success(data.message || '✅ 처리되었습니다.')
       setSelected(null)
       setCommentText('')
