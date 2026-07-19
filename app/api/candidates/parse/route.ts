@@ -53,7 +53,7 @@ const CANDIDATE_PARSE_TOOL: Anthropic.Tool = {
       current_company: { type: 'string', description: '현재 회사 (없으면 null)' },
       current_position: { type: 'string', description: '현재 직급/포지션 (없으면 null)' },
       total_experience_years: { type: 'number', description: '총 경력 년수' },
-      career_summary: { type: 'string', description: '경력 요약 2-3문장 (구체적 수치와 프로젝트 포함)' },
+      career_summary: { type: 'string', description: '회사별 경력 요약 (예: A사 3년 (백엔드) -> B사 5년 (팀장) -> C사 2년 (시니어))' },
       education: { type: 'array', items: { type: 'string' }, description: '학력 (최종학력부터)' },
       skills: { type: 'array', items: { type: 'string' }, description: '스킬 목록' },
       tech_stack: { type: 'array', items: { type: 'string' }, description: '기술스택' },

@@ -158,7 +158,7 @@ ${OUTPUT_RULES}
   "current_company": "현재 회사 (없으면 null)",
   "current_position": "현재 직급/포지션 (없으면 null)",
   "total_experience_years": 총경력년수숫자,
-  "career_summary": "경력 요약 2~3문장 (구체적 수치와 프로젝트 포함)",
+  "career_summary": "회사별 경력 요약 (예: A사 3년 (백엔드) -> B사 5년 (팀장) -> C사 2년 (시니어))",
   "education": ["최종학력", "그 이전 학력..."],
   "skills": ["스킬1", "스킬2", "스킬3"],
   "tech_stack": ["기술스택1", "기술스택2"],
