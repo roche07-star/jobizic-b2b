@@ -61,6 +61,7 @@ export default function AdminRecommendationsPage() {
   const [statusFilter, setStatusFilter] = useState<'pending' | 'recommended' | 'all'>('pending')
   const [userRole, setUserRole] = useState<string>('')
   const [recommendingJdId, setRecommendingJdId] = useState<string | null>(null)
+  const [minScores, setMinScores] = useState<Record<string, number>>({})
 
   useEffect(() => {
     checkAuth()
@@ -106,13 +107,16 @@ export default function AdminRecommendationsPage() {
   async function findRecommendedCandidates(jdId: string) {
     if (recommendingJdId) return
 
+    const minScore = minScores[jdId] || 70 // 기본값 70점
+
     setRecommendingJdId(jdId)
-    info('🤖 AI가 적합한 후보자를 찾고 있습니다...')
+    info(`🤖 AI가 ${minScore}점 이상의 후보자를 찾고 있습니다...`)
 
     try {
       const res = await fetch(`/api/jd/${jdId}/recommend-candidates`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ min_score: minScore })
       })
 
       const data = await res.json()
@@ -122,7 +126,7 @@ export default function AdminRecommendationsPage() {
         return
       }
 
-      success(`✅ ${data.total}명의 추천 후보를 찾았습니다!`)
+      success(`✅ ${data.total}명의 추천 후보를 찾았습니다! (${minScore}점 이상)`)
       loadRecommendations() // 추천 목록 새로고침
 
     } catch (err) {
@@ -248,7 +252,7 @@ export default function AdminRecommendationsPage() {
                   alignItems: 'center'
                 }}
               >
-                <div>
+                <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 4 }}>
                     {jd.company} - {jd.position}
                   </div>
@@ -256,21 +260,37 @@ export default function AdminRecommendationsPage() {
                     🏢 {jd.organizations.name} · 📝 {jd.created_by}
                   </div>
                 </div>
-                <button
-                  className="btn btn-primary btn-sm"
-                  onClick={() => findRecommendedCandidates(jd.id)}
-                  disabled={recommendingJdId === jd.id}
-                  style={{ minWidth: 140 }}
-                >
-                  {recommendingJdId === jd.id ? (
-                    <>
-                      <div className="spinner" style={{ width: 14, height: 14 }} />
-                      AI 분석 중...
-                    </>
-                  ) : (
-                    '🤖 AI 후보 찾기'
-                  )}
-                </button>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                  <select
+                    className="form-select"
+                    value={minScores[jd.id] || 70}
+                    onChange={(e) => setMinScores({ ...minScores, [jd.id]: Number(e.target.value) })}
+                    disabled={recommendingJdId === jd.id}
+                    style={{ fontSize: 13, padding: '6px 8px', minWidth: 100 }}
+                  >
+                    <option value={60}>60점 이상</option>
+                    <option value={70}>70점 이상</option>
+                    <option value={75}>75점 이상</option>
+                    <option value={80}>80점 이상</option>
+                    <option value={85}>85점 이상</option>
+                    <option value={90}>90점 이상</option>
+                  </select>
+                  <button
+                    className="btn btn-primary btn-sm"
+                    onClick={() => findRecommendedCandidates(jd.id)}
+                    disabled={recommendingJdId === jd.id}
+                    style={{ minWidth: 140 }}
+                  >
+                    {recommendingJdId === jd.id ? (
+                      <>
+                        <div className="spinner" style={{ width: 14, height: 14 }} />
+                        AI 분석 중...
+                      </>
+                    ) : (
+                      '🤖 AI 후보 찾기'
+                    )}
+                  </button>
+                </div>
               </div>
             ))}
           </div>

@@ -51,7 +51,11 @@ export async function POST(req: NextRequest, context: { params: Promise<{ id: st
       return NextResponse.json({ error: '권한이 없습니다.' }, { status: 403 })
     }
 
-    console.log('[recommend-candidates] Starting for JD:', jdId, 'by admin:', profile.email)
+    // 최소 점수 파라미터 (기본값 70점)
+    const body = await req.json().catch(() => ({}))
+    const minScore = body.min_score || 70
+
+    console.log('[recommend-candidates] Starting for JD:', jdId, 'by admin:', profile.email, 'min_score:', minScore)
 
     // 1. JD 정보 조회 (Super Admin은 모든 조직의 JD 접근 가능)
     const { data: jd, error: jdError } = await supabaseAdmin
@@ -189,10 +193,13 @@ STEP 3 — 후보자-JD 대조 및 분석
 
     console.log('[recommend-candidates] Matching complete:', matchingResults.length)
 
-    // 4. 상위 10명 선정 (매칭 점수 순)
+    // 4. 점수 필터링 및 상위 10명 선정 (매칭 점수 순)
     const topCandidates = matchingResults
+      .filter(r => (r?.match_score || 0) >= minScore) // 최소 점수 필터
       .sort((a, b) => (b?.match_score || 0) - (a?.match_score || 0))
       .slice(0, 10)
+
+    console.log('[recommend-candidates] Candidates >= ', minScore, 'points:', topCandidates.length)
 
     // 5. DB에 저장
     const insertData = topCandidates.map(r => ({
