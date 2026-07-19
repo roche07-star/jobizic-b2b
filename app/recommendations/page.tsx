@@ -158,7 +158,9 @@ export default function RecommendationsPage() {
       success(data.message || '✅ 처리되었습니다.')
       setSelected(null)
       setCommentText('')
-      loadRecommendations()
+
+      // 수락/거절 후 자동 삭제
+      setRecommendations(prev => prev.filter(r => r.id !== id))
 
     } catch (err) {
       console.error('[recommendations] Respond error:', err)
