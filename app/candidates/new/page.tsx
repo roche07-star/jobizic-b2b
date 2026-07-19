@@ -91,47 +91,16 @@ export default function CandidateNewPage() {
 
       // ✅ localStorage에 저장 (전역 진행 표시용)
       localStorage.setItem('processing_job_id', jobId)
+      localStorage.setItem('processing_job_type', 'candidate')
 
-      // ✅ Step 2: 처리 시작
-      setAnalysisStep(2) // Step 3: AI 분석 중
-
-      // 처리 API 호출 (fire-and-forget)
+      // ✅ 처리 API 호출 (백그라운드)
       fetch(`/api/jobs/${jobId}/process`, { method: 'POST' })
         .catch(err => console.error('[process] Error:', err))
 
-      // Polling으로 상태 확인
-      const pollInterval = setInterval(async () => {
-        try {
-          const statusRes = await fetch(`/api/jobs/${jobId}`)
-          const jobData = await statusRes.json()
-
-          console.log('[poll] Status:', jobData.status, jobData.progress)
-
-          if (jobData.status === 'completed') {
-            clearInterval(pollInterval)
-            setParsed(jobData.result)
-            setParsing(false)
-            setAnalysisStep(0)
-          } else if (jobData.status === 'failed') {
-            clearInterval(pollInterval)
-            setError(jobData.error || '분석 실패')
-            setParsing(false)
-            setAnalysisStep(0)
-          }
-        } catch (err) {
-          console.error('[poll] Error:', err)
-        }
-      }, 2000) // 2초마다 확인
-
-      // 5분 후 타임아웃
+      // ✅ 즉시 후보자 목록으로 이동 (백그라운드 처리)
       setTimeout(() => {
-        clearInterval(pollInterval)
-        if (parsing) {
-          setError('분석 시간 초과')
-          setParsing(false)
-          setAnalysisStep(0)
-        }
-      }, 300000)
+        router.push('/candidates?processing=true')
+      }, 1000)
 
     } catch {
       setError('서버 오류가 발생했습니다.')
