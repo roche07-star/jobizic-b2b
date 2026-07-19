@@ -357,13 +357,14 @@ export default function AdminRecommendationsPage() {
                         padding: 12,
                         background: 'var(--surface-secondary)',
                         borderRadius: 8,
-                        cursor: 'pointer',
                         transition: 'all 0.2s'
                       }}
-                      onClick={() => setSelected(rec)}
                     >
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <div>
+                        <div
+                          style={{ flex: 1, cursor: 'pointer' }}
+                          onClick={() => setSelected(rec)}
+                        >
                           <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 4 }}>
                             {rec.candidates.name}
                           </div>
@@ -380,10 +381,7 @@ export default function AdminRecommendationsPage() {
                           {rec.status === 'pending' && (
                             <button
                               className="btn btn-success btn-sm"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                setSelected(rec)
-                              }}
+                              onClick={() => setSelected(rec)}
                             >
                               PM에게 전송
                             </button>
