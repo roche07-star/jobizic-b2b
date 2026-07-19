@@ -91,27 +91,14 @@ export async function POST(req: NextRequest, context: { params: Promise<{ id: st
 
     console.log('[recommend-candidates] Total candidates in org:', allCandidates?.length || 0)
 
-    // 스킬 매칭 필터링 (10% 이상 일치 또는 스킬 정보 없음)
-    const filteredCandidates = (allCandidates || []).filter(candidate => {
-      const candidateSkills = [...(candidate.skills || []), ...(candidate.tech_stack || [])]
+    // 테스트: 스킬 필터 제거, 모든 후보 대상으로 AI 분석 (최대 30명)
+    const filteredCandidates = (allCandidates || []).slice(0, 30)
 
-      // 스킬 정보가 없으면 일단 포함 (AI가 판단하도록)
-      if (allSkills.length === 0 || candidateSkills.length === 0) {
-        return true
-      }
-
-      const matchCount = allSkills.filter(skill =>
-        candidateSkills.some(cs => cs.toLowerCase().includes(skill.toLowerCase()))
-      ).length
-      const matchRate = (matchCount / allSkills.length) * 100
-      return matchRate >= 10 // 10%로 완화
-    }).slice(0, 30) // 최대 30명
-
-    console.log('[recommend-candidates] Filtered candidates (10%+ or no skill data):', filteredCandidates.length)
+    console.log('[recommend-candidates] Candidates for AI analysis:', filteredCandidates.length)
 
     if (filteredCandidates.length === 0) {
       return NextResponse.json({
-        message: '매칭되는 후보자가 없습니다.',
+        message: '조직에 후보자가 없습니다.',
         total: 0,
         recommendations: []
       })
@@ -199,13 +186,18 @@ STEP 3 — 후보자-JD 대조 및 분석
 
     console.log('[recommend-candidates] Matching complete:', matchingResults.length)
 
+    // 매칭 결과 점수 분포 로그
+    const scores = matchingResults.map(r => r?.match_score || 0).sort((a, b) => b - a)
+    console.log('[recommend-candidates] Score distribution:', scores)
+
     // 4. 점수 필터링 및 상위 10명 선정 (매칭 점수 순)
     const topCandidates = matchingResults
       .filter(r => (r?.match_score || 0) >= minScore) // 최소 점수 필터
       .sort((a, b) => (b?.match_score || 0) - (a?.match_score || 0))
       .slice(0, 10)
 
-    console.log('[recommend-candidates] Candidates >= ', minScore, 'points:', topCandidates.length)
+    console.log('[recommend-candidates] Min score:', minScore, '/ Filtered:', topCandidates.length)
+    console.log('[recommend-candidates] Top scores:', topCandidates.map(r => r?.match_score))
 
     // 5. DB에 저장
     const insertData = topCandidates.map(r => ({
