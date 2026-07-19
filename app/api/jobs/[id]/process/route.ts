@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
-import { getCandidateParsePrompt, getJDParsePrompt } from '@/lib/prompts/base-headhunter'
+import { getCandidateParsePrompt, getJDParsePrompt, getMatchingPrompt } from '@/lib/prompts/base-headhunter'
 import { createClient } from '@supabase/supabase-js'
 import { callClaude } from '@/lib/claude-client'
 const supabase = createClient(
@@ -244,6 +244,115 @@ export async function POST(
         console.error('[jobs/process] JSON text:', jsonText.substring(0, 500))
         throw new Error(`JSON parse failed: ${parseError.message}`)
       }
+
+    } else if (job.job_type === 'pipeline_match') {
+      // Pipeline 매칭 분석
+      const { jd, candidate } = job.input as {
+        jd: any
+        candidate: any
+        client_comment?: string
+      }
+
+      // 35% - Claude API 호출 전
+      await supabase
+        .from('jobs')
+        .update({ progress: 35, message: 'JD-후보자 매칭 분석 시작...' })
+        .eq('id', jobId)
+
+      console.log('[jobs/process] Pipeline matching - Calling Claude API...')
+
+      // 안전한 배열 처리 헬퍼 함수
+      const safeJoin = (arr: any, separator: string = ', '): string => {
+        if (Array.isArray(arr) && arr.length > 0) {
+          return arr.join(separator)
+        }
+        return '없음'
+      }
+
+      // 현재 날짜 (경력 계산용)
+      const today = new Date()
+      const currentDate = `${today.getFullYear()}년 ${today.getMonth() + 1}월 ${today.getDate()}일`
+
+      // 매칭 분석 프롬프트
+      const userPrompt = `**중요: 오늘은 ${currentDate}입니다.**
+
+다음 JD와 후보자의 적합도를 분석해주세요:
+
+【JD 정보】
+- 회사: ${jd.company ?? '미상'}
+- 포지션: ${jd.position}
+- 필수 스킬: ${safeJoin(jd.required_skills)}
+- 우대 스킬: ${safeJoin(jd.preferred_skills)}
+- 난이도: ${jd.difficulty ?? '없음'}
+- 타깃 프로파일: ${jd.target_profile ?? '없음'}
+
+【후보자 정보】
+- 현재 포지션: ${candidate.current_position ?? '미상'}
+- 경력: ${candidate.total_experience_years ? `${candidate.total_experience_years}년` : '미상'}
+- 스킬: ${safeJoin(candidate.skills)}
+- 기술스택: ${safeJoin(candidate.tech_stack)}
+- 학력: ${safeJoin(candidate.education)}
+- 강점 요약: ${candidate.strength_summary ?? '없음'}
+- 약점 분석: ${candidate.weakness_summary ?? '없음'}
+- 경력 요약: ${candidate.career_summary ?? '없음'}`
+
+      // Tool 정의
+      const MATCHING_TOOL: Anthropic.Tool = {
+        name: 'analyze_jd_candidate_match',
+        description: 'JD와 후보자의 매칭 분석 결과를 구조화된 형식으로 반환',
+        input_schema: {
+          type: 'object',
+          properties: {
+            match_score: { type: 'number', description: '0-100 사이의 매칭 점수' },
+            match_reason: { type: 'string', description: '매칭 근거 2-3문장' },
+            skill_match_rate: { type: 'number', description: '0-100 사이의 스킬 매칭률' },
+            experience_match: { type: 'string', description: '경력 적합도 평가' },
+            strength_for_jd: { type: 'array', items: { type: 'string' }, description: '강점 (최대 3개)' },
+            concerns: { type: 'array', items: { type: 'string' }, description: '우려사항 (최대 4개)' },
+            recommendation: { type: 'string', enum: ['추천', '보류', '부적합'], description: '최종 추천 여부' },
+            next_steps: { type: 'string', description: '다음 단계 제안' }
+          },
+          required: ['match_score', 'match_reason', 'skill_match_rate', 'experience_match', 'strength_for_jd', 'concerns', 'recommendation', 'next_steps']
+        }
+      }
+
+      const message = await callClaude({
+        max_tokens: 2000,
+        system: [{
+          type: 'text',
+          text: getMatchingPrompt(),
+          cache_control: { type: 'ephemeral' }
+        }],
+        tools: [MATCHING_TOOL],
+        tool_choice: { type: 'tool', name: 'analyze_jd_candidate_match' },
+        messages: [{
+          role: 'user',
+          content: userPrompt
+        }],
+      })
+
+      // 70% - Claude API 응답 받음
+      await supabase
+        .from('jobs')
+        .update({ progress: 70, message: 'AI 매칭 분석 완료, 결과 생성 중...' })
+        .eq('id', jobId)
+
+      // Tool use 블록 찾기
+      const toolUseBlock = message.content.find(
+        (block): block is Anthropic.ToolUseBlock => block.type === 'tool_use'
+      )
+
+      if (!toolUseBlock) {
+        throw new Error('No tool_use block found')
+      }
+
+      // 85% - 결과 정리 중
+      await supabase
+        .from('jobs')
+        .update({ progress: 85, message: '결과 정리 중...' })
+        .eq('id', jobId)
+
+      result = toolUseBlock.input
 
     } else {
       throw new Error(`Unknown job_type: ${job.job_type}`)

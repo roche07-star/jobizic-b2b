@@ -84,6 +84,10 @@ export default function PipelinePage() {
   const [organizations, setOrganizations] = useState<Organization[]>([])
   const [selectedOrgId, setSelectedOrgId] = useState<string>('전체')
 
+  // 백그라운드 처리 상태
+  const [processingJobId, setProcessingJobId] = useState<string | null>(null)
+  const [processingProgress, setProcessingProgress] = useState(0)
+
   const { toasts, success, error, info, removeToast } = useToast()
 
   useEffect(() => {
@@ -102,6 +106,100 @@ export default function PipelinePage() {
       }
     }
     loadOrganizations()
+  }, [])
+
+  // 백그라운드 처리 polling
+  useEffect(() => {
+    const jobId = localStorage.getItem('processing_job_id')
+    const jobType = localStorage.getItem('processing_job_type')
+
+    if (!jobId || jobType !== 'pipeline') return
+
+    setProcessingJobId(jobId)
+    setProcessingProgress(0)
+
+    const pollInterval = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/jobs/${jobId}`)
+        const data = await res.json()
+
+        setProcessingProgress(data.progress || 0)
+
+        if (data.status === 'completed') {
+          clearInterval(pollInterval)
+          localStorage.removeItem('processing_job_id')
+          localStorage.removeItem('processing_job_type')
+          const meta = JSON.parse(localStorage.getItem('processing_job_metadata') || '{}')
+          localStorage.removeItem('processing_job_metadata')
+
+          try {
+            const result = data.result
+
+            // 프로세스에 저장
+            const profile = await getProfile()
+            if (!profile) return
+
+            const saveRes = await fetch('/api/pipeline', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                jd_id: meta.jd_id,
+                candidate_id: meta.candidate_id,
+                stage: '신규',
+                match_score: result.match_score,
+                match_reason: result.match_reason,
+                skill_match_rate: result.skill_match_rate,
+                experience_match: result.experience_match,
+                strength_for_jd: result.strength_for_jd,
+                concerns: result.concerns,
+                is_active: true,
+                organization_id: meta.organization_id,
+                created_by: meta.created_by,
+              }),
+            })
+
+            if (!saveRes.ok) {
+              const errorData = await saveRes.json()
+              console.error('[pipeline] Save error response:', errorData)
+              throw new Error(errorData.error || '프로세스 저장 실패')
+            }
+
+            // 목록 새로고침
+            const params = new URLSearchParams({
+              role: profile.role,
+              user_email: profile.email,
+              ...(profile.role === 'admin' && selectedOrgId !== '전체' && { organization_id: selectedOrgId }),
+              ...(profile.role !== 'admin' && profile.organization_id && { organization_id: profile.organization_id })
+            })
+            const refreshRes = await fetch(`/api/pipeline?${params}`, {
+              cache: 'no-store',
+              headers: { 'Cache-Control': 'no-cache' }
+            })
+            const refreshData = await refreshRes.json()
+            setPipeline(refreshData.pipeline ?? [])
+            setProcessingJobId(null)
+            success('✅ JD-후보자 매칭이 완료되어 프로세스에 추가되었습니다!')
+          } catch (err) {
+            console.error('[pipeline] Save error:', err)
+            error('❌ 프로세스 저장 실패')
+            setProcessingJobId(null)
+          }
+        } else if (data.status === 'failed') {
+          clearInterval(pollInterval)
+          localStorage.removeItem('processing_job_id')
+          localStorage.removeItem('processing_job_type')
+          localStorage.removeItem('processing_job_metadata')
+          setProcessingJobId(null)
+          error('❌ JD-후보자 매칭 분석 실패')
+        }
+      } catch (err) {
+        console.error('[pipeline/poll] Error:', err)
+      }
+    }, 2000)
+
+    return () => {
+      clearInterval(pollInterval)
+    }
   }, [])
 
   useEffect(() => {
@@ -234,71 +332,57 @@ export default function PipelinePage() {
         return
       }
 
-      // AI 매칭 분석
+      // JD와 후보자 정보 가져오기
       const jd = jds.find(j => j.id === selectedJd)
       const candidate = candidates.find(c => c.id === selectedCandidate)
 
-      console.log('[Pipeline Add] Starting AI matching analysis...')
-      const matchRes = await fetch('/api/pipeline/match', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ jd, candidate }),
-      })
+      console.log('[Pipeline Add] Creating background job for matching...')
 
-      if (!matchRes.ok) {
-        const errorData = await matchRes.json().catch(() => ({ error: 'JSON 파싱 실패' }))
-        console.error('[Pipeline Add] ❌ Matching failed. Status:', matchRes.status)
-        console.error('[Pipeline Add] ❌ Error data:', JSON.stringify(errorData, null, 2))
-        console.error('[Pipeline Add] ❌ JD data sent:', JSON.stringify(jd, null, 2))
-        console.error('[Pipeline Add] ❌ Candidate data sent:', JSON.stringify(candidate, null, 2))
-        error(`❌ AI 매칭 분석 실패 (${matchRes.status})\n\n${errorData.error || '서버 오류가 발생했습니다.'}\n\n상세: ${errorData.details || '없음'}\n\n프로세스 추가를 중단합니다.`)
-        return
-      }
-
-      const matchData = await matchRes.json()
-      console.log('[Pipeline Add] Matching analysis success. Score:', matchData.match_score)
-
-      // 프로세스에 추가
-      const res = await fetch('/api/pipeline', {
+      // 1. Match Job 생성
+      const res = await fetch('/api/pipeline/match-job', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           jd_id: selectedJd,
           candidate_id: selectedCandidate,
-          stage: '신규',
-          match_score: matchData.match_score,
-          match_reason: matchData.match_reason,
-          skill_match_rate: matchData.skill_match_rate,
-          experience_match: matchData.experience_match,
-          strength_for_jd: matchData.strength_for_jd,
-          concerns: matchData.concerns,
-          is_active: true,
+          jd,
+          candidate,
           organization_id: profile.organization_id,
-          created_by: profile.email,
+          created_by: profile.email
         }),
       })
 
-      if (res.ok) {
-        // 새로고침 (파라미터 포함!)
-        const params = new URLSearchParams({
-          role: profile.role,
-          user_email: profile.email,
-          ...(profile.role === 'admin' && selectedOrgId !== '전체' && { organization_id: selectedOrgId }),
-          ...(profile.role !== 'admin' && profile.organization_id && { organization_id: profile.organization_id })
-        })
-        const updated = await fetch(`/api/pipeline?${params}`, {
-          cache: 'no-store',
-          headers: { 'Cache-Control': 'no-cache' }
-        }).then(r => r.json())
-        setPipeline(updated.pipeline ?? [])
-        setShowAddModal(false)
-        setSelectedJd('')
-        setSelectedCandidate('')
-        success('✅ 채용 프로세스에 추가되었습니다!')
-      } else {
-        const err = await res.json()
-        error(err.error)
+      const data = await res.json()
+
+      if (!res.ok) {
+        error(data.error)
+        setMatching(false)
+        return
       }
+
+      // 2. localStorage에 저장 (백그라운드 처리용)
+      const { jobId } = data
+      console.log('[Pipeline Add] Job created:', jobId)
+
+      localStorage.setItem('processing_job_id', jobId)
+      localStorage.setItem('processing_job_type', 'pipeline')
+      localStorage.setItem('processing_job_metadata', JSON.stringify({
+        jd_id: selectedJd,
+        candidate_id: selectedCandidate,
+        organization_id: profile.organization_id,
+        created_by: profile.email
+      }))
+
+      // 3. Process API 백그라운드 호출
+      fetch(`/api/jobs/${jobId}/process`, { method: 'POST' })
+        .catch(err => console.error('[Pipeline Add] Process error:', err))
+
+      // 4. 모달 닫기 및 상태 초기화
+      setShowAddModal(false)
+      setSelectedJd('')
+      setSelectedCandidate('')
+      success('✅ 백그라운드에서 AI 매칭 분석 중입니다...')
+
     } catch (e) {
       error('추가 중 오류가 발생했습니다.')
     } finally {
@@ -512,6 +596,32 @@ export default function PipelinePage() {
 
   return (
     <main className="page">
+      {/* 백그라운드 처리 중 표시 */}
+      {processingJobId && (
+        <div style={{
+          position: 'fixed',
+          top: 80,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          zIndex: 1000,
+          background: 'var(--bg2)',
+          border: '2px solid var(--primary)',
+          padding: '12px 20px',
+          borderRadius: 12,
+          boxShadow: '0 4px 16px rgba(0,0,0,0.2)',
+          minWidth: 280,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 12,
+          fontSize: 14,
+          fontWeight: 600,
+          color: 'var(--text)'
+        }}>
+          <div className="spinner" style={{ width: 16, height: 16, borderWidth: 2 }} />
+          <span>JD-후보자 매칭 분석 중... ({processingProgress}%)</span>
+        </div>
+      )}
+
       <div className="page-header">
         <div>
           <div className="page-title">채용 프로세스</div>
