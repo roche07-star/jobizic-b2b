@@ -159,7 +159,7 @@ export default function JDPage() {
                     ...(result.step2_requirements?.nice_to_have || []).slice(0, 2)
                   ],
                   key_points: result.step3_headhunter_insight?.caution_points || [],
-                  fee_rate: meta.fee_rate,
+                  fee_rate: meta.fee_rate?.substring(0, 10) || null, // varchar(10) 제한
                   company_url: meta.company_url,
                   recruitment_process: meta.recruitment_process,
                   raw_text: meta.raw_text,
