@@ -197,6 +197,18 @@ export default function AdminRecommendationsPage() {
     return acc
   }, {} as Record<string, { jd: any, recommendations: Recommendation[] }>)
 
+  // 권한 체크 중
+  if (!userRole) {
+    return (
+      <main className="page">
+        <div className="empty">
+          <div className="spinner" style={{ margin: '0 auto 12px' }} />
+          <div className="empty-text">권한 확인 중...</div>
+        </div>
+      </main>
+    )
+  }
+
   return (
     <main className="page">
       <ToastContainer toasts={toasts} onRemove={onRemove} />
