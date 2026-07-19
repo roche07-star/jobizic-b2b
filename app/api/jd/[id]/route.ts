@@ -73,6 +73,9 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
         if (telegramMembers && telegramMembers.length > 0) {
           console.log('[JD PATCH] TELEGRAM_BOT_TOKEN configured:', !!process.env.TELEGRAM_BOT_TOKEN)
 
+          const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://jobizic-biz.vercel.app'
+          const isHttps = appUrl.startsWith('https://')
+
           const telegramMessage = `✅ <b>[JD 활성화]</b>
 
 🏢 회사: ${jd.company || '회사명 미상'}
@@ -87,11 +90,14 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
                 chatId: member.telegram_chat_id!,
                 text: telegramMessage,
                 parseMode: 'HTML',
-                replyMarkup: {
-                  inline_keyboard: [[
-                    { text: '🌐 JD 보러가기', url: `${process.env.NEXT_PUBLIC_APP_URL || 'https://jobizic-biz.vercel.app'}/jd` }
-                  ]]
-                }
+                // 텔레그램은 HTTPS URL만 지원 (로컬 환경에서는 버튼 없이)
+                ...(isHttps && {
+                  replyMarkup: {
+                    inline_keyboard: [[
+                      { text: '🌐 JD 보러가기', url: `${appUrl}/jd` }
+                    ]]
+                  }
+                })
               })
               console.log('[JD PATCH] Telegram result for', member.email, ':', success ? '✅ SUCCESS' : '❌ FAILED')
             } catch (err) {

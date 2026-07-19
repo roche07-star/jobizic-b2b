@@ -243,7 +243,10 @@ export async function POST(req: NextRequest) {
         if (telegramMembers && telegramMembers.length > 0) {
           console.log('[JD POST] Sending Telegram notifications to', telegramMembers.length, 'members')
           console.log('[JD POST] TELEGRAM_BOT_TOKEN configured:', !!process.env.TELEGRAM_BOT_TOKEN)
-          console.log('[JD POST] NEXT_PUBLIC_APP_URL:', process.env.NEXT_PUBLIC_APP_URL || 'https://jobizic-biz.vercel.app')
+
+          const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://jobizic-biz.vercel.app'
+          const isHttps = appUrl.startsWith('https://')
+          console.log('[JD POST] NEXT_PUBLIC_APP_URL:', appUrl, 'isHttps:', isHttps)
 
           const creatorName = creator.full_name || creator.email.split('@')[0]
           const telegramMessage = `🆕 <b>[신규 JD]</b>
@@ -262,11 +265,14 @@ export async function POST(req: NextRequest) {
                 chatId: member.telegram_chat_id!,
                 text: telegramMessage,
                 parseMode: 'HTML',
-                replyMarkup: {
-                  inline_keyboard: [[
-                    { text: '🌐 JD 보러가기', url: `${process.env.NEXT_PUBLIC_APP_URL || 'https://jobizic-biz.vercel.app'}/jd` }
-                  ]]
-                }
+                // 텔레그램은 HTTPS URL만 지원 (로컬 환경에서는 버튼 없이)
+                ...(isHttps && {
+                  replyMarkup: {
+                    inline_keyboard: [[
+                      { text: '🌐 JD 보러가기', url: `${appUrl}/jd` }
+                    ]]
+                  }
+                })
               })
               console.log('[JD POST] Telegram result for', member.email, ':', success ? '✅ SUCCESS' : '❌ FAILED')
             } catch (err) {

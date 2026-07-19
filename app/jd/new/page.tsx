@@ -61,11 +61,13 @@ export default function JDNewPage() {
       if (!res.ok) { setError(data.error); return }
 
       // AI 파싱 결과에 고정 필드 값 병합
+      // 우선순위는 기본값 "보통"으로 설정 (유저가 수정 가능)
       setParsed({
         ...data,
         company,
         position,
-        location: location || data.location
+        location: location || data.location,
+        priority: '보통'
       })
     } catch {
       setError('서버 오류가 발생했습니다.')
@@ -245,11 +247,21 @@ export default function JDNewPage() {
         {/* 파싱 결과 */}
         {parsed && (
           <div className="card">
-            <div className="card-title" style={{ display: 'flex', justifyContent: 'space-between' }}>
+            <div className="card-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span>AI 분석 결과</span>
-              <div style={{ display: 'flex', gap: 6 }}>
-                <span className={`badge badge-${parsed.priority}`}>{parsed.priority}</span>
-                <span className={`badge badge-${parsed.difficulty}`}>난이도 {parsed.difficulty}</span>
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                <label style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>우선순위:</label>
+                <select
+                  className="form-input"
+                  style={{ width: 'auto', padding: '4px 8px', fontSize: '13px' }}
+                  value={parsed.priority}
+                  onChange={e => setParsed(p => p ? { ...p, priority: e.target.value as any } : p)}
+                >
+                  <option value="긴급">🔥 긴급</option>
+                  <option value="높음">⬆️ 높음</option>
+                  <option value="보통">보통</option>
+                  <option value="낮음">⬇️ 낮음</option>
+                </select>
               </div>
             </div>
 
