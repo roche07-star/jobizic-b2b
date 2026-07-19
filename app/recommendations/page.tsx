@@ -834,32 +834,48 @@ export default function RecommendationsPage() {
                 <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 8 }}>
                   {selected.job_descriptions.company} - {selected.job_descriptions.position}
                 </div>
-                <div style={{ fontSize: 14, color: 'var(--text-secondary)', marginBottom: 4 }}>
+                <div style={{ fontSize: 14, color: 'var(--text-secondary)', marginBottom: 8 }}>
                   👨‍💼 {selected.candidates.name} ({selected.candidates.current_position || '포지션 미상'})
                   {selected.candidates.total_experience_years && ` · 경력 ${selected.candidates.total_experience_years}년`}
                 </div>
+
+                {/* 학력 */}
                 {selected.candidates.education && selected.candidates.education.length > 0 && (
-                  <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 4 }}>
-                    🎓 {selected.candidates.education[selected.candidates.education.length - 1]}
+                  <div style={{ marginBottom: 8 }}>
+                    <div style={{ fontSize: 12, color: 'var(--text-tertiary)', marginBottom: 4 }}>🎓 학력</div>
+                    {selected.candidates.education.map((edu, i) => (
+                      <div key={i} style={{ fontSize: 13, color: 'var(--text-secondary)', paddingLeft: 16 }}>
+                        • {edu}
+                      </div>
+                    ))}
                   </div>
                 )}
+
+                {/* 경력 요약 */}
                 {selected.candidates.career_summary && (
-                  <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 4 }}>
-                    💼 {selected.candidates.career_summary}
+                  <div style={{ marginBottom: 8 }}>
+                    <div style={{ fontSize: 12, color: 'var(--text-tertiary)', marginBottom: 4 }}>💼 경력 요약</div>
+                    <div style={{ fontSize: 13, color: 'var(--text-secondary)', paddingLeft: 16, whiteSpace: 'pre-wrap' }}>
+                      {selected.candidates.career_summary}
+                    </div>
                   </div>
                 )}
-                <div style={{ fontSize: 13, marginTop: 8, display: 'flex', gap: 16 }}>
-                  <div>
-                    <span style={{ color: 'var(--text-tertiary)' }}>직전연봉: </span>
-                    <span style={{ fontWeight: 500 }}>
-                      {selected.candidates.metadata?.current_salary || '미입력'}
-                    </span>
-                  </div>
-                  <div>
-                    <span style={{ color: 'var(--text-tertiary)' }}>희망연봉: </span>
-                    <span style={{ fontWeight: 500 }}>
-                      {selected.candidates.desired_salary || '미입력'}
-                    </span>
+                {/* 연봉 정보 */}
+                <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--border)' }}>
+                  <div style={{ fontSize: 12, color: 'var(--text-tertiary)', marginBottom: 6 }}>💰 연봉 정보</div>
+                  <div style={{ fontSize: 13, display: 'flex', gap: 16, paddingLeft: 16 }}>
+                    <div>
+                      <span style={{ color: 'var(--text-tertiary)' }}>직전: </span>
+                      <span style={{ fontWeight: 500 }}>
+                        {selected.candidates.metadata?.current_salary || '미입력'}
+                      </span>
+                    </div>
+                    <div>
+                      <span style={{ color: 'var(--text-tertiary)' }}>희망: </span>
+                      <span style={{ fontWeight: 500 }}>
+                        {selected.candidates.desired_salary || '미입력'}
+                      </span>
+                    </div>
                   </div>
                 </div>
                 {selected.recommended_by && (
