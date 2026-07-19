@@ -355,17 +355,43 @@ export default function AdminRecommendationsPage() {
                       key={rec.id}
                       style={{
                         padding: 12,
-                        background: 'var(--surface-secondary)',
+                        background: rec.status === 'recommended'
+                          ? 'rgba(232, 255, 71, 0.05)'
+                          : 'var(--surface-secondary)',
+                        border: rec.status === 'recommended'
+                          ? '1px solid rgba(232, 255, 71, 0.3)'
+                          : '1px solid transparent',
                         borderRadius: 8,
-                        transition: 'all 0.2s'
+                        transition: 'all 0.2s',
+                        position: 'relative'
                       }}
                     >
+                      {rec.status === 'recommended' && (
+                        <div style={{
+                          position: 'absolute',
+                          top: -8,
+                          left: 12,
+                          background: 'var(--accent)',
+                          color: 'var(--bg)',
+                          fontSize: 10,
+                          fontWeight: 700,
+                          padding: '2px 8px',
+                          borderRadius: 4
+                        }}>
+                          ✓ PM 전송됨
+                        </div>
+                      )}
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <div
                           style={{ flex: 1, cursor: 'pointer' }}
                           onClick={() => setSelected(rec)}
                         >
-                          <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 4 }}>
+                          <div style={{
+                            fontSize: 14,
+                            fontWeight: 600,
+                            marginBottom: 4,
+                            opacity: rec.status === 'recommended' ? 0.7 : 1
+                          }}>
                             {rec.candidates.name}
                           </div>
                           <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
@@ -387,7 +413,7 @@ export default function AdminRecommendationsPage() {
                             </button>
                           )}
                           {rec.status === 'recommended' && (
-                            <span className="badge badge-활성">전송완료</span>
+                            <span className="badge badge-활성">✓ 전송완료</span>
                           )}
                         </div>
                       </div>
