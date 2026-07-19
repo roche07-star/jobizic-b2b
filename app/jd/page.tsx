@@ -137,23 +137,40 @@ export default function JDPage() {
             if (profile && data.result && metadata) {
               try {
                 const meta = JSON.parse(metadata)
+                const result = data.result
+
+                // DB 테이블에 맞는 필드만 추출
+                const jdData = {
+                  company: meta.company,
+                  position: meta.position,
+                  location: meta.location || result.metadata?.location || null,
+                  salary_estimate: result.metadata?.salary || null,
+                  priority: result.metadata?.priority || '일반',
+                  difficulty: result.metadata?.difficulty || '중',
+                  difficulty_reason: `난이도 ${result.metadata?.difficulty || '중'}`,
+                  target_profile: result.step3_headhunter_insight?.core_profile || '',
+                  search_strategy: result.step3_headhunter_insight?.search_direction || '',
+                  required_skills: result.step2_requirements?.must_have || [],
+                  keywords: [
+                    ...(result.step2_requirements?.must_have || []).slice(0, 3),
+                    ...(result.step2_requirements?.nice_to_have || []).slice(0, 2)
+                  ],
+                  key_points: result.step3_headhunter_insight?.caution_points || [],
+                  fee_rate: meta.fee_rate,
+                  company_url: meta.company_url,
+                  recruitment_process: meta.recruitment_process,
+                  raw_text: meta.raw_text,
+                  status: '검토중',
+                  source: '수동',
+                  organization_id: profile.organization_id,
+                  created_by: profile.email,
+                  _v2: result // 전체 분석 결과는 _v2에 저장
+                }
+
                 const saveRes = await fetch('/api/jd', {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({
-                    ...data.result,
-                    company: meta.company,
-                    position: meta.position,
-                    location: meta.location,
-                    fee_rate: meta.fee_rate,
-                    company_url: meta.company_url,
-                    recruitment_process: meta.recruitment_process,
-                    raw_text: meta.raw_text,
-                    status: '검토중',
-                    source: '수동',
-                    organization_id: profile.organization_id,
-                    created_by: profile.email
-                  })
+                  body: JSON.stringify(jdData)
                 })
 
                 if (!saveRes.ok) {
