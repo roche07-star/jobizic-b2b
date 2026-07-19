@@ -133,6 +133,7 @@ export default function CandidatesPage() {
   const [showCommentForm, setShowCommentForm] = useState(false)
   const [processingJobId, setProcessingJobId] = useState<string | null>(null)
   const [processingProgress, setProcessingProgress] = useState(0)
+  const [processingStep, setProcessingStep] = useState(0) // 0: 읽기, 1: 분석, 2: 생성, 3: 완료
 
   const { toasts, success, error, info, removeToast } = useToast()
 
@@ -143,6 +144,15 @@ export default function CandidatesPage() {
 
     if (jobId && jobType === 'candidate') {
       setProcessingJobId(jobId)
+      setProcessingStep(0)
+
+      // 단계별 자동 진행 (시각적 피드백)
+      const stepInterval = setInterval(() => {
+        setProcessingStep(prev => {
+          if (prev < 2) return prev + 1 // 최대 2단계까지만 자동 진행
+          return prev
+        })
+      }, 8000) // 8초마다 다음 단계
 
       // Polling으로 상태 확인
       const pollInterval = setInterval(async () => {
@@ -152,7 +162,15 @@ export default function CandidatesPage() {
 
           setProcessingProgress(data.progress || 0)
 
+          // 실제 진행 상황에 따라 단계 업데이트
+          if (data.progress >= 20 && data.progress < 80) {
+            setProcessingStep(1) // 분석 중
+          } else if (data.progress >= 80 && data.progress < 100) {
+            setProcessingStep(2) // 생성 중
+          }
+
           if (data.status === 'completed') {
+            clearInterval(stepInterval)
             clearInterval(pollInterval)
             localStorage.removeItem('processing_job_id')
             localStorage.removeItem('processing_job_type')
@@ -206,9 +224,11 @@ export default function CandidatesPage() {
             }
           } else if (data.status === 'failed') {
             clearInterval(pollInterval)
+            clearInterval(stepInterval)
             localStorage.removeItem('processing_job_id')
             localStorage.removeItem('processing_job_type')
             setProcessingJobId(null)
+            setProcessingStep(0)
             error('❌ 후보자 분석 실패')
           }
         } catch (err) {
@@ -216,7 +236,10 @@ export default function CandidatesPage() {
         }
       }, 2000)
 
-      return () => clearInterval(pollInterval)
+      return () => {
+        clearInterval(pollInterval)
+        clearInterval(stepInterval)
+      }
     }
   }, [selectedOrgId])
 
@@ -534,19 +557,123 @@ export default function CandidatesPage() {
           left: '50%',
           transform: 'translateX(-50%)',
           zIndex: 1000,
-          background: 'var(--primary)',
-          color: 'var(--bg)',
-          padding: '12px 24px',
-          borderRadius: 24,
-          boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 12,
-          fontSize: 14,
-          fontWeight: 500
+          background: 'var(--bg2)',
+          border: '2px solid var(--primary)',
+          padding: '16px 24px',
+          borderRadius: 12,
+          boxShadow: '0 4px 16px rgba(0,0,0,0.2)',
+          minWidth: 320,
+          maxWidth: '90%'
         }}>
-          <div className="spinner" style={{ width: 16, height: 16, borderWidth: 2 }} />
-          🔄 이력서 분석 중... {processingProgress}%
+          {/* 제목 */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 12,
+            marginBottom: 16,
+            fontSize: 15,
+            fontWeight: 600,
+            color: 'var(--text)'
+          }}>
+            <div className="spinner" style={{ width: 16, height: 16, borderWidth: 2 }} />
+            이력서 분석 중...
+          </div>
+
+          {/* 단계 표시 */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {/* 1단계: 이력서 읽기 */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10,
+              fontSize: 13,
+              color: processingStep >= 0 ? 'var(--text)' : 'var(--muted2)',
+              opacity: processingStep >= 0 ? 1 : 0.5
+            }}>
+              <div style={{
+                width: 20,
+                height: 20,
+                borderRadius: '50%',
+                background: processingStep > 0 ? 'var(--success)' : processingStep === 0 ? 'var(--primary)' : 'var(--bg3)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 11,
+                fontWeight: 700,
+                color: processingStep >= 0 ? 'var(--bg)' : 'var(--muted2)',
+                flexShrink: 0
+              }}>
+                {processingStep > 0 ? '✓' : processingStep === 0 && <div className="spinner" style={{ width: 10, height: 10, borderWidth: 2 }} />}
+              </div>
+              <span>📄 이력서 읽는 중...</span>
+            </div>
+
+            {/* 2단계: AI 분석 */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10,
+              fontSize: 13,
+              color: processingStep >= 1 ? 'var(--text)' : 'var(--muted2)',
+              opacity: processingStep >= 1 ? 1 : 0.5
+            }}>
+              <div style={{
+                width: 20,
+                height: 20,
+                borderRadius: '50%',
+                background: processingStep > 1 ? 'var(--success)' : processingStep === 1 ? 'var(--primary)' : 'var(--bg3)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 11,
+                fontWeight: 700,
+                color: processingStep >= 1 ? 'var(--bg)' : 'var(--muted2)',
+                flexShrink: 0
+              }}>
+                {processingStep > 1 ? '✓' : processingStep === 1 && <div className="spinner" style={{ width: 10, height: 10, borderWidth: 2 }} />}
+              </div>
+              <span>🤖 AI 분석 중...</span>
+            </div>
+
+            {/* 3단계: 결과 생성 */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10,
+              fontSize: 13,
+              color: processingStep >= 2 ? 'var(--text)' : 'var(--muted2)',
+              opacity: processingStep >= 2 ? 1 : 0.5
+            }}>
+              <div style={{
+                width: 20,
+                height: 20,
+                borderRadius: '50%',
+                background: processingStep > 2 ? 'var(--success)' : processingStep === 2 ? 'var(--primary)' : 'var(--bg3)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 11,
+                fontWeight: 700,
+                color: processingStep >= 2 ? 'var(--bg)' : 'var(--muted2)',
+                flexShrink: 0
+              }}>
+                {processingStep > 2 ? '✓' : processingStep === 2 && <div className="spinner" style={{ width: 10, height: 10, borderWidth: 2 }} />}
+              </div>
+              <span>✨ 결과 생성 중...</span>
+            </div>
+          </div>
+
+          {/* 예상 시간 */}
+          <div style={{
+            marginTop: 12,
+            paddingTop: 12,
+            borderTop: '1px solid var(--border)',
+            fontSize: 12,
+            color: 'var(--muted2)',
+            textAlign: 'center'
+          }}>
+            약 15-20초 소요됩니다
+          </div>
         </div>
       )}
 
