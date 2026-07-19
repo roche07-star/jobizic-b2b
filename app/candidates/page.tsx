@@ -158,19 +158,41 @@ export default function CandidatesPage() {
             localStorage.removeItem('processing_job_type')
             setProcessingJobId(null)
 
-            // 목록 새로고침
+            // ✅ Job result를 candidates 테이블에 저장
             const profile = await getProfile()
-            if (profile) {
-              const params = new URLSearchParams({
-                role: profile.role,
-                user_email: profile.email,
-                ...(profile.role === 'admin' && selectedOrgId !== '전체' && { organization_id: selectedOrgId }),
-                ...(profile.role !== 'admin' && profile.organization_id && { organization_id: profile.organization_id })
-              })
-              const refreshRes = await fetch(`/api/candidates?${params}`)
-              const refreshData = await refreshRes.json()
-              setCandidates(refreshData.candidates ?? [])
-              success('✅ 후보자 분석이 완료되었습니다!')
+            if (profile && data.result) {
+              try {
+                // candidates 테이블에 저장
+                const saveRes = await fetch('/api/candidates', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    ...data.result,
+                    organization_id: profile.organization_id,
+                    created_by: profile.email,
+                    status: '대기'
+                  })
+                })
+
+                if (!saveRes.ok) {
+                  throw new Error('후보자 저장 실패')
+                }
+
+                // 목록 새로고침
+                const params = new URLSearchParams({
+                  role: profile.role,
+                  user_email: profile.email,
+                  ...(profile.role === 'admin' && selectedOrgId !== '전체' && { organization_id: selectedOrgId }),
+                  ...(profile.role !== 'admin' && profile.organization_id && { organization_id: profile.organization_id })
+                })
+                const refreshRes = await fetch(`/api/candidates?${params}`)
+                const refreshData = await refreshRes.json()
+                setCandidates(refreshData.candidates ?? [])
+                success('✅ 후보자 분석이 완료되었습니다!')
+              } catch (err) {
+                console.error('[save candidate] Error:', err)
+                error('❌ 후보자 저장 실패')
+              }
             }
           } else if (data.status === 'failed') {
             clearInterval(pollInterval)
