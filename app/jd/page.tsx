@@ -184,7 +184,7 @@ export default function JDPage() {
                 })
                 const refreshRes = await fetch(`/api/jd?${params}`)
                 const refreshData = await refreshRes.json()
-                setJds(refreshData)
+                setJds(refreshData.jds ?? [])
                 success('✅ JD 분석이 완료되었습니다!')
               } catch (err) {
                 console.error('[jd] Save error:', err)
