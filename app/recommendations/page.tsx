@@ -596,7 +596,7 @@ export default function RecommendationsPage() {
                     </div>
                     <div>
                       <label style={{ display: 'block', fontSize: 12, color: 'var(--text-tertiary)', marginBottom: 4 }}>
-                        💼 경력 요약 (회사 정보)
+                        💼 회사 정보
                       </label>
                       <textarea
                         className="form-textarea"
@@ -851,10 +851,10 @@ export default function RecommendationsPage() {
                   </div>
                 )}
 
-                {/* 경력 요약 */}
+                {/* 회사 정보 */}
                 {selected.candidates.career_summary && (
                   <div style={{ marginBottom: 8 }}>
-                    <div style={{ fontSize: 12, color: 'var(--text-tertiary)', marginBottom: 4 }}>💼 경력 요약</div>
+                    <div style={{ fontSize: 12, color: 'var(--text-tertiary)', marginBottom: 4 }}>💼 회사 정보</div>
                     <div style={{ fontSize: 13, color: 'var(--text-secondary)', paddingLeft: 16, whiteSpace: 'pre-wrap' }}>
                       {selected.candidates.career_summary}
                     </div>
