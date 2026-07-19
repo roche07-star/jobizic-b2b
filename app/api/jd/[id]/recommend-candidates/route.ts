@@ -197,7 +197,20 @@ STEP 3 — 후보자-JD 대조 및 분석
     console.log('[recommend-candidates] Min score:', minScore, '/ Filtered:', topCandidates.length)
     console.log('[recommend-candidates] Top scores:', topCandidates.map(r => r?.match_score))
 
-    // 5. DB에 저장
+    // 5. 기존 pending 추천 삭제 (새로 검색하면 이전 결과는 삭제)
+    const { error: deleteError } = await supabaseAdmin
+      .from('jd_recommendations')
+      .delete()
+      .eq('jd_id', jdId)
+      .eq('status', 'pending')
+
+    if (deleteError) {
+      console.error('[recommend-candidates] Delete old recommendations error:', deleteError)
+    } else {
+      console.log('[recommend-candidates] Deleted old pending recommendations for JD:', jdId)
+    }
+
+    // 6. DB에 저장
     const insertData = topCandidates.map(r => ({
       jd_id: jdId,
       candidate_id: r!.candidate_id,
