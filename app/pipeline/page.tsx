@@ -134,35 +134,48 @@ export default function PipelinePage() {
 
           try {
             const result = data.result
+            console.log('[pipeline] ✅ Matching completed. Result:', result)
+            console.log('[pipeline] Metadata:', meta)
 
             // 프로세스에 저장
             const profile = await getProfile()
-            if (!profile) return
+            if (!profile) {
+              console.error('[pipeline] ❌ Profile not found')
+              return
+            }
+
+            const pipelineData = {
+              jd_id: meta.jd_id,
+              candidate_id: meta.candidate_id,
+              stage: '신규',
+              match_score: result.match_score,
+              match_reason: result.match_reason,
+              skill_match_rate: result.skill_match_rate,
+              experience_match: result.experience_match,
+              strength_for_jd: result.strength_for_jd,
+              concerns: result.concerns,
+              is_active: true,
+              organization_id: meta.organization_id,
+              created_by: meta.created_by,
+            }
+
+            console.log('[pipeline] Saving to pipeline...', pipelineData)
 
             const saveRes = await fetch('/api/pipeline', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                jd_id: meta.jd_id,
-                candidate_id: meta.candidate_id,
-                stage: '신규',
-                match_score: result.match_score,
-                match_reason: result.match_reason,
-                skill_match_rate: result.skill_match_rate,
-                experience_match: result.experience_match,
-                strength_for_jd: result.strength_for_jd,
-                concerns: result.concerns,
-                is_active: true,
-                organization_id: meta.organization_id,
-                created_by: meta.created_by,
-              }),
+              body: JSON.stringify(pipelineData),
             })
+
+            console.log('[pipeline] Save response status:', saveRes.status)
 
             if (!saveRes.ok) {
               const errorData = await saveRes.json()
-              console.error('[pipeline] Save error response:', errorData)
+              console.error('[pipeline] ❌ Save error response:', errorData)
               throw new Error(errorData.error || '프로세스 저장 실패')
             }
+
+            console.log('[pipeline] ✅ Pipeline saved successfully')
 
             // 목록 새로고침
             const params = new URLSearchParams({
