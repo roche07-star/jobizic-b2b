@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { getProfile } from '@/lib/auth'
-import AnalysisProgress from '@/components/AnalysisProgress'
 
 // 최종학력 추출 함수 (전체 텍스트 반환)
 function getFinalEducation(education: string[] | undefined): string {
@@ -45,34 +44,28 @@ export default function CandidateNewPage() {
   const router = useRouter()
   const [rawResume, setRawResume] = useState('')
   const [file, setFile] = useState<File | null>(null)
-  const [parsing, setParsing] = useState(false)
-  const [analysisStep, setAnalysisStep] = useState(0)
   const [parsed, setParsed] = useState<ParsedCandidate | null>(null)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   async function handleParse() {
     if (!rawResume.trim() && !file) return
-    setParsing(true)
     setError(null)
     setParsed(null)
-    try {
-      setAnalysisStep(0) // Step 1: 이력서 읽는 중
 
+    try {
       let res: Response
       if (file) {
         // 파일 업로드
         const formData = new FormData()
         formData.append('file', file)
 
-        setAnalysisStep(1) // Step 2: AI 분석 중
         res = await fetch('/api/candidates/parse', {
           method: 'POST',
           body: formData,
         })
       } else {
         // 텍스트 입력
-        setAnalysisStep(1) // Step 2: AI 분석 중
         res = await fetch('/api/candidates/parse', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -80,10 +73,12 @@ export default function CandidateNewPage() {
         })
       }
 
-      // ✅ 응답을 먼저 받고
       const data = await res.json()
 
-      if (!res.ok) { setError(data.error); return }
+      if (!res.ok) {
+        setError(data.error)
+        return
+      }
 
       // ✅ 비동기 처리: jobId 받음
       const { jobId } = data
@@ -104,17 +99,7 @@ export default function CandidateNewPage() {
 
     } catch {
       setError('서버 오류가 발생했습니다.')
-      setParsing(false)
-      setAnalysisStep(0)
     }
-  }
-
-  function getParsingMessage() {
-    if (!parsing) return '🤖 AI 파싱'
-    if (file && file.name.toLowerCase().endsWith('.pdf')) {
-      return '📄 PDF 처리 중... (이미지 기반 PDF는 40~80초 소요)'
-    }
-    return '분석 중...'
   }
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -243,9 +228,9 @@ export default function CandidateNewPage() {
             <button
               className="btn btn-primary"
               onClick={handleParse}
-              disabled={(!rawResume.trim() && !file) || parsing}
+              disabled={!rawResume.trim() && !file}
             >
-              {parsing ? <><div className="spinner" /> {getParsingMessage()}</> : '🤖 AI 파싱'}
+              🤖 AI 파싱
             </button>
             {parsed && (
               <button className="btn btn-ghost" onClick={() => { setParsed(null); setRawResume(''); setFile(null) }}>
@@ -402,26 +387,6 @@ export default function CandidateNewPage() {
         )}
       </div>
 
-      {/* Analysis Progress */}
-      {parsing && (
-        <AnalysisProgress
-          steps={
-            file && file.name.toLowerCase().endsWith('.pdf')
-              ? [
-                  '📄 PDF 파일 읽는 중...',
-                  '🤖 AI 분석 중 (일반 60초, 이미지 기반 40~80초)',
-                  '✨ 결과 생성 중...'
-                ]
-              : [
-                  '📝 이력서 읽는 중...',
-                  '🤖 AI 분석 중 (약 30초 소요)',
-                  '✨ 결과 생성 중...'
-                ]
-          }
-          currentStep={analysisStep}
-          estimatedTime={file && file.name.toLowerCase().endsWith('.pdf') ? 90 : 45}
-        />
-      )}
     </main>
   )
 }
