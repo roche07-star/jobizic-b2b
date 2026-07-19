@@ -235,7 +235,13 @@ export default function RecommendationsPage() {
       success('✅ PM에게 추천을 전송했습니다!')
       setAdminSelected(null)
       setAdminCommentText('')
-      loadAdminRecommendations()
+
+      // 전송 후 전체 보기로 전환 (목록에서 사라지지 않도록)
+      if (statusFilter === 'pending') {
+        setStatusFilter('all')
+      } else {
+        loadAdminRecommendations()
+      }
 
     } catch (err) {
       console.error('[admin recommendations] Send error:', err)
