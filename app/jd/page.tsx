@@ -60,7 +60,7 @@ interface BoardPost {
 }
 
 const STATUS_FILTERS = ['전체', '검토중', '활성', '마감', '보류']
-const PRIORITY_FILTERS = ['전체', '긴급', '높음', '보통', '낮음']
+const PRIORITY_FILTERS = ['전체', '긴급', '보통']
 
 interface Organization {
   id: string
@@ -723,20 +723,19 @@ export default function JDPage() {
                         onClick={(e) => {
                           e.preventDefault()
                           e.stopPropagation()
-                          const priorities = ['긴급', '높음', '보통', '낮음']
-                          const currentIndex = priorities.indexOf(normalizedPriority)
-                          const nextPriority = priorities[(currentIndex + 1) % priorities.length]
+                          // 긴급 ↔ 보통 토글
+                          const nextPriority = normalizedPriority === '긴급' ? '보통' : '긴급'
                           updatePriority(jd.id, nextPriority)
                         }}
                         style={{ cursor: 'pointer', fontWeight: 600, position: 'relative', zIndex: 10, pointerEvents: 'auto' }}
                         title="클릭하여 우선순위 변경"
                       >
-                        {displayPriority === '긴급' ? '🔥 ' : displayPriority === '높음' ? '⬆️ ' : displayPriority === '낮음' ? '⬇️ ' : ''}
+                        {displayPriority === '긴급' ? '🔥 ' : ''}
                         {displayPriority}
                       </button>
                     ) : (
                       <span className={`badge badge-${normalizedPriority}`} style={{ fontWeight: 600 }}>
-                        {displayPriority === '긴급' ? '🔥 ' : displayPriority === '높음' ? '⬆️ ' : displayPriority === '낮음' ? '⬇️ ' : ''}
+                        {displayPriority === '긴급' ? '🔥 ' : ''}
                         {displayPriority}
                       </span>
                     )
@@ -817,7 +816,7 @@ export default function JDPage() {
                       <button className="btn btn-warning btn-sm" onClick={() => updatePriority(jd.id, '긴급')}>🔥 긴급</button>
                     )}
                     {jd.priority === '긴급' && (
-                      <button className="btn btn-ghost btn-sm" onClick={() => updatePriority(jd.id, '보통')}>↓ 보통</button>
+                      <button className="btn btn-ghost btn-sm" onClick={() => updatePriority(jd.id, '보통')}>보통</button>
                     )}
                     <button className="btn btn-danger btn-sm" onClick={() => deleteJD(jd.id)}>삭제</button>
                   </>
@@ -1086,21 +1085,20 @@ export default function JDPage() {
                           <button
                             className={`badge badge-${displayPriority}`}
                             onClick={() => {
-                              const priorities = ['긴급', '높음', '보통', '낮음']
-                              const currentIndex = priorities.indexOf(displayPriority)
-                              const nextPriority = priorities[(currentIndex + 1) % priorities.length]
+                              // 긴급 ↔ 보통 토글
+                              const nextPriority = displayPriority === '긴급' ? '보통' : '긴급'
                               updatePriority(selected.id, nextPriority)
                               setSelected({...selected, priority: nextPriority})
                             }}
                             style={{ cursor: 'pointer', fontSize: 13, fontWeight: 600 }}
                             title="클릭하여 우선순위 변경"
                           >
-                            {displayPriority === '긴급' ? '🔥 ' : displayPriority === '높음' ? '⬆️ ' : displayPriority === '낮음' ? '⬇️ ' : ''}
+                            {displayPriority === '긴급' ? '🔥 ' : ''}
                             {displayPriority}
                           </button>
                         ) : (
                           <span className={`badge badge-${displayPriority}`} style={{ fontSize: 13, fontWeight: 600 }}>
-                            {displayPriority === '긴급' ? '🔥 ' : displayPriority === '높음' ? '⬆️ ' : displayPriority === '낮음' ? '⬇️ ' : ''}
+                            {displayPriority === '긴급' ? '🔥 ' : ''}
                             {displayPriority}
                           </span>
                         )
@@ -1137,7 +1135,7 @@ export default function JDPage() {
                           )}
                           {normalizedPriority === '긴급' && (
                             <button className="btn btn-ghost btn-sm" onClick={() => { updatePriority(selected.id, '보통'); setSelected({...selected, priority: '보통'}); }}>
-                              ↓ 보통으로
+                              보통으로
                             </button>
                           )}
                         </div>

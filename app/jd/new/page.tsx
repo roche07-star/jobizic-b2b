@@ -258,9 +258,7 @@ export default function JDNewPage() {
                   onChange={e => setParsed(p => p ? { ...p, priority: e.target.value as any } : p)}
                 >
                   <option value="긴급">🔥 긴급</option>
-                  <option value="높음">⬆️ 높음</option>
                   <option value="보통">보통</option>
-                  <option value="낮음">⬇️ 낮음</option>
                 </select>
               </div>
             </div>
