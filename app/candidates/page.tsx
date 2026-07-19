@@ -164,10 +164,12 @@ export default function CandidatesPage() {
               try {
                 console.log('[save candidate] Profile:', profile)
                 console.log('[save candidate] Job result:', data.result)
+                console.log('[save candidate] Job input:', data.input)
 
                 // candidates 테이블에 저장
                 const savePayload = {
                   ...data.result,
+                  raw_resume: data.input?.resumeText || '', // ✅ 원본 이력서 텍스트
                   organization_id: profile.organization_id,
                   created_by: profile.email,
                   status: '대기'
