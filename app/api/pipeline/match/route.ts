@@ -175,7 +175,7 @@ export async function POST(req: NextRequest) {
     const today = new Date()
     const currentDate = `${today.getFullYear()}년 ${today.getMonth() + 1}월 ${today.getDate()}일`
 
-    // 🔍 프롬프트 생성 및 검증
+    // 🔍 프롬프트 생성 (Eve 기본 + Adam JD 분석)
     const userPrompt = `**중요: 오늘은 ${currentDate}입니다. 경력 기간 계산 시 이 날짜를 기준으로 정확히 계산해주세요.**
 
 다음 JD와 후보자의 적합도를 분석해주세요:
@@ -185,9 +185,10 @@ export async function POST(req: NextRequest) {
 - 포지션: ${jd.position}
 - 필수 스킬: ${safeJoin(jd.required_skills)}
 - 우대 스킬: ${safeJoin(jd.preferred_skills)}
-- 난이도: ${jd.difficulty}
+- 난이도: ${jd.difficulty ?? '없음'}
 - 타깃 프로파일: ${jd.target_profile ?? '없음'}
 - 서칭 전략: ${jd.search_strategy ?? '없음'}
+${jd.raw_text ? `\nJD 원문:\n${jd.raw_text.substring(0, 2000)}` : ''}
 
 【후보자 정보】
 🔒 개인정보 보호: 이름, 회사명 등 개인정보는 제외됨
@@ -212,6 +213,20 @@ ${client_comment}
 - 기피 프로파일 주의
 - 처우 조건 고려
 - strength_for_jd, concerns에 코멘트 내용 통합` : ''}
+
+**[JD 분석 절차 - Adam 방식]**
+
+STEP 1 — JD 핵심 요구 역량 추출
+JD를 읽고 요구사항을 3가지로 분리합니다:
+① 필수 요건(없으면 탈락): 최소 학력/전공, 최소 경력 연수, 특정 도메인/직무 경험, 자격증/어학
+② 우대 사항(있으면 가산점): 특정 툴/플랫폼, 관련 업종, 특수 환경(해외/IPO/스타트업 등)
+③ 숨은 요구 역량(JD에 없지만 맥락상 필요한 것): "글로벌 팀 협업"→영어 실무, "C-level 보고"→문서화 능력, "스타트업 환경"→멀티태스킹, "팀 리딩"→실제 인사권 여부, "외부 파트너"→협상 경험
+
+STEP 2 — 타깃 프로파일 한 줄 정의
+STEP 1을 종합해 "[도메인]에서 [N]년 이상 [핵심 직무]를 직접 수행한 경험이 있으며, [환경]에서 [역할]을 해본 [직급대] 인재" 형식으로 기준선을 먼저 정한 뒤 후보자를 대조합니다.
+
+STEP 3 — 후보자-JD 대조 및 분석
+위 JD 분석 결과를 바탕으로 후보자의 strength_for_jd, concerns를 도출하십시오.
 `
     console.log('[pipeline/match] 📝 User prompt:', userPrompt.substring(0, 300) + '...')
 
@@ -220,7 +235,7 @@ ${client_comment}
       max_tokens: 2000,
       system: [{
         type: 'text',
-        text: getMatchingPrompt(), // ✨ Enhanced prompt from ADAM
+        text: getMatchingPrompt(), // ✨ Eve 기본 프롬프트 (Adam JD 분석 추가됨)
         cache_control: { type: 'ephemeral' }
       }],
       tools: [MATCHING_TOOL],
