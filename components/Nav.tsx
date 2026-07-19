@@ -202,7 +202,7 @@ export default function Nav() {
               href={l.href}
               className={`nav-link${path === l.href || (l.href !== '/' && path.startsWith(l.href)) ? ' active' : ''}`}
             >
-              {l.label}
+              {profile?.role === 'admin' ? '관리자' : '조직 관리'}
             </Link>
           ))
         })()}
@@ -252,7 +252,7 @@ export default function Nav() {
                   whiteSpace: 'nowrap',
                 }}
               >
-                {l.label}
+                {l.href === '/admin' && profile?.role === 'owner' ? '조직 관리' : l.label}
               </Link>
             ))}
           </div>
