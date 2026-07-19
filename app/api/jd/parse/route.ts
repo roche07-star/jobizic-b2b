@@ -19,6 +19,13 @@ interface JDParseResult {
     nice_to_have: string[]
     implicit: string[]
   }
+  company_analysis: {
+    introduction: string
+    revenue: string
+    current_business: string
+    recent_trends: string
+    future_value: string
+  }
   step3_headhunter_insight: {
     core_profile: string
     caution_points: string[]
@@ -68,6 +75,33 @@ const JD_PARSE_TOOL: Anthropic.Tool = {
         },
         required: ['must_have', 'nice_to_have', 'implicit']
       },
+      company_analysis: {
+        type: 'object',
+        description: '회사 상세 분석 — JD, 회사명, URL에서 알 수 있는 정보 기반. 정보가 불충분하면 "회사 정보 확인 불가"',
+        properties: {
+          introduction: {
+            type: 'string',
+            description: '회사 소개 (업종, 주요 사업, 설립 배경 등). 정보가 없으면 "회사 정보 확인 불가"'
+          },
+          revenue: {
+            type: 'string',
+            description: '매출액 또는 규모 추정 (알려진 경우). 정보가 없으면 "정보 부족"'
+          },
+          current_business: {
+            type: 'string',
+            description: '현재 진행 중인 주요 사업/프로젝트 (JD에서 추론 가능한 경우). 정보가 없으면 "정보 부족"'
+          },
+          recent_trends: {
+            type: 'string',
+            description: '최근 동향 (채용 배경, 사업 확장 등 JD에서 유추). 정보가 없으면 "정보 부족"'
+          },
+          future_value: {
+            type: 'string',
+            description: '회사 미래 가치 및 성장 가능성 (산업 전망, 경쟁력, 투자 가치 등). 정보가 없으면 "정보 부족"'
+          }
+        },
+        required: ['introduction', 'revenue', 'current_business', 'recent_trends', 'future_value']
+      },
       step3_headhunter_insight: {
         type: 'object',
         properties: {
@@ -111,16 +145,57 @@ const JD_PARSE_TOOL: Anthropic.Tool = {
         required: ['location', 'salary', 'deadline', 'priority', 'difficulty']
       }
     },
-    required: ['step1_context', 'step2_requirements', 'step3_headhunter_insight', 'metadata']
+    required: ['step1_context', 'step2_requirements', 'company_analysis', 'step3_headhunter_insight', 'metadata']
   }
 }
 
 export async function POST(req: NextRequest) {
   try {
-    const { text, client_comment } = await req.json()
+    const { text, company_url, client_comment } = await req.json()
     if (!text?.trim()) return NextResponse.json({ error: 'JD 내용을 입력해 주세요.' }, { status: 400 })
 
+    // 회사 URL이 있으면 웹페이지 정보 가져오기
+    let companyWebInfo = ''
+    if (company_url?.trim()) {
+      try {
+        const urlToFetch = company_url.trim()
+        const controller = new AbortController()
+        const timeout = setTimeout(() => controller.abort(), 10000) // 10초 타임아웃
+
+        const response = await fetch(urlToFetch, {
+          signal: controller.signal,
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+          },
+        })
+        clearTimeout(timeout)
+
+        if (response.ok) {
+          const html = await response.text()
+          // HTML에서 텍스트만 추출 (간단한 방법)
+          const textContent = html
+            .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+            .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+            .replace(/<[^>]+>/g, ' ')
+            .replace(/\s+/g, ' ')
+            .trim()
+            .slice(0, 3000) // 처음 3000자만
+
+          if (textContent.length > 100) {
+            companyWebInfo = `\n\n## 회사 웹사이트 정보 (${company_url}):\n${textContent}`
+          }
+        }
+      } catch (err) {
+        console.warn('[jd/parse] Failed to fetch company URL:', err)
+        // URL fetch 실패해도 계속 진행
+      }
+    }
+
     console.log('[jd/parse] Calling Claude API with Tool Calling...')
+
+    const userContent = client_comment
+      ? `다음 JD를 분석하고, 클라이언트 코멘트를 반영하여 분석을 보완해주세요.\n\n## JD:\n${text}${companyWebInfo}\n\n## 클라이언트 코멘트:\n${client_comment}\n\n**step4_client_comment 필드에 다음을 포함:**\n- comment_summary: 코멘트 요약\n- changes: [{"before": "변경 전", "after": "변경 후", "reason": "이유"}]\n- refined_profile: 보완된 핵심 프로파일`
+      : `다음 JD를 분석해주세요:\n\n${text}${companyWebInfo}`
 
     const message = await callClaude({
       max_tokens: 4000,
@@ -133,9 +208,7 @@ export async function POST(req: NextRequest) {
       tool_choice: { type: 'tool', name: 'analyze_job_description' },
       messages: [{
         role: 'user',
-        content: client_comment
-          ? `다음 JD를 분석하고, 클라이언트 코멘트를 반영하여 분석을 보완해주세요.\n\n## JD:\n${text}\n\n## 클라이언트 코멘트:\n${client_comment}\n\n**step4_client_comment 필드에 다음을 포함:**\n- comment_summary: 코멘트 요약\n- changes: [{"before": "변경 전", "after": "변경 후", "reason": "이유"}]\n- refined_profile: 보완된 핵심 프로파일`
-          : `다음 JD를 분석해주세요:\n\n${text}`
+        content: userContent
       }],
     })
 

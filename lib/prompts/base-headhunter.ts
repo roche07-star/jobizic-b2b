@@ -237,6 +237,19 @@ JD를 4단계 프로세스로 분석하여 JSON 형식으로 응답하세요.
 
 ${OUTPUT_RULES}
 
+## 회사 정보 분석 (중요!)
+
+**회사 정보가 충분한 경우:**
+- JD 텍스트, 회사명, 웹사이트 정보를 종합하여 상세 분석
+- introduction, revenue, current_business, recent_trends, future_value 모두 구체적으로 작성
+
+**회사 정보가 불충분한 경우 (신규 스타트업, 비공개 회사 등):**
+- introduction: "회사 정보 확인 불가"
+- revenue: "정보 부족"
+- current_business: "정보 부족"
+- recent_trends: "정보 부족"
+- future_value: "정보 부족"
+
 ## JSON 출력 형식
 {
   "step1_context": {
@@ -252,6 +265,13 @@ ${OUTPUT_RULES}
     "must_have": ["필수역량1", "필수역량2"],
     "nice_to_have": ["우대역량1", "우대역량2"],
     "implicit": ["숨은요구역량1", "숨은요구역량2"]
+  },
+  "company_analysis": {
+    "introduction": "회사 소개 (업종, 주요 사업, 설립 배경). 정보 없으면 '회사 정보 확인 불가'",
+    "revenue": "매출액 또는 규모 추정. 정보 없으면 '정보 부족'",
+    "current_business": "현재 진행 중인 주요 사업/프로젝트. 정보 없으면 '정보 부족'",
+    "recent_trends": "최근 동향 (채용 배경, 사업 확장 등). 정보 없으면 '정보 부족'",
+    "future_value": "회사 미래 가치 및 성장 가능성. 정보 없으면 '정보 부족'"
   },
   "step3_headhunter_insight": {
     "core_profile": "핵심 1명 프로파일 (구체적 인물상 3-4문장, 구체적 수치와 프로젝트 포함)",

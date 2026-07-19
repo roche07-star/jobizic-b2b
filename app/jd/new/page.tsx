@@ -30,6 +30,7 @@ export default function JDNewPage() {
   const [position, setPosition] = useState('')
   const [feeRate, setFeeRate] = useState('')
   const [location, setLocation] = useState('')
+  const [companyUrl, setCompanyUrl] = useState('')
 
   // JD 내용
   const [rawText, setRawText] = useState('')
@@ -51,6 +52,7 @@ export default function JDNewPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           text: rawText,
+          company_url: companyUrl.trim() || undefined,
           client_comment: clientComment.trim() || undefined
         }),
       })
@@ -95,6 +97,7 @@ export default function JDNewPage() {
           position,
           location,
           fee_rate: feeRate || null,
+          company_url: companyUrl || null,
           raw_text: rawText,
           status: '검토중',
           source: '수동',
@@ -170,6 +173,17 @@ export default function JDNewPage() {
             </div>
           </div>
 
+          <div className="form-group" style={{ marginBottom: 12 }}>
+            <label className="form-label">회사 URL <span style={{ color: 'var(--text-tertiary)', fontWeight: 400 }}>(선택)</span></label>
+            <input
+              className="form-input"
+              type="url"
+              placeholder="예: https://www.company.com 또는 https://www.rocketpunch.com/companies/..."
+              value={companyUrl}
+              onChange={e => setCompanyUrl(e.target.value)}
+            />
+          </div>
+
           {/* JD 내용 */}
           <div className="form-group">
             <label className="form-label">JD 내용 *</label>
@@ -207,6 +221,7 @@ export default function JDNewPage() {
                 setPosition('')
                 setFeeRate('')
                 setLocation('')
+                setCompanyUrl('')
                 setRawText('')
                 setClientComment('')
               }}>
@@ -271,6 +286,52 @@ export default function JDNewPage() {
                 {parsed.preferred_skills.map(s => <span key={s} className="skill-chip preferred">{s}</span>)}
               </div>
             </div>
+
+            {/* 회사 정보 분석 */}
+            {(parsed as any)._v2?.company_analysis && (parsed as any)._v2.company_analysis.introduction !== '회사 정보 확인 불가' && (
+              <div className="form-group" style={{ marginBottom: 12 }}>
+                <label className="form-label">회사 정보</label>
+                <div className="analysis-box">
+                  <div className="analysis-row">
+                    <span className="analysis-label">회사 소개</span>
+                    <span className="analysis-value">{(parsed as any)._v2.company_analysis.introduction}</span>
+                  </div>
+                  {(parsed as any)._v2.company_analysis.revenue !== '정보 부족' && (
+                    <div className="analysis-row">
+                      <span className="analysis-label">매출/규모</span>
+                      <span className="analysis-value">{(parsed as any)._v2.company_analysis.revenue}</span>
+                    </div>
+                  )}
+                  {(parsed as any)._v2.company_analysis.current_business !== '정보 부족' && (
+                    <div className="analysis-row">
+                      <span className="analysis-label">현재 사업</span>
+                      <span className="analysis-value">{(parsed as any)._v2.company_analysis.current_business}</span>
+                    </div>
+                  )}
+                  {(parsed as any)._v2.company_analysis.recent_trends !== '정보 부족' && (
+                    <div className="analysis-row">
+                      <span className="analysis-label">최근 동향</span>
+                      <span className="analysis-value">{(parsed as any)._v2.company_analysis.recent_trends}</span>
+                    </div>
+                  )}
+                  {(parsed as any)._v2.company_analysis.future_value !== '정보 부족' && (
+                    <div className="analysis-row">
+                      <span className="analysis-label">미래 가치</span>
+                      <span className="analysis-value">{(parsed as any)._v2.company_analysis.future_value}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {(parsed as any)._v2?.company_analysis?.introduction === '회사 정보 확인 불가' && (
+              <div className="form-group" style={{ marginBottom: 12 }}>
+                <label className="form-label">회사 정보</label>
+                <div style={{ padding: '12px', background: 'var(--surface-secondary)', borderRadius: '6px', fontSize: '13px', color: 'var(--text-tertiary)' }}>
+                  회사 정보 확인 불가
+                </div>
+              </div>
+            )}
 
             <div className="analysis-box" style={{ marginBottom: 12 }}>
               <div className="analysis-row">
