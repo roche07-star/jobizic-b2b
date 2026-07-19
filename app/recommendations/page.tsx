@@ -142,15 +142,24 @@ export default function RecommendationsPage() {
 
       {/* 후보자 추천 관리 탭 */}
       {activeTab === 'manage' ? (
-        <iframe
-          src="/admin/recommendations"
-          style={{
-            width: '100%',
-            height: 'calc(100vh - 200px)',
-            border: 'none',
-            borderRadius: 8
-          }}
-        />
+        <div style={{
+          padding: 20,
+          background: 'var(--surface)',
+          borderRadius: 8,
+          textAlign: 'center'
+        }}>
+          <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 12 }}>
+            후보자 추천 관리
+          </div>
+          <div style={{ fontSize: 14, color: 'var(--text-secondary)', marginBottom: 20 }}>
+            Super Admin 전용 기능입니다
+          </div>
+          <a href="/admin/recommendations" style={{ textDecoration: 'none' }}>
+            <button className="btn btn-primary">
+              후보자 추천 관리 페이지로 이동
+            </button>
+          </a>
+        </div>
       ) : loading ? (
         <div className="empty">
           <div className="spinner" style={{ margin: '0 auto 12px' }} />
