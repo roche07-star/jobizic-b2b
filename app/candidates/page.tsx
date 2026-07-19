@@ -162,20 +162,28 @@ export default function CandidatesPage() {
             const profile = await getProfile()
             if (profile && data.result) {
               try {
+                console.log('[save candidate] Profile:', profile)
+                console.log('[save candidate] Job result:', data.result)
+
                 // candidates 테이블에 저장
+                const savePayload = {
+                  ...data.result,
+                  organization_id: profile.organization_id,
+                  created_by: profile.email,
+                  status: '대기'
+                }
+                console.log('[save candidate] Payload:', savePayload)
+
                 const saveRes = await fetch('/api/candidates', {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({
-                    ...data.result,
-                    organization_id: profile.organization_id,
-                    created_by: profile.email,
-                    status: '대기'
-                  })
+                  body: JSON.stringify(savePayload)
                 })
 
                 if (!saveRes.ok) {
-                  throw new Error('후보자 저장 실패')
+                  const errorData = await saveRes.json()
+                  console.error('[save candidate] Error response:', errorData)
+                  throw new Error(`후보자 저장 실패: ${errorData.error || saveRes.statusText}`)
                 }
 
                 // 목록 새로고침
