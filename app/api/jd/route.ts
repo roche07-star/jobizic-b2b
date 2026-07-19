@@ -48,9 +48,8 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    // Admin과 Owner는 조직 전체 JD 조회
-    // headhunter는 본인 JD + 관심 JD + 활성 JD (현재 조직 내에서만)
-    // 기타 사용자는 본인 JD 또는 활성 JD (현재 조직 내에서만)
+    // 조직 격리: 같은 조직 내 모든 JD 공유 (role 무관)
+    // 검토중/활성/마감/보류 상태 모두 조회 가능
     if (role && role !== 'admin' && role !== 'owner' && userEmail) {
       // 먼저 현재 사용자의 organization_id 조회 (조직 격리를 위해 필수!)
       const { data: userProfile } = await supabaseAdmin
@@ -64,30 +63,12 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ jds: [] }, { status: 200 })
       }
 
-      // 조직 격리: 현재 조직의 JD만 조회
+      // 조직 격리: 현재 조직의 모든 JD 조회 (상태 무관 - 검토중/활성/마감/보류 모두 공유)
       console.log('[jd] Filtering by user organization_id:', userProfile.organization_id)
       q = q.eq('organization_id', userProfile.organization_id)
 
-      if (role === 'headhunter') {
-        // headhunter: 관심 등록한 JD도 포함
-        const { data: interests } = await supabaseAdmin
-          .from('jd_interests')
-          .select('jd_id')
-          .eq('user_id', userProfile.id)
-
-        const interestedJdIds = interests?.map(i => i.jd_id) ?? []
-
-        if (interestedJdIds.length > 0) {
-          // 본인 JD OR 관심 JD OR 활성 JD (현재 조직 내에서만)
-          q = q.or(`created_by.eq.${userEmail},id.in.(${interestedJdIds.join(',')}),status.eq.활성`)
-        } else {
-          // 관심 JD 없으면 본인 JD OR 활성 JD (현재 조직 내에서만)
-          q = q.or(`created_by.eq.${userEmail},status.eq.활성`)
-        }
-      } else {
-        // 기타 role: 본인 JD OR 활성 JD (현재 조직 내에서만)
-        q = q.or(`created_by.eq.${userEmail},status.eq.활성`)
-      }
+      // ✅ 같은 조직 내 모든 JD 공유
+      // 상태 필터는 쿼리 파라미터로 처리 (아래 status 체크 참고)
     }
 
     if (status) {
