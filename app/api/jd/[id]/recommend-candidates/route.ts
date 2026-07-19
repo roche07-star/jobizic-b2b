@@ -77,12 +77,10 @@ export async function POST(req: NextRequest, context: { params: Promise<{ id: st
 
     console.log('[recommend-candidates] Filtering candidates by skills:', allSkills)
 
-    // JD 조직 내 후보자 조회 (Super Admin은 JD의 organization_id 사용)
-    // 테스트: status 필터 제거 (모든 상태의 후보 포함)
+    // Super Admin: 모든 조직의 후보자를 대상으로 매칭 (조직 필터 제거)
     const { data: allCandidates, error: candidatesError } = await supabaseAdmin
       .from('candidates')
       .select('*')
-      .eq('organization_id', jd.organization_id)
 
     if (candidatesError) {
       console.error('[recommend-candidates] Candidates query error:', candidatesError)
