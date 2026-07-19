@@ -24,15 +24,24 @@ interface ParsedJD {
 
 export default function JDNewPage() {
   const router = useRouter()
+
+  // 고정 필드
+  const [company, setCompany] = useState('')
+  const [position, setPosition] = useState('')
+  const [feeRate, setFeeRate] = useState('')
+  const [location, setLocation] = useState('')
+
+  // JD 내용
   const [rawText, setRawText] = useState('')
   const [clientComment, setClientComment] = useState('')
+
   const [parsing, setParsing] = useState(false)
   const [parsed, setParsed] = useState<ParsedJD | null>(null)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   async function handleParse() {
-    if (!rawText.trim()) return
+    if (!rawText.trim() || !company.trim() || !position.trim()) return
     setParsing(true)
     setError(null)
     setParsed(null)
@@ -47,7 +56,14 @@ export default function JDNewPage() {
       })
       const data = await res.json()
       if (!res.ok) { setError(data.error); return }
-      setParsed(data)
+
+      // AI 파싱 결과에 고정 필드 값 병합
+      setParsed({
+        ...data,
+        company,
+        position,
+        location: location || data.location
+      })
     } catch {
       setError('서버 오류가 발생했습니다.')
     } finally {
@@ -75,6 +91,10 @@ export default function JDNewPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...dataToSave,
+          company,  // 고정 필드 값으로 덮어쓰기
+          position,
+          location,
+          fee_rate: feeRate || null,
           raw_text: rawText,
           status: '검토중',
           source: '수동',
@@ -105,12 +125,58 @@ export default function JDNewPage() {
 
         {/* 입력 영역 */}
         <div className="card">
-          <div className="card-title">JD 원문 입력</div>
+          <div className="card-title">JD 등록</div>
+
+          {/* 고정 필드 */}
+          <div className="form-row" style={{ marginBottom: 12 }}>
+            <div className="form-group" style={{ marginBottom: 0 }}>
+              <label className="form-label">회사명 *</label>
+              <input
+                className="form-input"
+                placeholder="예: 네이버"
+                value={company}
+                onChange={e => setCompany(e.target.value)}
+              />
+            </div>
+            <div className="form-group" style={{ marginBottom: 0 }}>
+              <label className="form-label">포지션명 *</label>
+              <input
+                className="form-input"
+                placeholder="예: Backend 개발자"
+                value={position}
+                onChange={e => setPosition(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="form-row" style={{ marginBottom: 12 }}>
+            <div className="form-group" style={{ marginBottom: 0 }}>
+              <label className="form-label">수수료율 *</label>
+              <input
+                className="form-input"
+                placeholder="예: 20%"
+                value={feeRate}
+                onChange={e => setFeeRate(e.target.value)}
+              />
+            </div>
+            <div className="form-group" style={{ marginBottom: 0 }}>
+              <label className="form-label">근무지 *</label>
+              <input
+                className="form-input"
+                placeholder="예: 서울 강남구"
+                value={location}
+                onChange={e => setLocation(e.target.value)}
+              />
+            </div>
+          </div>
+
+          {/* JD 내용 */}
           <div className="form-group">
+            <label className="form-label">JD 내용 *</label>
             <textarea
               className="form-textarea"
               style={{ minHeight: 280 }}
-              placeholder="채용공고 전체 내용을 여기에 붙여넣으세요.&#10;&#10;이메일로 받은 JD, 잡플래닛, 원티드, 링크드인 등 어디서든 복사해서 붙여넣으면 됩니다."
+              placeholder="주요업무&#10;- 백엔드 API 개발 및 운영&#10;- 데이터베이스 설계 및 최적화&#10;&#10;자격조건&#10;- Node.js 또는 Java 개발 경력 3년 이상&#10;- RDBMS 실무 경험&#10;&#10;우대사항&#10;- AWS 클라우드 서비스 경험&#10;- MSA 아키텍처 설계 경험"
               value={rawText}
               onChange={e => setRawText(e.target.value)}
             />
@@ -130,12 +196,20 @@ export default function JDNewPage() {
             <button
               className="btn btn-primary"
               onClick={handleParse}
-              disabled={!rawText.trim() || parsing}
+              disabled={!company.trim() || !position.trim() || !feeRate.trim() || !location.trim() || !rawText.trim() || parsing}
             >
               {parsing ? <><div className="spinner" /> 분석 중...</> : '🤖 AI 파싱'}
             </button>
             {parsed && (
-              <button className="btn btn-ghost" onClick={() => { setParsed(null); setRawText(''); setClientComment('') }}>
+              <button className="btn btn-ghost" onClick={() => {
+                setParsed(null)
+                setCompany('')
+                setPosition('')
+                setFeeRate('')
+                setLocation('')
+                setRawText('')
+                setClientComment('')
+              }}>
                 초기화
               </button>
             )}
@@ -153,31 +227,35 @@ export default function JDNewPage() {
               </div>
             </div>
 
-            <div className="form-row" style={{ marginBottom: 12 }}>
-              <div className="form-group" style={{ marginBottom: 0 }}>
-                <label className="form-label">회사</label>
-                <input className="form-input" value={parsed.company ?? ''} onChange={e => setParsed(p => p ? { ...p, company: e.target.value } : p)} />
+            {/* 고정 필드 표시 (읽기 전용) */}
+            <div className="analysis-box" style={{ marginBottom: 12, background: 'var(--surface-secondary)' }}>
+              <div className="analysis-row">
+                <span className="analysis-label">회사</span>
+                <span className="analysis-value">{company}</span>
               </div>
-              <div className="form-group" style={{ marginBottom: 0 }}>
-                <label className="form-label">포지션</label>
-                <input className="form-input" value={parsed.position} onChange={e => setParsed(p => p ? { ...p, position: e.target.value } : p)} />
+              <div className="analysis-row">
+                <span className="analysis-label">포지션</span>
+                <span className="analysis-value">{position}</span>
+              </div>
+              <div className="analysis-row">
+                <span className="analysis-label">수수료율</span>
+                <span className="analysis-value">{feeRate}</span>
+              </div>
+              <div className="analysis-row">
+                <span className="analysis-label">근무지</span>
+                <span className="analysis-value">{location}</span>
               </div>
             </div>
 
             <div className="form-row" style={{ marginBottom: 12 }}>
-              <div className="form-group" style={{ marginBottom: 0 }}>
-                <label className="form-label">근무지</label>
-                <input className="form-input" value={parsed.location ?? ''} onChange={e => setParsed(p => p ? { ...p, location: e.target.value } : p)} />
-              </div>
               <div className="form-group" style={{ marginBottom: 0 }}>
                 <label className="form-label">마감일</label>
                 <input className="form-input" value={parsed.deadline} onChange={e => setParsed(p => p ? { ...p, deadline: e.target.value } : p)} />
               </div>
-            </div>
-
-            <div className="form-group" style={{ marginBottom: 12 }}>
-              <label className="form-label">예상 연봉</label>
-              <input className="form-input" value={parsed.salary_estimate} onChange={e => setParsed(p => p ? { ...p, salary_estimate: e.target.value } : p)} />
+              <div className="form-group" style={{ marginBottom: 0 }}>
+                <label className="form-label">예상 연봉</label>
+                <input className="form-input" value={parsed.salary_estimate} onChange={e => setParsed(p => p ? { ...p, salary_estimate: e.target.value } : p)} />
+              </div>
             </div>
 
             <div className="form-group" style={{ marginBottom: 12 }}>
