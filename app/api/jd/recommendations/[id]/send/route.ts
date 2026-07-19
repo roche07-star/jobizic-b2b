@@ -12,8 +12,8 @@ export async function POST(req: NextRequest, context: { params: Promise<{ id: st
       return NextResponse.json({ error: '인증이 필요합니다.' }, { status: 401 })
     }
 
-    // 권한 체크: owner/admin만
-    if (profile.role !== 'owner' && profile.role !== 'admin') {
+    // 권한 체크: super admin만
+    if (profile.role !== 'admin') {
       return NextResponse.json({ error: '권한이 없습니다.' }, { status: 403 })
     }
 

@@ -44,10 +44,31 @@ export default function AdminRecommendationsPage() {
   const [sending, setSending] = useState(false)
   const [commentText, setCommentText] = useState('')
   const [statusFilter, setStatusFilter] = useState<'pending' | 'recommended' | 'all'>('pending')
+  const [userRole, setUserRole] = useState<string>('')
 
   useEffect(() => {
-    loadRecommendations()
-  }, [statusFilter])
+    checkAuth()
+  }, [])
+
+  useEffect(() => {
+    if (userRole === 'admin') {
+      loadRecommendations()
+    }
+  }, [statusFilter, userRole])
+
+  async function checkAuth() {
+    const profile = await getProfile()
+    if (!profile) {
+      window.location.href = '/'
+      return
+    }
+    if (profile.role !== 'admin') {
+      error('❌ Super Admin만 접근할 수 있습니다.')
+      window.location.href = '/'
+      return
+    }
+    setUserRole(profile.role)
+  }
 
   async function loadRecommendations() {
     setLoading(true)

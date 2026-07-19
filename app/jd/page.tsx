@@ -1163,7 +1163,7 @@ export default function JDPage() {
                     })()}
 
                     {/* AI 추천 후보 찾기 */}
-                    {(userRole === 'owner' || userRole === 'admin') && selected.status === '활성' && (
+                    {userRole === 'admin' && selected.status === '활성' && (
                       <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--border)' }}>
                         <button
                           className="btn btn-primary btn-sm"
