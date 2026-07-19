@@ -23,6 +23,10 @@ interface JD {
   difficulty_reason: string
   keywords: string[]
   raw_text: string | null
+  company_url?: string | null
+  recruitment_process?: string | null
+  fee_rate?: string | null
+  _v2?: any
   created_at: string
   created_by?: string
   created_by_user?: {
@@ -1186,6 +1190,62 @@ export default function JDPage() {
                             <div className="form-label">필수 스킬</div>
                             <div className="skills-wrap">
                               {selected.required_skills.map(s => <span key={s} className="skill-chip">{s}</span>)}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* 채용절차 */}
+                        {selected.recruitment_process && (
+                          <div style={{ marginBottom: 16 }}>
+                            <div className="form-label">채용절차</div>
+                            <div style={{ whiteSpace: 'pre-line', fontSize: '13px', padding: '12px', background: 'var(--surface-secondary)', borderRadius: '6px' }}>
+                              {selected.recruitment_process}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* 회사 정보 */}
+                        {selected._v2?.company_analysis && selected._v2.company_analysis.introduction !== '회사 정보 확인 불가' && (
+                          <div style={{ marginBottom: 16 }}>
+                            <div className="form-label">회사 정보</div>
+                            <div className="analysis-box">
+                              <div className="analysis-row">
+                                <span className="analysis-label">회사 소개</span>
+                                <span className="analysis-value">{selected._v2.company_analysis.introduction}</span>
+                              </div>
+                              {selected._v2.company_analysis.revenue !== '정보 부족' && (
+                                <div className="analysis-row">
+                                  <span className="analysis-label">매출/규모</span>
+                                  <span className="analysis-value">{selected._v2.company_analysis.revenue}</span>
+                                </div>
+                              )}
+                              {selected._v2.company_analysis.current_business !== '정보 부족' && (
+                                <div className="analysis-row">
+                                  <span className="analysis-label">현재 사업</span>
+                                  <span className="analysis-value">{selected._v2.company_analysis.current_business}</span>
+                                </div>
+                              )}
+                              {selected._v2.company_analysis.recent_trends !== '정보 부족' && (
+                                <div className="analysis-row">
+                                  <span className="analysis-label">최근 동향</span>
+                                  <span className="analysis-value">{selected._v2.company_analysis.recent_trends}</span>
+                                </div>
+                              )}
+                              {selected._v2.company_analysis.future_value !== '정보 부족' && (
+                                <div className="analysis-row">
+                                  <span className="analysis-label">미래 가치</span>
+                                  <span className="analysis-value">{selected._v2.company_analysis.future_value}</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
+                        {selected._v2?.company_analysis?.introduction === '회사 정보 확인 불가' && (
+                          <div style={{ marginBottom: 16 }}>
+                            <div className="form-label">회사 정보</div>
+                            <div style={{ padding: '12px', background: 'var(--surface-secondary)', borderRadius: '6px', fontSize: '13px', color: 'var(--text-tertiary)' }}>
+                              회사 정보 확인 불가
                             </div>
                           </div>
                         )}
