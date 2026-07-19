@@ -60,7 +60,7 @@ interface BoardPost {
 }
 
 const STATUS_FILTERS = ['전체', '검토중', '활성', '마감', '보류']
-const PRIORITY_FILTERS = ['전체', '긴급', '보통']
+const PRIORITY_FILTERS = ['긴급', '보통']
 
 interface Organization {
   id: string
@@ -72,7 +72,7 @@ export default function JDPage() {
   const [jds, setJds] = useState<JD[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('전체')
-  const [priorityFilter, setPriorityFilter] = useState('전체')
+  const [priorityFilter, setPriorityFilter] = useState('긴급')
   const [selected, setSelected] = useState<JD | null>(null)
   const [isAdmin, setIsAdmin] = useState(false)
   const [userEmail, setUserEmail] = useState<string>('')
@@ -305,7 +305,7 @@ export default function JDPage() {
     : jds.filter(j => j.created_by === userEmail || interests.includes(j.id))
 
   const statusFiltered = filter === '전체' ? viewFiltered : viewFiltered.filter(j => j.status === filter)
-  const priorityFiltered = priorityFilter === '전체' ? statusFiltered : statusFiltered.filter(j => j.priority === priorityFilter)
+  const priorityFiltered = statusFiltered.filter(j => j.priority === priorityFilter)
 
   // 상태 + 우선순위 정렬 (활성/긴급이 최우선)
   const statusPriority: Record<string, number> = {
