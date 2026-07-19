@@ -266,8 +266,9 @@ export default function AdminRecommendationsPage() {
                     value={minScores[jd.id] || 70}
                     onChange={(e) => setMinScores({ ...minScores, [jd.id]: Number(e.target.value) })}
                     disabled={recommendingJdId === jd.id}
-                    style={{ fontSize: 13, padding: '6px 8px', minWidth: 100 }}
+                    style={{ fontSize: 13, padding: '6px 8px', minWidth: 120 }}
                   >
+                    <option value={5}>5점 이상 (테스트)</option>
                     <option value={60}>60점 이상</option>
                     <option value={70}>70점 이상</option>
                     <option value={75}>75점 이상</option>
