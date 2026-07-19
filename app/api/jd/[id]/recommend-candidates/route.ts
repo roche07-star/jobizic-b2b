@@ -51,21 +51,20 @@ export async function POST(req: NextRequest, context: { params: Promise<{ id: st
       return NextResponse.json({ error: '권한이 없습니다.' }, { status: 403 })
     }
 
-    console.log('[recommend-candidates] Starting for JD:', jdId)
+    console.log('[recommend-candidates] Starting for JD:', jdId, 'by admin:', profile.email)
 
-    // 1. JD 정보 조회
+    // 1. JD 정보 조회 (Super Admin은 모든 조직의 JD 접근 가능)
     const { data: jd, error: jdError } = await supabaseAdmin
       .from('job_descriptions')
       .select('*')
       .eq('id', jdId)
-      .eq('organization_id', profile.organization_id)
       .single()
 
     if (jdError || !jd) {
       return NextResponse.json({ error: 'JD를 찾을 수 없습니다.' }, { status: 404 })
     }
 
-    console.log('[recommend-candidates] JD found:', jd.company, jd.position)
+    console.log('[recommend-candidates] JD found:', jd.company, jd.position, 'org:', jd.organization_id)
 
     // 2. 후보자 필터링 (스킬, 경력)
     const requiredSkills = jd.required_skills || []
@@ -74,11 +73,11 @@ export async function POST(req: NextRequest, context: { params: Promise<{ id: st
 
     console.log('[recommend-candidates] Filtering candidates by skills:', allSkills)
 
-    // 조직 내 후보자 조회
+    // JD 조직 내 후보자 조회 (Super Admin은 JD의 organization_id 사용)
     const { data: allCandidates, error: candidatesError } = await supabaseAdmin
       .from('candidates')
       .select('*')
-      .eq('organization_id', profile.organization_id)
+      .eq('organization_id', jd.organization_id)
       .eq('status', '활성')
 
     if (candidatesError) {
@@ -86,7 +85,7 @@ export async function POST(req: NextRequest, context: { params: Promise<{ id: st
       return NextResponse.json({ error: '후보자 조회 실패' }, { status: 500 })
     }
 
-    console.log('[recommend-candidates] Total candidates:', allCandidates?.length || 0)
+    console.log('[recommend-candidates] Total candidates in org:', allCandidates?.length || 0)
 
     // 스킬 매칭 필터링 (30% 이상 일치)
     const filteredCandidates = (allCandidates || []).filter(candidate => {
@@ -208,7 +207,7 @@ STEP 3 — 후보자-JD 대조 및 분석
       recommendation: r!.recommendation,
       next_steps: r!.next_steps,
       status: 'pending',
-      organization_id: profile.organization_id,
+      organization_id: jd.organization_id, // JD의 조직 ID
       recommended_to: jd.created_by // PM 이메일
     }))
 
