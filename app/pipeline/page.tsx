@@ -390,7 +390,97 @@ export default function PipelinePage() {
       fetch(`/api/jobs/${jobId}/process`, { method: 'POST' })
         .catch(err => console.error('[Pipeline Add] Process error:', err))
 
-      // 4. 모달 닫기 및 상태 초기화
+      // 4. 상태 설정 (polling 시작)
+      setProcessingJobId(jobId)
+      setProcessingProgress(10)
+
+      // 5. Polling 시작
+      const pollInterval = setInterval(async () => {
+        try {
+          const pollRes = await fetch(`/api/jobs/${jobId}`)
+          const pollData = await pollRes.json()
+
+          setProcessingProgress(pollData.progress || 0)
+
+          if (pollData.status === 'completed') {
+            clearInterval(pollInterval)
+            localStorage.removeItem('processing_job_id')
+            localStorage.removeItem('processing_job_type')
+            const meta = JSON.parse(localStorage.getItem('processing_job_metadata') || '{}')
+            localStorage.removeItem('processing_job_metadata')
+
+            try {
+              const result = pollData.result
+              console.log('[pipeline] ✅ Matching completed. Result:', result)
+              console.log('[pipeline] Metadata:', meta)
+
+              const pipelineData = {
+                jd_id: meta.jd_id,
+                candidate_id: meta.candidate_id,
+                stage: '신규',
+                match_score: result.match_score,
+                match_reason: result.match_reason,
+                skill_match_rate: result.skill_match_rate,
+                experience_match: result.experience_match,
+                strength_for_jd: result.strength_for_jd,
+                concerns: result.concerns,
+                is_active: true,
+                organization_id: meta.organization_id,
+                created_by: meta.created_by,
+              }
+
+              console.log('[pipeline] Saving to pipeline...', pipelineData)
+
+              const saveRes = await fetch('/api/pipeline', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(pipelineData),
+              })
+
+              console.log('[pipeline] Save response status:', saveRes.status)
+
+              if (!saveRes.ok) {
+                const errorData = await saveRes.json()
+                console.error('[pipeline] ❌ Save error response:', errorData)
+                throw new Error(errorData.error || '프로세스 저장 실패')
+              }
+
+              console.log('[pipeline] ✅ Pipeline saved successfully')
+
+              // 목록 새로고침
+              const params = new URLSearchParams({
+                role: profile.role,
+                user_email: profile.email,
+                ...(profile.role === 'admin' && selectedOrgId !== '전체' && { organization_id: selectedOrgId }),
+                ...(profile.role !== 'admin' && profile.organization_id && { organization_id: profile.organization_id })
+              })
+              const refreshRes = await fetch(`/api/pipeline?${params}`, {
+                cache: 'no-store',
+                headers: { 'Cache-Control': 'no-cache' }
+              })
+              const refreshData = await refreshRes.json()
+              setPipeline(refreshData.pipeline ?? [])
+              setProcessingJobId(null)
+              success('✅ JD-후보자 매칭이 완료되어 프로세스에 추가되었습니다!')
+            } catch (err) {
+              console.error('[pipeline] Save error:', err)
+              error('❌ 프로세스 저장 실패')
+              setProcessingJobId(null)
+            }
+          } else if (pollData.status === 'failed') {
+            clearInterval(pollInterval)
+            localStorage.removeItem('processing_job_id')
+            localStorage.removeItem('processing_job_type')
+            localStorage.removeItem('processing_job_metadata')
+            setProcessingJobId(null)
+            error('❌ JD-후보자 매칭 분석 실패')
+          }
+        } catch (err) {
+          console.error('[pipeline/poll] Error:', err)
+        }
+      }, 2000)
+
+      // 6. 모달 닫기 및 상태 초기화
       setShowAddModal(false)
       setSelectedJd('')
       setSelectedCandidate('')
