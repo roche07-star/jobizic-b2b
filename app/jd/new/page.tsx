@@ -31,6 +31,7 @@ export default function JDNewPage() {
   const [feeRate, setFeeRate] = useState('')
   const [location, setLocation] = useState('')
   const [companyUrl, setCompanyUrl] = useState('')
+  const [recruitmentProcess, setRecruitmentProcess] = useState('')
 
   // JD 내용
   const [rawText, setRawText] = useState('')
@@ -98,6 +99,7 @@ export default function JDNewPage() {
           location,
           fee_rate: feeRate || null,
           company_url: companyUrl || null,
+          recruitment_process: recruitmentProcess || null,
           raw_text: rawText,
           status: '검토중',
           source: '수동',
@@ -184,6 +186,17 @@ export default function JDNewPage() {
             />
           </div>
 
+          <div className="form-group" style={{ marginBottom: 12 }}>
+            <label className="form-label">채용절차 <span style={{ color: 'var(--text-tertiary)', fontWeight: 400 }}>(선택)</span></label>
+            <textarea
+              className="form-textarea"
+              style={{ minHeight: 100 }}
+              placeholder="예:&#10;1차: 서류전형&#10;2차: 실무면접 (1~2시간)&#10;3차: 임원면접&#10;4차: 처우협의"
+              value={recruitmentProcess}
+              onChange={e => setRecruitmentProcess(e.target.value)}
+            />
+          </div>
+
           {/* JD 내용 */}
           <div className="form-group">
             <label className="form-label">JD 내용 *</label>
@@ -222,6 +235,7 @@ export default function JDNewPage() {
                 setFeeRate('')
                 setLocation('')
                 setCompanyUrl('')
+                setRecruitmentProcess('')
                 setRawText('')
                 setClientComment('')
               }}>
@@ -260,6 +274,12 @@ export default function JDNewPage() {
                 <span className="analysis-label">근무지</span>
                 <span className="analysis-value">{location}</span>
               </div>
+              {recruitmentProcess && (
+                <div className="analysis-row">
+                  <span className="analysis-label">채용절차</span>
+                  <span className="analysis-value" style={{ whiteSpace: 'pre-line' }}>{recruitmentProcess}</span>
+                </div>
+              )}
             </div>
 
             <div className="form-row" style={{ marginBottom: 12 }}>
