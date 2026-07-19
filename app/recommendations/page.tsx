@@ -146,6 +146,29 @@ export default function RecommendationsPage() {
     }
   }
 
+  async function deleteAdminRecommendation(id: string) {
+    try {
+      const res = await fetch(`/api/jd/recommendations/${id}`, {
+        method: 'DELETE'
+      })
+
+      if (!res.ok) {
+        const data = await res.json()
+        error(`❌ ${data.error || '삭제 실패'}`)
+        return
+      }
+
+      success('✅ 삭제되었습니다.')
+
+      // 목록에서 제거 (UI 즉시 반영)
+      setAdminRecommendations(prev => prev.filter(r => r.id !== id))
+
+    } catch (err) {
+      console.error('[deleteAdminRecommendation] Error:', err)
+      error('❌ 삭제 중 오류가 발생했습니다.')
+    }
+  }
+
   async function respondToRecommendation(id: string, action: 'accept' | 'reject') {
     if (responding) return
 
@@ -527,6 +550,47 @@ export default function RecommendationsPage() {
                               }}>
                                 ✓ PM 전송됨
                               </div>
+                            )}
+
+                            {/* 전송완료 상태 삭제 버튼 */}
+                            {['recommended', 'accepted', 'rejected'].includes(rec.status) && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  if (confirm('이 추천을 삭제하시겠습니까?')) {
+                                    deleteAdminRecommendation(rec.id)
+                                  }
+                                }}
+                                style={{
+                                  position: 'absolute',
+                                  top: 8,
+                                  right: 8,
+                                  background: 'var(--surface-tertiary)',
+                                  border: '1px solid var(--border)',
+                                  borderRadius: 4,
+                                  width: 24,
+                                  height: 24,
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  cursor: 'pointer',
+                                  fontSize: 14,
+                                  color: 'var(--muted)',
+                                  transition: 'all 0.2s'
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.background = 'var(--danger)'
+                                  e.currentTarget.style.color = 'white'
+                                  e.currentTarget.style.borderColor = 'var(--danger)'
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.background = 'var(--surface-tertiary)'
+                                  e.currentTarget.style.color = 'var(--muted)'
+                                  e.currentTarget.style.borderColor = 'var(--border)'
+                                }}
+                              >
+                                ✕
+                              </button>
                             )}
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                               <div
