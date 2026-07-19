@@ -72,6 +72,9 @@ export default function JDPage() {
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('전체')
   const [selected, setSelected] = useState<JD | null>(null)
+  const [processingJobId, setProcessingJobId] = useState<string | null>(null)
+  const [processingProgress, setProcessingProgress] = useState(0)
+  const [processingStep, setProcessingStep] = useState(0)
   const [isAdmin, setIsAdmin] = useState(false)
   const [userEmail, setUserEmail] = useState<string>('')
   const [userRole, setUserRole] = useState<string>('')
@@ -87,6 +90,111 @@ export default function JDPage() {
   const [showBoardForm, setShowBoardForm] = useState(false)
   const [editMode, setEditMode] = useState(false)
   const [editForm, setEditForm] = useState<Partial<JD>>({})
+
+  // 백그라운드 JD 분석 처리
+  useEffect(() => {
+    const jobId = localStorage.getItem('processing_job_id')
+    const jobType = localStorage.getItem('processing_job_type')
+
+    if (jobId && jobType === 'jd') {
+      setProcessingJobId(jobId)
+      setProcessingStep(0)
+
+      // 단계별 자동 진행
+      const stepInterval = setInterval(() => {
+        setProcessingStep(prev => {
+          if (prev < 2) return prev + 1
+          return prev
+        })
+      }, 10000) // JD는 더 오래 걸리므로 10초마다
+
+      // Polling으로 상태 확인
+      const pollInterval = setInterval(async () => {
+        try {
+          const res = await fetch(`/api/jobs/${jobId}`)
+          const data = await res.json()
+
+          setProcessingProgress(data.progress || 0)
+
+          if (data.progress >= 20 && data.progress < 80) {
+            setProcessingStep(1)
+          } else if (data.progress >= 80 && data.progress < 100) {
+            setProcessingStep(2)
+          }
+
+          if (data.status === 'completed') {
+            clearInterval(stepInterval)
+            clearInterval(pollInterval)
+            localStorage.removeItem('processing_job_id')
+            localStorage.removeItem('processing_job_type')
+            const metadata = localStorage.getItem('processing_job_metadata')
+            localStorage.removeItem('processing_job_metadata')
+            setProcessingJobId(null)
+            setProcessingStep(0)
+
+            // JD 저장
+            const profile = await getProfile()
+            if (profile && data.result && metadata) {
+              try {
+                const meta = JSON.parse(metadata)
+                const saveRes = await fetch('/api/jd', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    ...data.result,
+                    company: meta.company,
+                    position: meta.position,
+                    location: meta.location,
+                    fee_rate: meta.fee_rate,
+                    company_url: meta.company_url,
+                    recruitment_process: meta.recruitment_process,
+                    raw_text: meta.raw_text,
+                    status: '검토중',
+                    source: '수동',
+                    organization_id: profile.organization_id,
+                    created_by: profile.email
+                  })
+                })
+
+                if (!saveRes.ok) {
+                  throw new Error('JD 저장 실패')
+                }
+
+                // 목록 새로고침
+                const params = new URLSearchParams({
+                  user_email: profile.email,
+                  role: profile.role
+                })
+                const refreshRes = await fetch(`/api/jd?${params}`)
+                const refreshData = await refreshRes.json()
+                setJds(refreshData)
+                success('✅ JD 분석이 완료되었습니다!')
+              } catch (err) {
+                console.error('[jd] Save error:', err)
+                error('❌ JD 저장 실패')
+              }
+            }
+          } else if (data.status === 'failed') {
+            clearInterval(stepInterval)
+            clearInterval(pollInterval)
+            localStorage.removeItem('processing_job_id')
+            localStorage.removeItem('processing_job_type')
+            localStorage.removeItem('processing_job_metadata')
+            setProcessingJobId(null)
+            setProcessingStep(0)
+            error('❌ JD 분석 실패')
+          }
+        } catch (err) {
+          console.error('[jd/poll] Error:', err)
+        }
+      }, 2000)
+
+      return () => {
+        clearInterval(pollInterval)
+        clearInterval(stepInterval)
+      }
+    }
+  }, [])
 
   useEffect(() => {
     async function loadOrganizations() {
@@ -519,6 +627,128 @@ export default function JDPage() {
 
   return (
     <main className="page">
+      {/* 백그라운드 처리 중 표시 */}
+      {processingJobId && (
+        <div style={{
+          position: 'fixed',
+          top: 80,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          zIndex: 1000,
+          background: 'var(--bg2)',
+          border: '2px solid var(--primary)',
+          padding: '16px 24px',
+          borderRadius: 12,
+          boxShadow: '0 4px 16px rgba(0,0,0,0.2)',
+          minWidth: 320,
+          maxWidth: '90%'
+        }}>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 12,
+            marginBottom: 16,
+            fontSize: 15,
+            fontWeight: 600,
+            color: 'var(--text)'
+          }}>
+            <div className="spinner" style={{ width: 16, height: 16, borderWidth: 2 }} />
+            JD 분석 중...
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10,
+              fontSize: 13,
+              color: processingStep >= 0 ? 'var(--text)' : 'var(--muted2)',
+              opacity: processingStep >= 0 ? 1 : 0.5
+            }}>
+              <div style={{
+                width: 20,
+                height: 20,
+                borderRadius: '50%',
+                background: processingStep > 0 ? 'var(--success)' : processingStep === 0 ? 'var(--primary)' : 'var(--bg3)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 11,
+                fontWeight: 700,
+                color: processingStep >= 0 ? 'var(--bg)' : 'var(--muted2)',
+                flexShrink: 0
+              }}>
+                {processingStep > 0 ? '✓' : processingStep === 0 && <div className="spinner" style={{ width: 10, height: 10, borderWidth: 2 }} />}
+              </div>
+              <span>📄 JD 읽는 중...</span>
+            </div>
+
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10,
+              fontSize: 13,
+              color: processingStep >= 1 ? 'var(--text)' : 'var(--muted2)',
+              opacity: processingStep >= 1 ? 1 : 0.5
+            }}>
+              <div style={{
+                width: 20,
+                height: 20,
+                borderRadius: '50%',
+                background: processingStep > 1 ? 'var(--success)' : processingStep === 1 ? 'var(--primary)' : 'var(--bg3)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 11,
+                fontWeight: 700,
+                color: processingStep >= 1 ? 'var(--bg)' : 'var(--muted2)',
+                flexShrink: 0
+              }}>
+                {processingStep > 1 ? '✓' : processingStep === 1 && <div className="spinner" style={{ width: 10, height: 10, borderWidth: 2 }} />}
+              </div>
+              <span>🤖 AI 분석 중...</span>
+            </div>
+
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10,
+              fontSize: 13,
+              color: processingStep >= 2 ? 'var(--text)' : 'var(--muted2)',
+              opacity: processingStep >= 2 ? 1 : 0.5
+            }}>
+              <div style={{
+                width: 20,
+                height: 20,
+                borderRadius: '50%',
+                background: processingStep > 2 ? 'var(--success)' : processingStep === 2 ? 'var(--primary)' : 'var(--bg3)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 11,
+                fontWeight: 700,
+                color: processingStep >= 2 ? 'var(--bg)' : 'var(--muted2)',
+                flexShrink: 0
+              }}>
+                {processingStep > 2 ? '✓' : processingStep === 2 && <div className="spinner" style={{ width: 10, height: 10, borderWidth: 2 }} />}
+              </div>
+              <span>✨ 분석 결과 생성 중...</span>
+            </div>
+          </div>
+
+          <div style={{
+            marginTop: 12,
+            paddingTop: 12,
+            borderTop: '1px solid var(--border)',
+            fontSize: 12,
+            color: 'var(--muted2)',
+            textAlign: 'center'
+          }}>
+            약 30-40초 소요됩니다
+          </div>
+        </div>
+      )}
+
       <div className="page-header">
         <div>
           <div className="page-title">JD 관리</div>

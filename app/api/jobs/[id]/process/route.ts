@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
-import { getCandidateParsePrompt } from '@/lib/prompts/base-headhunter'
+import { getCandidateParsePrompt, getJDParsePrompt } from '@/lib/prompts/base-headhunter'
 import { createClient } from '@supabase/supabase-js'
 import { callClaude } from '@/lib/claude-client'
 const supabase = createClient(
@@ -78,57 +78,106 @@ export async function POST(
       .update({ status: 'processing', progress: 20, message: 'AI 분석 시작...' })
       .eq('id', jobId)
 
-    // 3. Input 데이터 추출
-    const { maskedText, personalInfo } = job.input as {
-      maskedText: string
-      personalInfo: any
+    // 3. Job 타입별 처리
+    let result: any
+
+    if (job.job_type === 'candidate_parse') {
+      // 후보자 파싱
+      const { maskedText, personalInfo } = job.input as {
+        maskedText: string
+        personalInfo: any
+      }
+
+      const today = new Date()
+      const currentDate = `${today.getFullYear()}년 ${today.getMonth() + 1}월 ${today.getDate()}일`
+
+      console.log('[jobs/process] Candidate parsing - Calling Claude API...')
+
+      const message = await callClaude({
+        max_tokens: 4096,
+        system: [{
+          type: 'text',
+          text: getCandidateParsePrompt(),
+          cache_control: { type: 'ephemeral' }
+        }],
+        tools: [CANDIDATE_PARSE_TOOL],
+        tool_choice: { type: 'tool', name: 'analyze_candidate_resume' },
+        messages: [{
+          role: 'user',
+          content: `**중요: 오늘은 ${currentDate}입니다.**\n\n다음 이력서를 분석해주세요:\n\n${maskedText}`
+        }],
+      })
+
+      const toolUseBlock = message.content.find(
+        (block): block is Anthropic.ToolUseBlock => block.type === 'tool_use'
+      )
+
+      if (!toolUseBlock) {
+        throw new Error('No tool_use block found')
+      }
+
+      const parsed = toolUseBlock.input as any
+
+      result = {
+        ...parsed,
+        name: personalInfo.name || parsed.name,
+        email: personalInfo.email || parsed.email,
+        phone: personalInfo.phone || parsed.phone,
+        birth_year: personalInfo.birth_year || parsed.birth_year,
+        location: personalInfo.location || parsed.location,
+      }
+
+    } else if (job.job_type === 'jd_parse') {
+      // JD 파싱
+      const { text, company_url, client_comment } = job.input as {
+        text: string
+        company_url?: string
+        client_comment?: string
+      }
+
+      console.log('[jobs/process] JD parsing - Calling Claude API...')
+
+      // 간소화된 JD 분석 (tool use 없이 직접 JSON)
+      const userContent = client_comment
+        ? `다음 JD를 분석하고, 클라이언트 코멘트를 반영해주세요.\n\nJD:\n${text}\n\n클라이언트 코멘트:\n${client_comment}`
+        : `다음 JD를 분석해주세요:\n\n${text}`
+
+      const message = await callClaude({
+        max_tokens: 4000,
+        system: [{
+          type: 'text',
+          text: getJDParsePrompt(),
+          cache_control: { type: 'ephemeral' }
+        }],
+        messages: [{
+          role: 'user',
+          content: userContent
+        }],
+      })
+
+      // JSON 파싱
+      const textBlock = message.content.find(block => block.type === 'text')
+      if (!textBlock || textBlock.type !== 'text') {
+        throw new Error('No text response from Claude')
+      }
+
+      // JSON 추출 (마크다운 제거)
+      let jsonText = textBlock.text.trim()
+      if (jsonText.startsWith('```json')) {
+        jsonText = jsonText.replace(/^```json\s*/, '').replace(/```\s*$/, '')
+      } else if (jsonText.startsWith('```')) {
+        jsonText = jsonText.replace(/^```\s*/, '').replace(/```\s*$/, '')
+      }
+
+      result = JSON.parse(jsonText)
+
+    } else {
+      throw new Error(`Unknown job_type: ${job.job_type}`)
     }
-
-    // 4. Claude API 호출
-    const today = new Date()
-    const currentDate = `${today.getFullYear()}년 ${today.getMonth() + 1}월 ${today.getDate()}일`
-
-    console.log('[jobs/process] Calling Claude API...')
-
-    const message = await callClaude({
-      max_tokens: 4096,
-      system: [{
-        type: 'text',
-        text: getCandidateParsePrompt(),
-        cache_control: { type: 'ephemeral' }
-      }],
-      tools: [CANDIDATE_PARSE_TOOL],
-      tool_choice: { type: 'tool', name: 'analyze_candidate_resume' },
-      messages: [{
-        role: 'user',
-        content: `**중요: 오늘은 ${currentDate}입니다.**\n\n다음 이력서를 분석해주세요:\n\n${maskedText}`
-      }],
-    })
 
     console.log('[jobs/process] ✅ Claude API response received')
 
-    // 5. 결과 추출
-    const toolUseBlock = message.content.find(
-      (block): block is Anthropic.ToolUseBlock => block.type === 'tool_use'
-    )
-
-    if (!toolUseBlock) {
-      throw new Error('No tool_use block found')
-    }
-
-    const parsed = toolUseBlock.input as any
-
-    // 6. 개인정보 병합
-    const result = {
-      ...parsed,
-      name: personalInfo.name || parsed.name,
-      email: personalInfo.email || parsed.email,
-      phone: personalInfo.phone || parsed.phone,
-      birth_year: personalInfo.birth_year || parsed.birth_year,
-      location: personalInfo.location || parsed.location,
-    }
-
-    // 7. Job 완료 처리
+    // 4. Job 완료 처리
     await supabase
       .from('jobs')
       .update({
