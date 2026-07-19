@@ -19,7 +19,7 @@ interface JDParseResult {
     nice_to_have: string[]
     implicit: string[]
   }
-  company_analysis: {
+  company_analysis?: {
     introduction: string
     revenue: string
     current_business: string
@@ -145,7 +145,7 @@ const JD_PARSE_TOOL: Anthropic.Tool = {
         required: ['location', 'salary', 'deadline', 'priority', 'difficulty']
       }
     },
-    required: ['step1_context', 'step2_requirements', 'company_analysis', 'step3_headhunter_insight', 'metadata']
+    required: ['step1_context', 'step2_requirements', 'step3_headhunter_insight', 'metadata']
   }
 }
 
