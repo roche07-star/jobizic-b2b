@@ -577,7 +577,7 @@ export default function RecommendationsPage() {
                   {/* 강점 */}
                   {adminSelected.strength_for_jd?.length > 0 && (
                     <div style={{ marginBottom: 16 }}>
-                      <div className="form-label">이 JD에 대한 강점</div>
+                      <div className="form-label">JD 매칭 강점</div>
                       <ul style={{ paddingLeft: 16, display: 'flex', flexDirection: 'column', gap: 4 }}>
                         {adminSelected.strength_for_jd.map((s, i) => (
                           <li key={i} style={{ fontSize: 13, color: 'var(--success)' }}>{s}</li>
@@ -778,7 +778,7 @@ export default function RecommendationsPage() {
               {/* 강점 */}
               {selected.strength_for_jd?.length > 0 && (
                 <div style={{ marginBottom: 16 }}>
-                  <div className="form-label">이 JD에 대한 강점</div>
+                  <div className="form-label">JD 매칭 강점</div>
                   <ul style={{ paddingLeft: 16, display: 'flex', flexDirection: 'column', gap: 4 }}>
                     {selected.strength_for_jd.map((s, i) => (
                       <li key={i} style={{ fontSize: 13, color: 'var(--success)' }}>{s}</li>
