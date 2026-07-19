@@ -79,6 +79,7 @@ export default function RecommendationsPage() {
   const [editedCurrentSalary, setEditedCurrentSalary] = useState<string>('')
   const [editedDesiredSalary, setEditedDesiredSalary] = useState<string>('')
   const [editedEducation, setEditedEducation] = useState<string>('')
+  const [editedCareerSummary, setEditedCareerSummary] = useState<string>('')
 
   useEffect(() => {
     checkAuth()
@@ -260,7 +261,8 @@ export default function RecommendationsPage() {
           admin_comment: adminCommentText.trim() || null,
           current_salary: editedCurrentSalary.trim() || null,
           desired_salary: editedDesiredSalary.trim() || null,
-          education: editedEducation.trim() || null
+          education: editedEducation.trim() || null,
+          career_summary: editedCareerSummary.trim() || null
         })
       })
 
@@ -503,6 +505,7 @@ export default function RecommendationsPage() {
                                   setEditedCurrentSalary(rec.candidates.metadata?.current_salary || '')
                                   setEditedDesiredSalary(rec.candidates.desired_salary || '')
                                   setEditedEducation(rec.candidates.education?.join(', ') || '')
+                                  setEditedCareerSummary(rec.candidates.career_summary || '')
                                 }}
                               >
                                 <div style={{
@@ -531,6 +534,7 @@ export default function RecommendationsPage() {
                                       setEditedCurrentSalary(rec.candidates.metadata?.current_salary || '')
                                       setEditedDesiredSalary(rec.candidates.desired_salary || '')
                                       setEditedEducation(rec.candidates.education?.join(', ') || '')
+                                      setEditedCareerSummary(rec.candidates.career_summary || '')
                                     }}
                                   >
                                     PM에게 전송
@@ -590,16 +594,18 @@ export default function RecommendationsPage() {
                         style={{ fontSize: 13 }}
                       />
                     </div>
-                    {adminSelected.candidates.career_summary && (
-                      <div>
-                        <label style={{ display: 'block', fontSize: 12, color: 'var(--text-tertiary)', marginBottom: 4 }}>
-                          💼 경력 요약
-                        </label>
-                        <div style={{ fontSize: 13, padding: 8, background: 'var(--bg)', borderRadius: 4 }}>
-                          {adminSelected.candidates.career_summary}
-                        </div>
-                      </div>
-                    )}
+                    <div>
+                      <label style={{ display: 'block', fontSize: 12, color: 'var(--text-tertiary)', marginBottom: 4 }}>
+                        💼 경력 요약 (회사 정보)
+                      </label>
+                      <textarea
+                        className="form-textarea"
+                        placeholder="예: A사 3년 (백엔드 개발) -> B사 4년 (팀장) -> C사 3년 (시니어 개발자)"
+                        value={editedCareerSummary}
+                        onChange={e => setEditedCareerSummary(e.target.value)}
+                        style={{ fontSize: 13, minHeight: 80 }}
+                      />
+                    </div>
                   </div>
 
                   {/* 매칭 점수 */}

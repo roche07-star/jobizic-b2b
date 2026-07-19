@@ -17,7 +17,7 @@ export async function POST(req: NextRequest, context: { params: Promise<{ id: st
       return NextResponse.json({ error: '권한이 없습니다.' }, { status: 403 })
     }
 
-    const { admin_comment, current_salary, desired_salary, education } = await req.json()
+    const { admin_comment, current_salary, desired_salary, education, career_summary } = await req.json()
 
     console.log('[recommendation send] ID:', id, 'by:', profile.email)
 
@@ -37,8 +37,8 @@ export async function POST(req: NextRequest, context: { params: Promise<{ id: st
       return NextResponse.json({ error: '추천을 찾을 수 없습니다.' }, { status: 404 })
     }
 
-    // 후보자 정보 업데이트 (연봉, 학력)
-    if (current_salary || desired_salary || education) {
+    // 후보자 정보 업데이트 (연봉, 학력, 경력)
+    if (current_salary || desired_salary || education || career_summary) {
       const candidateId = (recommendation as any).candidates.id
       const updateData: any = {}
 
@@ -49,6 +49,10 @@ export async function POST(req: NextRequest, context: { params: Promise<{ id: st
       if (education) {
         // 쉼표로 구분된 문자열을 배열로 변환
         updateData.education = education.split(',').map((e: string) => e.trim()).filter(Boolean)
+      }
+
+      if (career_summary) {
+        updateData.career_summary = career_summary
       }
 
       if (current_salary) {
