@@ -16,6 +16,7 @@ export async function GET(req: NextRequest) {
       .select(`
         *,
         created_by_user:profiles!fk_jd_created_by_profile(id, full_name, email),
+        organizations(id, name),
         pipeline!pipeline_jd_id_fkey(
           id,
           stage,

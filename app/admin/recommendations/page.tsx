@@ -5,6 +5,19 @@ import { getProfile } from '@/lib/auth'
 import { useToast } from '@/hooks/useToast'
 import ToastContainer from '@/components/ToastContainer'
 
+interface JD {
+  id: string
+  company: string
+  position: string
+  status: string
+  created_by: string
+  created_at: string
+  organization_id: string
+  organizations: {
+    name: string
+  }
+}
+
 interface Recommendation {
   id: string
   match_score: number
@@ -38,13 +51,16 @@ interface Recommendation {
 
 export default function AdminRecommendationsPage() {
   const { toasts, success, error, info, removeToast: onRemove } = useToast()
+  const [activeJDs, setActiveJDs] = useState<JD[]>([])
   const [recommendations, setRecommendations] = useState<Recommendation[]>([])
   const [loading, setLoading] = useState(true)
+  const [jdLoading, setJdLoading] = useState(true)
   const [selected, setSelected] = useState<Recommendation | null>(null)
   const [sending, setSending] = useState(false)
   const [commentText, setCommentText] = useState('')
   const [statusFilter, setStatusFilter] = useState<'pending' | 'recommended' | 'all'>('pending')
   const [userRole, setUserRole] = useState<string>('')
+  const [recommendingJdId, setRecommendingJdId] = useState<string | null>(null)
 
   useEffect(() => {
     checkAuth()
@@ -52,6 +68,7 @@ export default function AdminRecommendationsPage() {
 
   useEffect(() => {
     if (userRole === 'admin') {
+      loadActiveJDs()
       loadRecommendations()
     }
   }, [statusFilter, userRole])
@@ -68,6 +85,52 @@ export default function AdminRecommendationsPage() {
       return
     }
     setUserRole(profile.role)
+  }
+
+  async function loadActiveJDs() {
+    setJdLoading(true)
+    try {
+      const res = await fetch('/api/jd?status=활성')
+      const data = await res.json()
+
+      if (res.ok) {
+        setActiveJDs(data.jds || [])
+      }
+    } catch (err) {
+      console.error('[admin recommendations] Load JDs error:', err)
+    } finally {
+      setJdLoading(false)
+    }
+  }
+
+  async function findRecommendedCandidates(jdId: string) {
+    if (recommendingJdId) return
+
+    setRecommendingJdId(jdId)
+    info('🤖 AI가 적합한 후보자를 찾고 있습니다...')
+
+    try {
+      const res = await fetch(`/api/jd/${jdId}/recommend-candidates`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        error(`❌ ${data.error || '추천 실패'}`)
+        return
+      }
+
+      success(`✅ ${data.total}명의 추천 후보를 찾았습니다!`)
+      loadRecommendations() // 추천 목록 새로고침
+
+    } catch (err) {
+      console.error('[findRecommendedCandidates] Error:', err)
+      error('❌ 추천 중 오류가 발생했습니다.')
+    } finally {
+      setRecommendingJdId(null)
+    }
   }
 
   async function loadRecommendations() {
@@ -141,31 +204,93 @@ export default function AdminRecommendationsPage() {
       <div className="page-header">
         <div>
           <div className="page-title">후보자 추천 관리</div>
-          <div className="page-sub">AI가 찾은 후보자를 검토하고 PM에게 추천하세요</div>
+          <div className="page-sub">활성 JD에 대해 AI 후보 찾기를 실행하고, 결과를 PM에게 전송하세요</div>
         </div>
       </div>
 
-      {/* 상태 필터 */}
-      <div className="filter-bar" style={{ marginBottom: 20 }}>
-        <button
-          className={`filter-btn${statusFilter === 'pending' ? ' active' : ''}`}
-          onClick={() => setStatusFilter('pending')}
-        >
-          대기중 {statusFilter === 'pending' && `(${recommendations.length})`}
-        </button>
-        <button
-          className={`filter-btn${statusFilter === 'recommended' ? ' active' : ''}`}
-          onClick={() => setStatusFilter('recommended')}
-        >
-          전송완료
-        </button>
-        <button
-          className={`filter-btn${statusFilter === 'all' ? ' active' : ''}`}
-          onClick={() => setStatusFilter('all')}
-        >
-          전체
-        </button>
+      {/* 활성 JD 목록 */}
+      <div className="card" style={{ marginBottom: 24 }}>
+        <div className="card-title">활성 JD 목록</div>
+        <div className="card-sub">PM이 활성화한 JD에 대해 AI 후보 찾기를 실행하세요</div>
+
+        {jdLoading ? (
+          <div className="empty">
+            <div className="spinner" style={{ margin: '0 auto 12px' }} />
+          </div>
+        ) : activeJDs.length === 0 ? (
+          <div className="empty">
+            <div className="empty-icon">📋</div>
+            <div className="empty-text">활성 JD가 없습니다</div>
+          </div>
+        ) : (
+          <div style={{ display: 'grid', gap: 12 }}>
+            {activeJDs.map(jd => (
+              <div
+                key={jd.id}
+                style={{
+                  padding: 16,
+                  background: 'var(--surface-secondary)',
+                  borderRadius: 8,
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center'
+                }}
+              >
+                <div>
+                  <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 4 }}>
+                    {jd.company} - {jd.position}
+                  </div>
+                  <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
+                    🏢 {jd.organizations.name} · 📝 {jd.created_by}
+                  </div>
+                </div>
+                <button
+                  className="btn btn-primary btn-sm"
+                  onClick={() => findRecommendedCandidates(jd.id)}
+                  disabled={recommendingJdId === jd.id}
+                  style={{ minWidth: 140 }}
+                >
+                  {recommendingJdId === jd.id ? (
+                    <>
+                      <div className="spinner" style={{ width: 14, height: 14 }} />
+                      AI 분석 중...
+                    </>
+                  ) : (
+                    '🤖 AI 후보 찾기'
+                  )}
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
+
+      {/* 추천 결과 목록 */}
+      <div className="card">
+        <div className="card-title">AI 추천 결과</div>
+        <div className="card-sub">찾은 후보자를 검토하고 PM에게 전송하세요</div>
+
+        {/* 상태 필터 */}
+        <div className="filter-bar" style={{ marginBottom: 20, marginTop: 16 }}>
+          <button
+            className={`filter-btn${statusFilter === 'pending' ? ' active' : ''}`}
+            onClick={() => setStatusFilter('pending')}
+          >
+            대기중 {statusFilter === 'pending' && `(${recommendations.length})`}
+          </button>
+          <button
+            className={`filter-btn${statusFilter === 'recommended' ? ' active' : ''}`}
+            onClick={() => setStatusFilter('recommended')}
+          >
+            전송완료
+          </button>
+          <button
+            className={`filter-btn${statusFilter === 'all' ? ' active' : ''}`}
+            onClick={() => setStatusFilter('all')}
+          >
+            전체
+          </button>
+        </div>
 
       {loading ? (
         <div className="empty">
@@ -177,9 +302,9 @@ export default function AdminRecommendationsPage() {
           <div className="empty-text">추천 대기중인 후보자가 없습니다</div>
         </div>
       ) : (
-        <div style={{ display: 'grid', gap: 24 }}>
+        <div style={{ display: 'grid', gap: 16 }}>
           {Object.entries(groupedByJd).map(([jdId, group]) => (
-            <div key={jdId} className="card">
+            <div key={jdId} style={{ padding: 16, background: 'var(--surface-secondary)', borderRadius: 8 }}>
               <div style={{ marginBottom: 16, paddingBottom: 12, borderBottom: '1px solid var(--border)' }}>
                 <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 4 }}>
                   {group.jd.company} - {group.jd.position}
@@ -242,6 +367,7 @@ export default function AdminRecommendationsPage() {
           ))}
         </div>
       )}
+      </div>
 
       {/* 상세 모달 */}
       {selected && (

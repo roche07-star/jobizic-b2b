@@ -297,38 +297,6 @@ export default function JDPage() {
     }
   }
 
-  // AI 추천 후보 찾기
-  const [recommending, setRecommending] = useState(false)
-  async function findRecommendedCandidates(jdId: string) {
-    if (recommending) return
-
-    setRecommending(true)
-    info('🤖 AI가 적합한 후보자를 찾고 있습니다...')
-
-    try {
-      const res = await fetch(`/api/jd/${jdId}/recommend-candidates`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
-      })
-
-      const data = await res.json()
-
-      if (!res.ok) {
-        error(`❌ ${data.error || '추천 실패'}`)
-        return
-      }
-
-      success(`✅ ${data.total}명의 추천 후보를 찾았습니다!`)
-      info('💡 관리자 페이지에서 확인 후 PM에게 전송할 수 있습니다.')
-
-    } catch (err) {
-      console.error('[findRecommendedCandidates] Error:', err)
-      error('❌ 추천 중 오류가 발생했습니다.')
-    } finally {
-      setRecommending(false)
-    }
-  }
-
   // 관심 JD 필터링
   const viewFiltered = viewMode === 'all'
     ? jds
@@ -1162,22 +1130,6 @@ export default function JDPage() {
                       )
                     })()}
 
-                    {/* AI 추천 후보 찾기 */}
-                    {userRole === 'admin' && selected.status === '활성' && (
-                      <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--border)' }}>
-                        <button
-                          className="btn btn-primary btn-sm"
-                          onClick={() => findRecommendedCandidates(selected.id)}
-                          disabled={recommending}
-                          style={{ width: '100%', justifyContent: 'center' }}
-                        >
-                          {recommending ? <><div className="spinner" style={{ width: 14, height: 14 }} /> AI 분석 중...</> : '🤖 AI 추천 후보 찾기'}
-                        </button>
-                        <div style={{ fontSize: 11, color: 'var(--text-tertiary)', marginTop: 6, textAlign: 'center' }}>
-                          AI가 적합한 후보자를 찾아 관리자 페이지에 표시합니다
-                        </div>
-                      </div>
-                    )}
 
 
                     {/* 좌우 분할 레이아웃 */}
