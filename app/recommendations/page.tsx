@@ -179,9 +179,9 @@ export default function RecommendationsPage() {
                 </div>
               </div>
 
-              {/* 매칭 점수 */}
+              {/* 점수 */}
               <div style={{ marginBottom: 16 }}>
-                <div className="form-label">매칭 점수</div>
+                <div className="form-label">점수</div>
                 <div style={{ display: 'flex', gap: 12 }}>
                   <span className="badge badge-일반" style={{ fontSize: 14 }}>
                     종합 {selected.match_score}점
@@ -195,9 +195,9 @@ export default function RecommendationsPage() {
                 </div>
               </div>
 
-              {/* 매칭 근거 */}
+              {/* 추천 근거 */}
               <div style={{ marginBottom: 16 }}>
-                <div className="form-label">매칭 근거</div>
+                <div className="form-label">추천 근거</div>
                 <div style={{ fontSize: 13, lineHeight: 1.6 }}>{selected.match_reason}</div>
               </div>
 
@@ -212,24 +212,6 @@ export default function RecommendationsPage() {
                   </ul>
                 </div>
               )}
-
-              {/* 우려사항 */}
-              {selected.concerns?.length > 0 && (
-                <div style={{ marginBottom: 16 }}>
-                  <div className="form-label">우려사항</div>
-                  <ul style={{ paddingLeft: 16, display: 'flex', flexDirection: 'column', gap: 4 }}>
-                    {selected.concerns.map((c, i) => (
-                      <li key={i} style={{ fontSize: 13, color: 'var(--warn)' }}>{c}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-              {/* 다음 단계 */}
-              <div style={{ marginBottom: 16 }}>
-                <div className="form-label">다음 단계</div>
-                <div style={{ fontSize: 13 }}>{selected.next_steps}</div>
-              </div>
 
               {/* 관리자 코멘트 */}
               {selected.admin_comment && (
