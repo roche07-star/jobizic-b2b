@@ -21,7 +21,7 @@ export async function POST(req: NextRequest, context: { params: Promise<{ id: st
 
     console.log('[recommendation send] ID:', id, 'by:', profile.email)
 
-    // 추천 정보 조회
+    // 추천 정보 조회 (Super Admin은 모든 조직 접근 가능)
     const { data: recommendation, error: fetchError } = await supabaseAdmin
       .from('jd_recommendations')
       .select(`
@@ -30,10 +30,10 @@ export async function POST(req: NextRequest, context: { params: Promise<{ id: st
         candidates!inner(name, current_position)
       `)
       .eq('id', id)
-      .eq('organization_id', profile.organization_id)
       .single()
 
     if (fetchError || !recommendation) {
+      console.error('[recommendation send] Fetch error:', fetchError)
       return NextResponse.json({ error: '추천을 찾을 수 없습니다.' }, { status: 404 })
     }
 

@@ -15,16 +15,16 @@ export async function POST(req: NextRequest, context: { params: Promise<{ id: st
 
     console.log('[recommendation accept] ID:', id, 'action:', action, 'by:', profile.email)
 
-    // 추천 정보 조회
+    // 추천 정보 조회 (본인에게 추천된 것만)
     const { data: recommendation, error: fetchError } = await supabaseAdmin
       .from('jd_recommendations')
       .select('*')
       .eq('id', id)
-      .eq('organization_id', profile.organization_id)
-      .eq('recommended_to', profile.email) // 본인에게 추천된 것만
+      .eq('recommended_to', profile.email)
       .single()
 
     if (fetchError || !recommendation) {
+      console.error('[recommendation accept] Fetch error:', fetchError)
       return NextResponse.json({ error: '추천을 찾을 수 없습니다.' }, { status: 404 })
     }
 
