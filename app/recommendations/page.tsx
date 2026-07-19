@@ -195,9 +195,9 @@ export default function RecommendationsPage() {
                 </div>
               </div>
 
-              {/* 추천 근거 */}
+              {/* 추천 사유 */}
               <div style={{ marginBottom: 16 }}>
-                <div className="form-label">추천 근거</div>
+                <div className="form-label">추천 사유</div>
                 <div style={{ fontSize: 13, lineHeight: 1.6 }}>{selected.match_reason}</div>
               </div>
 
