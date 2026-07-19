@@ -62,19 +62,23 @@ export async function POST(req: NextRequest, context: { params: Promise<{ id: st
           strength_for_jd: recommendation.strength_for_jd,
           concerns: recommendation.concerns,
           is_active: true,
-          organization_id: profile.organization_id,
+          organization_id: recommendation.organization_id, // 추천의 organization_id 사용
           created_by: profile.email
         })
 
       if (pipelineError) {
         console.error('[recommendation accept] Pipeline insert error:', pipelineError)
+        console.error('[recommendation accept] Error details:', pipelineError.message)
         // 중복 에러는 무시 (이미 추가된 경우)
         if (!pipelineError.message?.includes('duplicate')) {
-          return NextResponse.json({ error: '파이프라인 추가 실패' }, { status: 500 })
+          return NextResponse.json({
+            error: '파이프라인 추가 실패',
+            details: pipelineError.message
+          }, { status: 500 })
         }
       }
 
-      console.log('[recommendation accept] ✅ Added to pipeline')
+      console.log('[recommendation accept] ✅ Added to pipeline with org_id:', recommendation.organization_id)
 
       return NextResponse.json({
         success: true,
