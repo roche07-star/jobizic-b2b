@@ -25,8 +25,9 @@ export async function GET(req: NextRequest) {
 
     // "내가 받은 추천" 모드
     if (forMe) {
-      query = query.eq('recommended_to', profile.email)
-      // 모든 상태 포함 (status 필터 없음)
+      query = query
+        .eq('recommended_to', profile.email)
+        .in('status', ['recommended', 'accepted', 'rejected']) // pending 제외
     }
     // 역할별 필터링
     else if (role === 'admin') {
