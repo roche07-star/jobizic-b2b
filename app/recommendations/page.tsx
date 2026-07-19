@@ -99,7 +99,8 @@ export default function RecommendationsPage() {
   async function loadRecommendations() {
     setLoading(true)
     try {
-      const res = await fetch('/api/jd/recommendations?status=recommended')
+      // 모든 상태의 추천 조회 (recommended, accepted, rejected)
+      const res = await fetch('/api/jd/recommendations')
       const data = await res.json()
 
       if (res.ok) {
@@ -109,6 +110,29 @@ export default function RecommendationsPage() {
       console.error('[recommendations] Load error:', err)
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function deleteRecommendation(id: string) {
+    if (!confirm('이 추천을 삭제하시겠습니까?')) return
+
+    try {
+      const res = await fetch(`/api/jd/recommendations/${id}`, {
+        method: 'DELETE'
+      })
+
+      if (!res.ok) {
+        const data = await res.json()
+        error(`❌ ${data.error || '삭제 실패'}`)
+        return
+      }
+
+      success('✅ 삭제되었습니다.')
+      loadRecommendations()
+
+    } catch (err) {
+      console.error('[deleteRecommendation] Error:', err)
+      error('❌ 삭제 중 오류가 발생했습니다.')
     }
   }
 
@@ -637,10 +661,53 @@ export default function RecommendationsPage() {
             <div
               key={rec.id}
               className="card"
-              style={{ cursor: 'pointer', transition: 'all 0.2s' }}
+              style={{
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                opacity: rec.status !== 'recommended' ? 0.7 : 1,
+                position: 'relative'
+              }}
               onClick={() => setSelected(rec)}
             >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+              {/* X 삭제 버튼 */}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  deleteRecommendation(rec.id)
+                }}
+                style={{
+                  position: 'absolute',
+                  top: 12,
+                  right: 12,
+                  background: 'var(--surface-secondary)',
+                  border: '1px solid var(--border)',
+                  borderRadius: 4,
+                  width: 24,
+                  height: 24,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  fontSize: 12,
+                  color: 'var(--text-tertiary)',
+                  transition: 'all 0.2s'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'var(--danger)'
+                  e.currentTarget.style.color = 'white'
+                  e.currentTarget.style.borderColor = 'var(--danger)'
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'var(--surface-secondary)'
+                  e.currentTarget.style.color = 'var(--text-tertiary)'
+                  e.currentTarget.style.borderColor = 'var(--border)'
+                }}
+                title="삭제"
+              >
+                ✕
+              </button>
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12, paddingRight: 30 }}>
                 <div>
                   <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 4 }}>
                     {rec.job_descriptions.company} - {rec.job_descriptions.position}
@@ -649,7 +716,15 @@ export default function RecommendationsPage() {
                     👨‍💼 {rec.candidates.name} ({rec.candidates.current_position || '포지션 미상'})
                   </div>
                 </div>
-                <span className="badge badge-활성">매칭 {rec.match_score}점</span>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'flex-end' }}>
+                  <span className="badge badge-활성">매칭 {rec.match_score}점</span>
+                  {rec.status === 'accepted' && (
+                    <span className="badge badge-활성" style={{ fontSize: 11 }}>✅ 수락됨</span>
+                  )}
+                  {rec.status === 'rejected' && (
+                    <span className="badge badge-일반" style={{ fontSize: 11 }}>❌ 거절됨</span>
+                  )}
+                </div>
               </div>
 
               <div style={{ fontSize: 13, lineHeight: 1.6, marginBottom: 12 }}>
