@@ -11,7 +11,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const userEmail = req.nextUrl.searchParams.get('user_email') || 'unknown'
-    const { text, company_url, client_comment } = await req.json()
+    const { text, company, position, company_url, client_comment } = await req.json()
 
     if (!text?.trim()) {
       return NextResponse.json({ error: 'JD 내용을 입력해 주세요.' }, { status: 400 })
@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
       .insert({
         job_type: 'jd_parse',
         status: 'pending',
-        input: { text, company_url, client_comment },
+        input: { text, company, position, company_url, client_comment },
         user_email: userEmail,
         progress: 10,
         message: 'JD 분석 대기 중...'

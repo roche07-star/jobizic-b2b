@@ -54,6 +54,8 @@ export default function JDNewPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           text: rawText,
+          company: company.trim(),
+          position: position.trim(),
           company_url: companyUrl.trim() || undefined,
           client_comment: clientComment.trim() || undefined
         }),

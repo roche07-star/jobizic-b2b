@@ -147,8 +147,10 @@ export async function POST(
 
     } else if (job.job_type === 'jd_parse') {
       // JD 파싱
-      const { text, company_url, client_comment } = job.input as {
+      const { text, company, position, company_url, client_comment } = job.input as {
         text: string
+        company?: string
+        position?: string
         company_url?: string
         client_comment?: string
       }
@@ -161,10 +163,21 @@ export async function POST(
 
       console.log('[jobs/process] JD parsing - Calling Claude API...')
 
-      // 간소화된 JD 분석 (tool use 없이 직접 JSON)
-      const userContent = client_comment
-        ? `다음 JD를 분석하고, 클라이언트 코멘트를 반영해주세요.\n\nJD:\n${text}\n\n클라이언트 코멘트:\n${client_comment}`
-        : `다음 JD를 분석해주세요:\n\n${text}`
+      // JD 분석 프롬프트 (회사명/포지션 정보 포함)
+      let userContent = '다음 JD를 분석해주세요.\n\n'
+
+      if (company || position) {
+        userContent += '**기본 정보:**\n'
+        if (company) userContent += `- 회사명: ${company}\n`
+        if (position) userContent += `- 포지션: ${position}\n`
+        userContent += '\n'
+      }
+
+      userContent += `**JD 내용:**\n${text}`
+
+      if (client_comment) {
+        userContent += `\n\n**클라이언트 코멘트:**\n${client_comment}`
+      }
 
       const message = await callClaude({
         max_tokens: 4000,
