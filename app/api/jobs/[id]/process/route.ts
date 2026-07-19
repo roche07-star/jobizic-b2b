@@ -161,15 +161,40 @@ export async function POST(
         throw new Error('No text response from Claude')
       }
 
-      // JSON 추출 (마크다운 제거)
-      let jsonText = textBlock.text.trim()
-      if (jsonText.startsWith('```json')) {
-        jsonText = jsonText.replace(/^```json\s*/, '').replace(/```\s*$/, '')
-      } else if (jsonText.startsWith('```')) {
-        jsonText = jsonText.replace(/^```\s*/, '').replace(/```\s*$/, '')
+      // JSON 추출 (마크다운 및 추가 텍스트 제거)
+      let rawText = textBlock.text.trim()
+
+      // 마크다운 블록 제거
+      if (rawText.includes('```json')) {
+        const match = rawText.match(/```json\s*([\s\S]*?)```/)
+        if (match) {
+          rawText = match[1].trim()
+        }
+      } else if (rawText.includes('```')) {
+        const match = rawText.match(/```\s*([\s\S]*?)```/)
+        if (match) {
+          rawText = match[1].trim()
+        }
       }
 
-      result = JSON.parse(jsonText)
+      // JSON 객체 추출 (첫 번째 { 부터 마지막 } 까지)
+      const firstBrace = rawText.indexOf('{')
+      const lastBrace = rawText.lastIndexOf('}')
+
+      if (firstBrace === -1 || lastBrace === -1 || firstBrace >= lastBrace) {
+        console.error('[jobs/process] Invalid JSON structure:', rawText)
+        throw new Error('Invalid JSON structure in Claude response')
+      }
+
+      const jsonText = rawText.substring(firstBrace, lastBrace + 1)
+
+      try {
+        result = JSON.parse(jsonText)
+      } catch (parseError: any) {
+        console.error('[jobs/process] JSON parse error:', parseError.message)
+        console.error('[jobs/process] JSON text:', jsonText.substring(0, 500))
+        throw new Error(`JSON parse failed: ${parseError.message}`)
+      }
 
     } else {
       throw new Error(`Unknown job_type: ${job.job_type}`)
