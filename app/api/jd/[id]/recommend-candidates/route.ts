@@ -89,8 +89,8 @@ export async function POST(req: NextRequest, context: { params: Promise<{ id: st
 
     console.log('[recommend-candidates] Total candidates in org:', allCandidates?.length || 0)
 
-    // 테스트: 스킬 필터 제거, 모든 후보 대상으로 AI 분석 (최대 30명)
-    const filteredCandidates = (allCandidates || []).slice(0, 30)
+    // AI 분석 대상: 최대 50명 (점수 필터링 후 상위 10명만 DB 저장)
+    const filteredCandidates = (allCandidates || []).slice(0, 50)
 
     console.log('[recommend-candidates] Candidates for AI analysis:', filteredCandidates.length)
 
