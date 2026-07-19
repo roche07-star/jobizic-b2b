@@ -99,8 +99,8 @@ export default function RecommendationsPage() {
   async function loadRecommendations() {
     setLoading(true)
     try {
-      // 모든 상태의 추천 조회 (recommended, accepted, rejected)
-      const res = await fetch('/api/jd/recommendations')
+      // 내가 받은 추천만 조회 (for_me=true 파라미터)
+      const res = await fetch('/api/jd/recommendations?for_me=true')
       const data = await res.json()
 
       if (res.ok) {

@@ -11,6 +11,7 @@ export async function GET(req: NextRequest) {
 
     const searchParams = req.nextUrl.searchParams
     const status = searchParams.get('status') // pending, recommended, accepted, rejected
+    const forMe = searchParams.get('for_me') === 'true' // 내가 받은 추천만
     const role = profile.role
 
     let query = supabaseAdmin
@@ -22,8 +23,13 @@ export async function GET(req: NextRequest) {
       `)
       .order('match_score', { ascending: false })
 
+    // "내가 받은 추천" 모드
+    if (forMe) {
+      query = query.eq('recommended_to', profile.email)
+      // 모든 상태 포함 (status 필터 없음)
+    }
     // 역할별 필터링
-    if (role === 'admin') {
+    else if (role === 'admin') {
       // Super Admin: 모든 조직의 추천 조회 가능
       if (status) {
         query = query.eq('status', status)
