@@ -91,17 +91,23 @@ export async function POST(req: NextRequest, context: { params: Promise<{ id: st
 
     console.log('[recommend-candidates] Total candidates in org:', allCandidates?.length || 0)
 
-    // 스킬 매칭 필터링 (30% 이상 일치)
+    // 스킬 매칭 필터링 (10% 이상 일치 또는 스킬 정보 없음)
     const filteredCandidates = (allCandidates || []).filter(candidate => {
       const candidateSkills = [...(candidate.skills || []), ...(candidate.tech_stack || [])]
+
+      // 스킬 정보가 없으면 일단 포함 (AI가 판단하도록)
+      if (allSkills.length === 0 || candidateSkills.length === 0) {
+        return true
+      }
+
       const matchCount = allSkills.filter(skill =>
         candidateSkills.some(cs => cs.toLowerCase().includes(skill.toLowerCase()))
       ).length
-      const matchRate = allSkills.length > 0 ? (matchCount / allSkills.length) * 100 : 0
-      return matchRate >= 30
+      const matchRate = (matchCount / allSkills.length) * 100
+      return matchRate >= 10 // 10%로 완화
     }).slice(0, 30) // 최대 30명
 
-    console.log('[recommend-candidates] Filtered candidates:', filteredCandidates.length)
+    console.log('[recommend-candidates] Filtered candidates (10%+ or no skill data):', filteredCandidates.length)
 
     if (filteredCandidates.length === 0) {
       return NextResponse.json({
