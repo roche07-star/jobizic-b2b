@@ -568,9 +568,9 @@ export default function RecommendationsPage() {
                     </div>
                   </div>
 
-                  {/* 매칭 근거 */}
+                  {/* 추천 사유 */}
                   <div style={{ marginBottom: 16 }}>
-                    <div className="form-label">매칭 근거</div>
+                    <div className="form-label">추천 사유</div>
                     <div style={{ fontSize: 13, lineHeight: 1.6 }}>{adminSelected.match_reason}</div>
                   </div>
 
@@ -586,17 +586,6 @@ export default function RecommendationsPage() {
                     </div>
                   )}
 
-                  {/* 우려사항 */}
-                  {adminSelected.concerns?.length > 0 && (
-                    <div style={{ marginBottom: 16 }}>
-                      <div className="form-label">우려사항</div>
-                      <ul style={{ paddingLeft: 16, display: 'flex', flexDirection: 'column', gap: 4 }}>
-                        {adminSelected.concerns.map((c, i) => (
-                          <li key={i} style={{ fontSize: 13, color: 'var(--warn)' }}>{c}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
 
                   {/* 다음 단계 */}
                   <div style={{ marginBottom: 16 }}>
