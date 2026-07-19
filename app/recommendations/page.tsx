@@ -76,6 +76,9 @@ export default function RecommendationsPage() {
   const [statusFilter, setStatusFilter] = useState<'pending' | 'recommended' | 'all'>('pending')
   const [recommendingJdId, setRecommendingJdId] = useState<string | null>(null)
   const [minScores, setMinScores] = useState<Record<string, number>>({})
+  const [editedCurrentSalary, setEditedCurrentSalary] = useState<string>('')
+  const [editedDesiredSalary, setEditedDesiredSalary] = useState<string>('')
+  const [editedEducation, setEditedEducation] = useState<string>('')
 
   useEffect(() => {
     checkAuth()
@@ -253,7 +256,12 @@ export default function RecommendationsPage() {
       const res = await fetch(`/api/jd/recommendations/${id}/send`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ admin_comment: adminCommentText.trim() || null })
+        body: JSON.stringify({
+          admin_comment: adminCommentText.trim() || null,
+          current_salary: editedCurrentSalary.trim() || null,
+          desired_salary: editedDesiredSalary.trim() || null,
+          education: editedEducation.trim() || null
+        })
       })
 
       if (!res.ok) {
@@ -490,7 +498,12 @@ export default function RecommendationsPage() {
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                               <div
                                 style={{ flex: 1, cursor: 'pointer' }}
-                                onClick={() => setAdminSelected(rec)}
+                                onClick={() => {
+                                  setAdminSelected(rec)
+                                  setEditedCurrentSalary(rec.candidates.metadata?.current_salary || '')
+                                  setEditedDesiredSalary(rec.candidates.desired_salary || '')
+                                  setEditedEducation(rec.candidates.education?.join(', ') || '')
+                                }}
                               >
                                 <div style={{
                                   fontSize: 14,
@@ -513,7 +526,12 @@ export default function RecommendationsPage() {
                                 {rec.status === 'pending' && (
                                   <button
                                     className="btn btn-success btn-sm"
-                                    onClick={() => setAdminSelected(rec)}
+                                    onClick={() => {
+                                      setAdminSelected(rec)
+                                      setEditedCurrentSalary(rec.candidates.metadata?.current_salary || '')
+                                      setEditedDesiredSalary(rec.candidates.desired_salary || '')
+                                      setEditedEducation(rec.candidates.education?.join(', ') || '')
+                                    }}
                                   >
                                     PM에게 전송
                                   </button>
@@ -551,19 +569,37 @@ export default function RecommendationsPage() {
                       👨‍💼 {adminSelected.candidates.name} ({adminSelected.candidates.current_position || '포지션 미상'})
                       {adminSelected.candidates.total_experience_years && ` · 경력 ${adminSelected.candidates.total_experience_years}년`}
                     </div>
-                    {adminSelected.candidates.education && adminSelected.candidates.education.length > 0 && (
-                      <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 4 }}>
-                        🎓 {adminSelected.candidates.education[adminSelected.candidates.education.length - 1]}
-                      </div>
-                    )}
-                    {adminSelected.candidates.career_summary && (
-                      <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 4 }}>
-                        💼 {adminSelected.candidates.career_summary}
-                      </div>
-                    )}
                     <div style={{ fontSize: 12, color: 'var(--text-tertiary)', marginTop: 8 }}>
                       PM: {adminSelected.recommended_to}
                     </div>
+                  </div>
+
+                  {/* 후보자 상세 정보 (수정 가능) */}
+                  <div style={{ marginBottom: 16, padding: 12, background: 'var(--surface-secondary)', borderRadius: 6 }}>
+                    <div className="form-label" style={{ marginBottom: 8 }}>📋 후보자 상세</div>
+                    <div style={{ marginBottom: 12 }}>
+                      <label style={{ display: 'block', fontSize: 12, color: 'var(--text-tertiary)', marginBottom: 4 }}>
+                        🎓 학력 (대학교, 대학원, 박사 등 쉼표로 구분)
+                      </label>
+                      <input
+                        type="text"
+                        className="form-input"
+                        placeholder="예: 서울대 컴퓨터공학 학사, KAIST 대학원 석사"
+                        value={editedEducation}
+                        onChange={e => setEditedEducation(e.target.value)}
+                        style={{ fontSize: 13 }}
+                      />
+                    </div>
+                    {adminSelected.candidates.career_summary && (
+                      <div>
+                        <label style={{ display: 'block', fontSize: 12, color: 'var(--text-tertiary)', marginBottom: 4 }}>
+                          💼 경력 요약
+                        </label>
+                        <div style={{ fontSize: 13, padding: 8, background: 'var(--bg)', borderRadius: 4 }}>
+                          {adminSelected.candidates.career_summary}
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {/* 매칭 점수 */}
@@ -620,18 +656,32 @@ export default function RecommendationsPage() {
                       {/* 연봉 정보 */}
                       <div style={{ marginBottom: 20, padding: 12, background: 'var(--surface-secondary)', borderRadius: 6 }}>
                         <div className="form-label" style={{ marginBottom: 8 }}>💰 연봉 정보</div>
-                        <div style={{ display: 'flex', gap: 16, fontSize: 13 }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                           <div>
-                            <span style={{ color: 'var(--text-tertiary)' }}>직전연봉: </span>
-                            <span style={{ fontWeight: 500 }}>
-                              {adminSelected.candidates.metadata?.current_salary || '미입력'}
-                            </span>
+                            <label style={{ display: 'block', fontSize: 12, color: 'var(--text-tertiary)', marginBottom: 4 }}>
+                              직전연봉
+                            </label>
+                            <input
+                              type="text"
+                              className="form-input"
+                              placeholder="예: 8,000만원"
+                              value={editedCurrentSalary}
+                              onChange={e => setEditedCurrentSalary(e.target.value)}
+                              style={{ fontSize: 13 }}
+                            />
                           </div>
                           <div>
-                            <span style={{ color: 'var(--text-tertiary)' }}>희망연봉: </span>
-                            <span style={{ fontWeight: 500 }}>
-                              {adminSelected.candidates.desired_salary || '미입력'}
-                            </span>
+                            <label style={{ display: 'block', fontSize: 12, color: 'var(--text-tertiary)', marginBottom: 4 }}>
+                              희망연봉
+                            </label>
+                            <input
+                              type="text"
+                              className="form-input"
+                              placeholder="예: 9,000만원"
+                              value={editedDesiredSalary}
+                              onChange={e => setEditedDesiredSalary(e.target.value)}
+                              style={{ fontSize: 13 }}
+                            />
                           </div>
                         </div>
                       </div>

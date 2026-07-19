@@ -17,7 +17,7 @@ export async function POST(req: NextRequest, context: { params: Promise<{ id: st
       return NextResponse.json({ error: '권한이 없습니다.' }, { status: 403 })
     }
 
-    const { admin_comment } = await req.json()
+    const { admin_comment, current_salary, desired_salary, education } = await req.json()
 
     console.log('[recommendation send] ID:', id, 'by:', profile.email)
 
@@ -27,7 +27,7 @@ export async function POST(req: NextRequest, context: { params: Promise<{ id: st
       .select(`
         *,
         job_descriptions!inner(company, position),
-        candidates!inner(name, current_position)
+        candidates!inner(id, name, current_position)
       `)
       .eq('id', id)
       .single()
@@ -35,6 +35,48 @@ export async function POST(req: NextRequest, context: { params: Promise<{ id: st
     if (fetchError || !recommendation) {
       console.error('[recommendation send] Fetch error:', fetchError)
       return NextResponse.json({ error: '추천을 찾을 수 없습니다.' }, { status: 404 })
+    }
+
+    // 후보자 정보 업데이트 (연봉, 학력)
+    if (current_salary || desired_salary || education) {
+      const candidateId = (recommendation as any).candidates.id
+      const updateData: any = {}
+
+      if (desired_salary) {
+        updateData.desired_salary = desired_salary
+      }
+
+      if (education) {
+        // 쉼표로 구분된 문자열을 배열로 변환
+        updateData.education = education.split(',').map((e: string) => e.trim()).filter(Boolean)
+      }
+
+      if (current_salary) {
+        // metadata JSONB 업데이트
+        const { data: currentCandidate } = await supabaseAdmin
+          .from('candidates')
+          .select('metadata')
+          .eq('id', candidateId)
+          .single()
+
+        updateData.metadata = {
+          ...(currentCandidate?.metadata || {}),
+          current_salary
+        }
+      }
+
+      if (Object.keys(updateData).length > 0) {
+        const { error: candidateUpdateError } = await supabaseAdmin
+          .from('candidates')
+          .update(updateData)
+          .eq('id', candidateId)
+
+        if (candidateUpdateError) {
+          console.error('[recommendation send] Candidate update error:', candidateUpdateError)
+        } else {
+          console.log('[recommendation send] ✅ Candidate info updated')
+        }
+      }
     }
 
     // 상태 업데이트: pending → recommended
