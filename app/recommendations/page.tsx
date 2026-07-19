@@ -32,7 +32,9 @@ interface Recommendation {
   recommended_by: string | null
   recommended_to: string
   recommended_at: string | null
+  responded_at?: string | null
   admin_comment: string | null
+  pm_comment?: string | null
   job_descriptions: {
     id: string
     company: string
@@ -174,8 +176,17 @@ export default function RecommendationsPage() {
       setSelected(null)
       setCommentText('')
 
-      // 수락/거절 후 자동 삭제
-      setRecommendations(prev => prev.filter(r => r.id !== id))
+      // 상태 업데이트 (삭제하지 않고 유지)
+      setRecommendations(prev => prev.map(r =>
+        r.id === id
+          ? {
+              ...r,
+              status: action === 'accept' ? 'accepted' : 'rejected',
+              responded_at: new Date().toISOString(),
+              pm_comment: commentText.trim() || null
+            }
+          : r
+      ))
 
     } catch (err) {
       console.error('[recommendations] Respond error:', err)
@@ -238,15 +249,28 @@ export default function RecommendationsPage() {
   async function loadAdminRecommendations() {
     setAdminLoading(true)
     try {
-      const url = statusFilter === 'all'
-        ? '/api/jd/recommendations'
-        : `/api/jd/recommendations?status=${statusFilter}`
+      let url = '/api/jd/recommendations'
+
+      if (statusFilter === 'pending') {
+        url += '?status=pending'
+      }
+      // statusFilter === 'recommended' 또는 'all'이면 파라미터 없이 전체 가져오기
 
       const res = await fetch(url)
       const data = await res.json()
 
       if (res.ok) {
-        setAdminRecommendations(data.recommendations || [])
+        let recommendations = data.recommendations || []
+
+        // 프론트엔드 필터링
+        if (statusFilter === 'recommended') {
+          // "전송완료" 탭: recommended, accepted, rejected만 표시
+          recommendations = recommendations.filter((r: any) =>
+            ['recommended', 'accepted', 'rejected'].includes(r.status)
+          )
+        }
+
+        setAdminRecommendations(recommendations)
       }
     } catch (err) {
       console.error('[admin recommendations] Load error:', err)
@@ -550,7 +574,29 @@ export default function RecommendationsPage() {
                                 {rec.status === 'recommended' && (
                                   <span className="badge badge-활성">✓ 전송완료</span>
                                 )}
+                                {rec.status === 'accepted' && (
+                                  <span className="badge badge-활성">✅ 수락됨</span>
+                                )}
+                                {rec.status === 'rejected' && (
+                                  <span className="badge badge-일반">❌ 거절됨</span>
+                                )}
                               </div>
+
+                              {/* 거절 사유 표시 */}
+                              {rec.status === 'rejected' && rec.pm_comment && (
+                                <div style={{
+                                  marginTop: 8,
+                                  padding: 8,
+                                  background: 'rgba(255, 59, 48, 0.1)',
+                                  border: '1px solid rgba(255, 59, 48, 0.3)',
+                                  borderRadius: 6,
+                                  fontSize: 11,
+                                  color: 'var(--muted)'
+                                }}>
+                                  <div style={{ fontWeight: 600, marginBottom: 4 }}>거절 사유:</div>
+                                  {rec.pm_comment}
+                                </div>
+                              )}
                             </div>
                           </div>
                         ))}
