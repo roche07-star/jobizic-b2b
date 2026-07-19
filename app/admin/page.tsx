@@ -398,7 +398,7 @@ export default function AdminPage() {
     <main className="page">
       <div className="page-header">
         <div>
-          <div className="page-title">관리자 대시보드</div>
+          <div className="page-title">{profile.role === 'admin' ? '관리자 대시보드' : '관리자 기능'}</div>
           <div className="page-sub">조직 & 사용자 관리</div>
         </div>
       </div>
