@@ -127,7 +127,7 @@ export default function RecommendationsPage() {
         <div style={{ display: 'flex', gap: 12, marginBottom: 20 }}>
           <button
             className={`btn${activeTab === 'manage' ? ' btn-primary' : ' btn-ghost'}`}
-            onClick={() => window.location.href = '/admin/recommendations'}
+            onClick={() => setActiveTab('manage')}
           >
             후보자 추천 관리
           </button>
@@ -140,7 +140,18 @@ export default function RecommendationsPage() {
         </div>
       )}
 
-      {loading ? (
+      {/* 후보자 추천 관리 탭 */}
+      {activeTab === 'manage' ? (
+        <iframe
+          src="/admin/recommendations"
+          style={{
+            width: '100%',
+            height: 'calc(100vh - 200px)',
+            border: 'none',
+            borderRadius: 8
+          }}
+        />
+      ) : loading ? (
         <div className="empty">
           <div className="spinner" style={{ margin: '0 auto 12px' }} />
         </div>
