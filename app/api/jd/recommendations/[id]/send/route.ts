@@ -39,47 +39,66 @@ export async function POST(req: NextRequest, context: { params: Promise<{ id: st
 
     // 후보자 정보 업데이트 (연봉, 학력, 경력)
     if (current_salary || desired_salary || education || career_summary) {
-      const candidateId = (recommendation as any).candidates.id
-      const updateData: any = {}
+      try {
+        const candidateId = (recommendation as any).candidates.id
+        console.log('[recommendation send] Updating candidate:', candidateId)
+        const updateData: any = {}
 
-      if (desired_salary) {
-        updateData.desired_salary = desired_salary
-      }
-
-      if (education) {
-        // 쉼표로 구분된 문자열을 배열로 변환
-        updateData.education = education.split(',').map((e: string) => e.trim()).filter(Boolean)
-      }
-
-      if (career_summary) {
-        updateData.career_summary = career_summary
-      }
-
-      if (current_salary) {
-        // metadata JSONB 업데이트
-        const { data: currentCandidate } = await supabaseAdmin
-          .from('candidates')
-          .select('metadata')
-          .eq('id', candidateId)
-          .single()
-
-        updateData.metadata = {
-          ...(currentCandidate?.metadata || {}),
-          current_salary
+        if (desired_salary) {
+          updateData.desired_salary = desired_salary
+          console.log('[recommendation send] desired_salary:', desired_salary)
         }
-      }
 
-      if (Object.keys(updateData).length > 0) {
-        const { error: candidateUpdateError } = await supabaseAdmin
-          .from('candidates')
-          .update(updateData)
-          .eq('id', candidateId)
+        if (education && typeof education === 'string' && education.trim()) {
+          // 쉼표로 구분된 문자열을 배열로 변환
+          updateData.education = education.split(',').map((e: string) => e.trim()).filter(Boolean)
+          console.log('[recommendation send] education:', updateData.education)
+        }
 
-        if (candidateUpdateError) {
-          console.error('[recommendation send] Candidate update error:', candidateUpdateError)
+        if (career_summary && typeof career_summary === 'string') {
+          updateData.career_summary = career_summary
+          console.log('[recommendation send] career_summary length:', career_summary.length)
+        }
+
+        if (current_salary) {
+          // metadata JSONB 업데이트
+          const { data: currentCandidate, error: fetchMetadataError } = await supabaseAdmin
+            .from('candidates')
+            .select('metadata')
+            .eq('id', candidateId)
+            .single()
+
+          if (fetchMetadataError) {
+            console.error('[recommendation send] Fetch metadata error:', fetchMetadataError)
+          }
+
+          updateData.metadata = {
+            ...(currentCandidate?.metadata || {}),
+            current_salary
+          }
+          console.log('[recommendation send] current_salary:', current_salary)
+        }
+
+        if (Object.keys(updateData).length > 0) {
+          console.log('[recommendation send] Update data keys:', Object.keys(updateData))
+          const { error: candidateUpdateError } = await supabaseAdmin
+            .from('candidates')
+            .update(updateData)
+            .eq('id', candidateId)
+
+          if (candidateUpdateError) {
+            console.error('[recommendation send] Candidate update error:', candidateUpdateError)
+            console.error('[recommendation send] Update data:', updateData)
+            // 후보자 업데이트 실패해도 계속 진행 (추천 전송은 수행)
+          } else {
+            console.log('[recommendation send] ✅ Candidate info updated')
+          }
         } else {
-          console.log('[recommendation send] ✅ Candidate info updated')
+          console.log('[recommendation send] No candidate data to update')
         }
+      } catch (candidateError) {
+        console.error('[recommendation send] Candidate update exception:', candidateError)
+        // 후보자 업데이트 실패해도 계속 진행
       }
     }
 
