@@ -84,9 +84,9 @@ export default function Dashboard() {
     if (hash && hash.includes('type=invite')) {
       console.log('[Dashboard] Invite detected in fragment, redirecting to set-password')
       // Fragment를 그대로 유지하면서 비밀번호 설정 페이지로 이동
-      router.push(`/auth/set-password${hash}`)
+      router.replace(`/auth/set-password${hash}`)
     }
-  }, [])
+  }, [router])
 
   useEffect(() => {
     async function loadOrganizations() {

@@ -12,12 +12,41 @@ export default function SetPasswordPage() {
   const [error, setError] = useState<string | null>(null)
   const [sessionChecked, setSessionChecked] = useState(false)
 
-  // 세션 확인 (URL fragment의 access_token 자동 처리)
+  // 세션 확인 및 Fragment 처리
   useEffect(() => {
     async function checkSession() {
       const supabase = getSupabaseBrowser()
 
-      // URL fragment의 토큰을 자동으로 감지하고 세션 생성
+      // URL fragment에서 토큰 추출
+      const hash = window.location.hash
+      if (hash && hash.includes('access_token')) {
+        console.log('[SET PASSWORD] Processing fragment tokens')
+        const params = new URLSearchParams(hash.substring(1))
+        const access_token = params.get('access_token')
+        const refresh_token = params.get('refresh_token')
+
+        if (access_token && refresh_token) {
+          // 명시적으로 세션 설정
+          const { error } = await supabase.auth.setSession({
+            access_token,
+            refresh_token
+          })
+
+          if (error) {
+            console.error('[SET PASSWORD] setSession error:', error)
+            router.push('/')
+            return
+          }
+
+          console.log('[SET PASSWORD] Session set from fragment')
+          // Fragment 제거
+          window.history.replaceState({}, '', '/auth/set-password')
+          setSessionChecked(true)
+          return
+        }
+      }
+
+      // 일반 세션 확인
       const { data: { session } } = await supabase.auth.getSession()
 
       if (!session) {
