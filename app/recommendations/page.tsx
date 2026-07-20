@@ -404,7 +404,7 @@ export default function RecommendationsPage() {
       )}
 
       {/* 후보자 추천 관리 탭 */}
-      {activeTab === 'manage' && userRole === 'admin' ? (
+      {activeTab === 'manage' && (userRole === 'admin' || userRole === 'owner' || userRole === 'headhunter') ? (
         <>
           {/* 활성 JD 목록 */}
           <div className="card" style={{ marginBottom: 24 }}>
