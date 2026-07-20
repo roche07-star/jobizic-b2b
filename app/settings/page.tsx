@@ -164,20 +164,17 @@ export default function SettingsPage() {
       }
 
       const successMsg = profile.password_set === false
-        ? '✅ 비밀번호가 성공적으로 설정되었습니다!'
-        : '✅ 비밀번호가 성공적으로 변경되었습니다!'
+        ? '✅ 비밀번호가 성공적으로 설정되었습니다!\n\n새 비밀번호로 다시 로그인해주세요.'
+        : '✅ 비밀번호가 성공적으로 변경되었습니다!\n\n새 비밀번호로 다시 로그인해주세요.'
 
       success(successMsg)
-      alert(successMsg) // 팝업으로도 표시
+      alert(successMsg)
 
-      setNewPassword('')
-      setConfirmPassword('')
+      // 로그아웃 처리
+      await supabase.auth.signOut()
 
-      // 프로필 다시 로드 (password_set 플래그 업데이트)
-      const updatedProfile = await getProfile()
-      if (updatedProfile) {
-        setProfile(updatedProfile)
-      }
+      // 로그인 페이지로 이동
+      router.push('/')
     } catch (e) {
       error('비밀번호 변경 중 오류가 발생했습니다.')
     } finally {
