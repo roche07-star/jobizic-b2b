@@ -20,12 +20,12 @@ interface Notification {
 const links = [
   { href: '/', label: '대시보드' },
   { href: '/jd', label: 'JD 관리' },
-  { href: '/candidates', label: '후보자' },
-  { href: '/pipeline', label: '채용 프로세스' },
+  { href: '/candidates', label: '후보자 관리' },
+  { href: '/pipeline', label: '진행현황' },
   { href: '/recommendations', label: '후보자 매칭' },
-  { href: '/boards', label: '📢 게시판' },
-  { href: '/settlements', label: '💰 정산' },
-  { href: '/settings', label: '⚙️ 설정' },
+  { href: '/boards', label: '게시판' },
+  { href: '/settlements', label: '정산 관리' },
+  { href: '/settings', label: '설정' },
 ]
 
 const adminLinks = [
