@@ -1,6 +1,6 @@
 ﻿'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { getSupabaseBrowser } from '@/lib/supabase-browser'
 
@@ -11,6 +11,71 @@ export default function ResetPasswordPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showPassword, setShowPassword] = useState(false)
+  const [sessionChecked, setSessionChecked] = useState(false)
+
+  // 세션 확인 및 Fragment 처리 (비밀번호 찾기 이메일 링크)
+  useEffect(() => {
+    async function checkSession() {
+      const supabase = getSupabaseBrowser()
+
+      // URL fragment에서 토큰 추출
+      const hash = window.location.hash
+      if (hash && hash.includes('access_token')) {
+        console.log('[RESET PASSWORD] Processing fragment tokens')
+        const params = new URLSearchParams(hash.substring(1))
+        const access_token = params.get('access_token')
+        const refresh_token = params.get('refresh_token')
+
+        if (access_token && refresh_token) {
+          // 명시적으로 세션 설정
+          const { error } = await supabase.auth.setSession({
+            access_token,
+            refresh_token
+          })
+
+          if (error) {
+            console.error('[RESET PASSWORD] setSession error:', error)
+            setError('세션 생성 실패. 비밀번호 재설정 링크를 다시 확인해주세요.')
+            setSessionChecked(true)
+            return
+          }
+
+          console.log('[RESET PASSWORD] Session set from fragment')
+          // Fragment 제거
+          window.history.replaceState({}, '', '/auth/reset-password')
+          setSessionChecked(true)
+          return
+        }
+      }
+
+      // 일반 세션 확인
+      const { data: { session } } = await supabase.auth.getSession()
+
+      if (!session) {
+        console.error('[RESET PASSWORD] No session found')
+        setError('로그인이 필요합니다. 비밀번호 재설정 링크를 통해 접근해주세요.')
+        setSessionChecked(true)
+        return
+      }
+
+      console.log('[RESET PASSWORD] Session found:', session.user.email)
+      setSessionChecked(true)
+    }
+
+    checkSession()
+  }, [])
+
+  // 세션 확인 전에는 로딩 표시
+  if (!sessionChecked) {
+    return (
+      <main className="page" style={{ maxWidth: 500, margin: '0 auto', paddingTop: 80 }}>
+        <div className="card" style={{ textAlign: 'center', padding: 40 }}>
+          <div className="spinner" style={{ margin: '0 auto 16px' }} />
+          <p style={{ color: 'var(--muted2)' }}>로딩 중...</p>
+        </div>
+      </main>
+    )
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -45,6 +110,35 @@ export default function ResetPasswordPage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  // 세션 없으면 에러 메시지만 표시
+  if (error && !password && !confirmPassword) {
+    return (
+      <main className="page" style={{ maxWidth: 500, margin: '0 auto', paddingTop: 80 }}>
+        <div className="card">
+          <h1 style={{ fontSize: 24, fontWeight: 600, marginBottom: 8 }}>비밀번호 재설정</h1>
+          <div style={{
+            padding: 16,
+            background: 'rgba(255,107,107,0.1)',
+            border: '1px solid var(--danger)',
+            borderRadius: 8,
+            marginBottom: 16,
+            color: 'var(--danger)',
+            fontSize: 14
+          }}>
+            {error}
+          </div>
+          <button
+            className="btn btn-primary"
+            onClick={() => router.push('/login')}
+            style={{ width: '100%', justifyContent: 'center' }}
+          >
+            로그인 페이지로 이동
+          </button>
+        </div>
+      </main>
+    )
   }
 
   return (
