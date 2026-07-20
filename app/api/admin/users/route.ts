@@ -37,46 +37,96 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const { email, full_name, role, organization_id } = await req.json()
+    const { email, full_name, role, organization_id, invite_method } = await req.json()
 
     if (!email) {
       return NextResponse.json({ error: '이메일은 필수입니다.' }, { status: 400 })
     }
 
-    // 이메일 초대 (Supabase가 자동으로 이메일 발송)
-    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
-      data: {
-        full_name,
-        role: role || 'headhunter',
-      },
-      redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://jobizic-biz.vercel.app'}/auth/callback`,
-    })
+    const method = invite_method || 'fixed' // 기본값: 고정 비밀번호
+    const defaultPassword = 'jobizic112'
+    let authData, authError
 
-    if (authError || !authData?.user) {
-      return NextResponse.json({ error: authError?.message || '초대 실패' }, { status: 500 })
+    // 기존 사용자가 있으면 삭제 후 재생성/재초대
+    try {
+      const { data: existingUser } = await supabaseAdmin.auth.admin.listUsers()
+      const existing = existingUser.users.find(u => u.email === email)
+
+      if (existing) {
+        console.log('[CREATE USER] Deleting existing user:', email)
+        await supabaseAdmin.auth.admin.deleteUser(existing.id)
+      }
+    } catch (deleteError) {
+      console.log('[CREATE USER] No existing user or delete failed (continuing):', deleteError)
     }
 
-    console.log(`[INVITE USER] ${email}`)
+    if (method === 'fixed') {
+      // ===== 고정 비밀번호 방식 =====
+      console.log('[CREATE USER] Creating user with fixed password:', email)
 
-    // Profile 업데이트 (password_set=false로 첫 로그인 시 비밀번호 변경 강제)
+      const result = await supabaseAdmin.auth.admin.createUser({
+        email,
+        password: defaultPassword,
+        email_confirm: true,
+        user_metadata: {
+          full_name,
+          role: role || 'headhunter',
+          organization_id,
+        },
+      })
+      authData = result.data
+      authError = result.error
+
+    } else if (method === 'email') {
+      // ===== 초대 이메일 방식 =====
+      console.log('[CREATE USER] Sending invite email to:', email)
+
+      const result = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
+        data: {
+          full_name,
+          role: role || 'headhunter',
+          organization_id,
+        },
+        redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://jobizic-biz.vercel.app'}/auth/callback`,
+      })
+      authData = result.data
+      authError = result.error
+    }
+
+    if (authError || !authData?.user) {
+      return NextResponse.json({ error: authError?.message || '사용자 생성 실패' }, { status: 500 })
+    }
+
+    console.log(`[CREATE USER] Success (${method}):`, email)
+
+    // Profile upsert (없으면 생성, 있으면 업데이트)
     const { error: profileError } = await supabaseAdmin
       .from('profiles')
-      .update({
+      .upsert({
+        id: authData.user.id,
+        email,
         organization_id,
         full_name,
         role: role || 'headhunter',
-        password_set: false, // 비밀번호 변경 필요
+        password_set: method === 'fixed' ? true : false,
+        is_active: true
+      }, {
+        onConflict: 'id',
+        ignoreDuplicates: false
       })
-      .eq('id', authData.user.id)
 
     if (profileError) {
-      console.error('Profile update error:', profileError)
+      console.error('[CREATE USER] Profile upsert error:', profileError)
     }
 
     return NextResponse.json({
       id: authData.user.id,
       email: authData.user.email,
-      message: `✅ 초대 이메일이 발송되었습니다!`,
+      method: method,
+      password: method === 'fixed' ? defaultPassword : null,
+      message: method === 'fixed'
+        ? `✅ 사용자가 생성되었습니다!`
+        : `✅ 초대 이메일이 발송되었습니다!`,
     })
   } catch (e: any) {
     console.error('[admin/users POST]', e)

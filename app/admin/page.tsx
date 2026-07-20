@@ -67,6 +67,7 @@ export default function AdminPage() {
   const [userFullName, setUserFullName] = useState('')
   const [userRole, setUserRole] = useState('headhunter')
   const [userOrgId, setUserOrgId] = useState('')
+  const [userInviteMethod, setUserInviteMethod] = useState<'fixed' | 'email'>('fixed') // 초대 방식
   const [creatingUser, setCreatingUser] = useState(false)
 
   // 사용자 수정 폼
@@ -262,6 +263,7 @@ export default function AdminPage() {
           full_name: userFullName,
           role: userRole,
           organization_id: userOrgId || null,
+          invite_method: userInviteMethod, // 'fixed' | 'email'
         }),
       })
       const data = await res.json()
@@ -272,8 +274,16 @@ export default function AdminPage() {
       setUserEmail('')
       setUserFullName('')
       setUserOrgId('')
+      setUserInviteMethod('fixed')
 
-      alert(data.message || '✅ 초대 이메일이 발송되었습니다!')
+      // 방식에 따라 다른 메시지
+      if (data.method === 'fixed' && data.password) {
+        alert(`✅ 사용자 생성 완료!\n\n📧 로그인 정보:\n이메일: ${userEmail}\n🔑 비밀번호: ${data.password}\n\n※ 사용자에게 직접 전달해주세요.`)
+      } else if (data.method === 'email') {
+        alert(data.message || '✅ 초대 이메일이 발송되었습니다!')
+      } else {
+        alert(data.message || '✅ 사용자가 생성되었습니다!')
+      }
     } catch (e: any) {
       setError(e.message)
     } finally {
@@ -639,12 +649,52 @@ export default function AdminPage() {
                 </select>
               </div>
             </div>
-            <div style={{ fontSize: 12, color: 'var(--muted2)', marginBottom: 12, padding: 10, background: 'var(--bg)', borderRadius: 6 }}>
-              📧 사용자에게 초대 이메일이 발송됩니다. 이메일 링크를 통해 비밀번호를 설정할 수 있습니다.
-            </div>
+            {userEmail && (
+              <div style={{ marginBottom: 16, padding: 12, background: 'var(--bg3)', borderRadius: 8, border: '1px solid var(--border)' }}>
+                <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 8, color: 'var(--text)' }}>
+                  🔑 계정 생성 방식
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  <label style={{ display: 'flex', alignItems: 'flex-start', gap: 8, cursor: 'pointer', padding: 8, borderRadius: 6, background: userInviteMethod === 'fixed' ? 'var(--bg)' : 'transparent', border: userInviteMethod === 'fixed' ? '1px solid var(--accent)' : '1px solid transparent' }}>
+                    <input
+                      type="radio"
+                      name="userInviteMethod"
+                      value="fixed"
+                      checked={userInviteMethod === 'fixed'}
+                      onChange={() => setUserInviteMethod('fixed')}
+                      style={{ marginTop: 2 }}
+                    />
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 2 }}>⚡ 빠른 생성 (고정 비밀번호)</div>
+                      <div style={{ fontSize: 11, color: 'var(--muted2)' }}>
+                        비밀번호: <code style={{ background: 'var(--bg)', padding: '2px 6px', borderRadius: 4, fontWeight: 600 }}>jobizic112</code><br />
+                        즉시 로그인 가능 · 테스트/개발용 추천
+                      </div>
+                    </div>
+                  </label>
+                  <label style={{ display: 'flex', alignItems: 'flex-start', gap: 8, cursor: 'pointer', padding: 8, borderRadius: 6, background: userInviteMethod === 'email' ? 'var(--bg)' : 'transparent', border: userInviteMethod === 'email' ? '1px solid var(--accent)' : '1px solid transparent' }}>
+                    <input
+                      type="radio"
+                      name="userInviteMethod"
+                      value="email"
+                      checked={userInviteMethod === 'email'}
+                      onChange={() => setUserInviteMethod('email')}
+                      style={{ marginTop: 2 }}
+                    />
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 2 }}>📧 초대 이메일 발송</div>
+                      <div style={{ fontSize: 11, color: 'var(--muted2)' }}>
+                        사용자가 직접 비밀번호 설정<br />
+                        이메일 검증 자동 · 프로덕션용 추천
+                      </div>
+                    </div>
+                  </label>
+                </div>
+              </div>
+            )}
             <div style={{ display: 'flex', gap: 8 }}>
               <button className="btn btn-primary btn-sm" onClick={createUser} disabled={creatingUser || !userEmail}>
-                {creatingUser ? '발송 중...' : '📧 초대 이메일 발송'}
+                {creatingUser ? (userInviteMethod === 'fixed' ? '생성 중...' : '발송 중...') : (userInviteMethod === 'fixed' ? '🚀 사용자 생성' : '📧 초대 이메일 발송')}
               </button>
               <button className="btn btn-ghost btn-sm" onClick={() => setShowUserForm(false)}>취소</button>
             </div>
