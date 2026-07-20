@@ -11,6 +11,7 @@ export default function SetPasswordPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [sessionChecked, setSessionChecked] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
 
   // 세션 확인 및 Fragment 처리
   useEffect(() => {
@@ -132,27 +133,75 @@ export default function SetPasswordPage() {
         <form onSubmit={handleSubmit}>
           <div className="form-group" style={{ marginBottom: 16 }}>
             <label className="form-label">비밀번호</label>
-            <input
-              type="password"
-              className="form-input"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="최소 6자 이상"
-              required
-              autoFocus
-            />
+            <div style={{ position: 'relative' }}>
+              <input
+                type={showPassword ? 'text' : 'password'}
+                className="form-input"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="최소 6자 이상"
+                required
+                autoFocus
+                style={{ paddingRight: 45 }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                style={{
+                  position: 'absolute',
+                  right: 8,
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  padding: '4px 8px',
+                  fontSize: 12,
+                  color: 'var(--muted2)',
+                  borderRadius: 4,
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.color = 'var(--accent)'}
+                onMouseLeave={(e) => e.currentTarget.style.color = 'var(--muted2)'}
+              >
+                {showPassword ? '숨기기' : '보기'}
+              </button>
+            </div>
           </div>
 
           <div className="form-group" style={{ marginBottom: 20 }}>
             <label className="form-label">비밀번호 확인</label>
-            <input
-              type="password"
-              className="form-input"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              placeholder="비밀번호 재입력"
-              required
-            />
+            <div style={{ position: 'relative' }}>
+              <input
+                type={showPassword ? 'text' : 'password'}
+                className="form-input"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="비밀번호 재입력"
+                required
+                style={{ paddingRight: 45 }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                style={{
+                  position: 'absolute',
+                  right: 8,
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  padding: '4px 8px',
+                  fontSize: 12,
+                  color: 'var(--muted2)',
+                  borderRadius: 4,
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.color = 'var(--accent)'}
+                onMouseLeave={(e) => e.currentTarget.style.color = 'var(--muted2)'}
+              >
+                {showPassword ? '숨기기' : '보기'}
+              </button>
+            </div>
           </div>
 
           {error && (
