@@ -53,6 +53,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: '조직명은 필수입니다.' }, { status: 400 })
     }
 
+    // 현재 요청의 origin 가져오기 (biz.jobizic.com 또는 vercel.app)
+    const origin = req.headers.get('origin') || req.headers.get('referer')?.split('/').slice(0, 3).join('/') || process.env.NEXT_PUBLIC_SITE_URL || 'https://jobizic-biz.vercel.app'
+    console.log('[ORG CREATE] Request origin:', origin)
+
     // 조직 생성
     const { data: organization, error: orgError } = await supabaseAdmin
       .from('organizations')
@@ -132,7 +136,7 @@ export async function POST(req: NextRequest) {
               role: 'headhunter',
               organization_id: organization.id,
             },
-            redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://jobizic-biz.vercel.app'}/auth/callback`,
+            redirectTo: `${origin}/auth/callback`,
           })
           authData = result.data
           authError = result.error

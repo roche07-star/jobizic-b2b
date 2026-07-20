@@ -43,6 +43,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: '이메일은 필수입니다.' }, { status: 400 })
     }
 
+    // 현재 요청의 origin 가져오기
+    const origin = req.headers.get('origin') || req.headers.get('referer')?.split('/').slice(0, 3).join('/') || process.env.NEXT_PUBLIC_SITE_URL || 'https://jobizic-biz.vercel.app'
+    console.log('[CREATE USER] Request origin:', origin)
+
     const method = invite_method || 'fixed' // 기본값: 고정 비밀번호
     const defaultPassword = 'jobizic112'
     let authData, authError
@@ -87,7 +91,7 @@ export async function POST(req: NextRequest) {
           role: role || 'headhunter',
           organization_id,
         },
-        redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://jobizic-biz.vercel.app'}/auth/callback`,
+        redirectTo: `${origin}/auth/callback`,
       })
       authData = result.data
       authError = result.error
