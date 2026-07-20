@@ -78,6 +78,39 @@ export async function GET(req: NextRequest) {
     // 초대받은 사용자는 무조건 비밀번호 설정 페이지로
     if (isInvitedUser || type === 'invite') {
       console.log('[AUTH CALLBACK] Redirecting to set-password (invited user)')
+
+      // Profile 업데이트 (user_metadata → profiles 테이블)
+      if (user?.id && user?.user_metadata) {
+        const { organization_id, full_name, role } = user.user_metadata
+
+        console.log('[AUTH CALLBACK] Updating profile for invited user:', {
+          user_id: user.id,
+          organization_id,
+          full_name,
+          role
+        })
+
+        try {
+          const updateData: any = {}
+          if (organization_id) updateData.organization_id = organization_id
+          if (full_name) updateData.full_name = full_name
+          if (role) updateData.role = role
+
+          const { error: profileError } = await supabaseAdmin
+            .from('profiles')
+            .update(updateData)
+            .eq('id', user.id)
+
+          if (profileError) {
+            console.error('[AUTH CALLBACK] Profile update error:', profileError)
+          } else {
+            console.log('[AUTH CALLBACK] Profile updated successfully')
+          }
+        } catch (err) {
+          console.error('[AUTH CALLBACK] Profile update exception:', err)
+        }
+      }
+
       const finalResponse = NextResponse.redirect(`${requestUrl.origin}/auth/set-password`)
       response.cookies.getAll().forEach(cookie => {
         finalResponse.cookies.set(cookie)
