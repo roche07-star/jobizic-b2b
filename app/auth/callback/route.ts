@@ -113,23 +113,32 @@ export async function GET(req: NextRequest) {
         })
 
         try {
-          const updateData: any = {}
-          if (organization_id) updateData.organization_id = organization_id
-          if (full_name) updateData.full_name = full_name
-          if (role) updateData.role = role
+          // Profile upsert (없으면 생성, 있으면 업데이트)
+          const profileData: any = {
+            id: user.id,
+            email: user.email,
+            password_set: false, // 초대받은 사용자는 비밀번호 미설정 상태
+            is_active: true
+          }
+
+          if (organization_id) profileData.organization_id = organization_id
+          if (full_name) profileData.full_name = full_name
+          if (role) profileData.role = role
 
           const { error: profileError } = await supabaseAdmin
             .from('profiles')
-            .update(updateData)
-            .eq('id', user.id)
+            .upsert(profileData, {
+              onConflict: 'id',
+              ignoreDuplicates: false
+            })
 
           if (profileError) {
-            console.error('[AUTH CALLBACK] Profile update error:', profileError)
+            console.error('[AUTH CALLBACK] Profile upsert error:', profileError)
           } else {
-            console.log('[AUTH CALLBACK] Profile updated successfully')
+            console.log('[AUTH CALLBACK] Profile upsert successful')
           }
         } catch (err) {
-          console.error('[AUTH CALLBACK] Profile update exception:', err)
+          console.error('[AUTH CALLBACK] Profile upsert exception:', err)
         }
       }
 
