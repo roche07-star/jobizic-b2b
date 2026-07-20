@@ -78,9 +78,10 @@ export default function Dashboard() {
   const [selectedStage, setSelectedStage] = useState<string | null>(null)
   const [stageDetails, setStageDetails] = useState<any[]>([])
 
-  // URL fragment 체크 (초대 이메일 처리)
+  // URL fragment 체크 및 초기화 (초대 이메일 처리)
   useEffect(() => {
-    async function checkFragment() {
+    async function init() {
+      // 1. Fragment 먼저 체크 (초대 이메일)
       const hash = window.location.hash
       if (hash && hash.includes('type=invite')) {
         console.log('[Dashboard] Invite detected in fragment')
@@ -96,20 +97,18 @@ export default function Dashboard() {
         // 세션 없으면 비밀번호 설정 페이지로
         console.log('[Dashboard] No session, redirecting to set-password')
         router.replace(`/auth/set-password${hash}`)
+        return // 리다이렉트 후 즉시 종료
       }
-    }
 
-    checkFragment()
-  }, [router])
-
-  useEffect(() => {
-    async function loadOrganizations() {
+      // 2. Fragment 없으면 일반 profile 체크
       const profile = await getProfile()
       if (!profile) {
+        console.log('[Dashboard] No profile, redirecting to login')
         router.push('/login')
         return
       }
 
+      // 3. Profile 로드 성공 - 설정
       setIsAdmin(profile.role === 'admin')
       setIsOwner(profile.role === 'owner')
       setIsOwnerOrPM(profile.role === 'owner' || profile.role === 'headhunter')
@@ -120,8 +119,9 @@ export default function Dashboard() {
         setOrganizations(data.organizations ?? [])
       }
     }
-    loadOrganizations()
-  }, [])
+
+    init()
+  }, [router])
 
   async function loadStageDetails(stage: string) {
     const profile = await getProfile()
