@@ -12,10 +12,13 @@ export default function SetPasswordPage() {
   const [error, setError] = useState<string | null>(null)
   const [sessionChecked, setSessionChecked] = useState(false)
 
-  // 세션 확인
+  // 세션 확인 (URL fragment의 access_token 자동 처리)
   useEffect(() => {
     async function checkSession() {
-      const { data: { session } } = await getSupabaseBrowser().auth.getSession()
+      const supabase = getSupabaseBrowser()
+
+      // URL fragment의 토큰을 자동으로 감지하고 세션 생성
+      const { data: { session } } = await supabase.auth.getSession()
 
       if (!session) {
         console.error('[SET PASSWORD] No session found, redirecting to login')

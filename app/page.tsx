@@ -2,7 +2,9 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { getProfile } from '@/lib/auth'
+import { getSupabaseBrowser } from '@/lib/supabase-browser'
 
 interface JD {
   id: string
@@ -57,6 +59,7 @@ interface DashboardStats {
 }
 
 export default function Dashboard() {
+  const router = useRouter()
   const [stats, setStats] = useState<Stats>({
     totalJDs: 0,
     interestJDs: 0,
@@ -74,6 +77,16 @@ export default function Dashboard() {
   const [dashboardStats, setDashboardStats] = useState<DashboardStats | null>(null)
   const [selectedStage, setSelectedStage] = useState<string | null>(null)
   const [stageDetails, setStageDetails] = useState<any[]>([])
+
+  // URL fragment 체크 (초대 이메일 처리)
+  useEffect(() => {
+    const hash = window.location.hash
+    if (hash && hash.includes('type=invite')) {
+      console.log('[Dashboard] Invite detected in fragment, redirecting to set-password')
+      // Fragment를 그대로 유지하면서 비밀번호 설정 페이지로 이동
+      router.push(`/auth/set-password${hash}`)
+    }
+  }, [])
 
   useEffect(() => {
     async function loadOrganizations() {
