@@ -105,7 +105,10 @@ export default function Dashboard() {
   useEffect(() => {
     async function loadOrganizations() {
       const profile = await getProfile()
-      if (!profile) return
+      if (!profile) {
+        router.push('/login')
+        return
+      }
 
       setIsAdmin(profile.role === 'admin')
       setIsOwner(profile.role === 'owner')
@@ -140,7 +143,10 @@ export default function Dashboard() {
   useEffect(() => {
     async function loadData() {
       const profile = await getProfile()
-      if (!profile) return
+      if (!profile) {
+        router.push('/login')
+        return
+      }
 
       const params = new URLSearchParams({
         role: profile.role,

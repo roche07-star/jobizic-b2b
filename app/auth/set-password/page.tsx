@@ -100,8 +100,8 @@ export default function SetPasswordPage() {
       // 로그아웃 처리
       await getSupabaseBrowser().auth.signOut()
 
-      // Fragment 완전 제거 후 로그인 페이지로 이동 (무한루프 방지)
-      window.location.replace('/')
+      // 로그인 페이지로 직접 이동 (무한루프 방지)
+      window.location.replace('/login')
     } catch (err: any) {
       setError(err.message)
     } finally {
