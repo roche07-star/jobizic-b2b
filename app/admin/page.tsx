@@ -77,6 +77,7 @@ export default function AdminPage() {
   const [editOrgId, setEditOrgId] = useState('')
   const [editIsActive, setEditIsActive] = useState(true)
   const [editPassword, setEditPassword] = useState('')
+  const [showEditPassword, setShowEditPassword] = useState(false)
   const [updatingUser, setUpdatingUser] = useState(false)
 
   // 업무 이관
@@ -867,13 +868,37 @@ export default function AdminPage() {
 
             <div className="form-group" style={{ marginBottom: 12 }}>
               <label className="form-label">🔒 새 비밀번호 (선택사항)</label>
-              <input
-                type="password"
-                className="form-input"
-                value={editPassword}
-                onChange={e => setEditPassword(e.target.value)}
-                placeholder="비밀번호를 변경하려면 입력하세요"
-              />
+              <div style={{ position: 'relative' }}>
+                <input
+                  type={showEditPassword ? 'text' : 'password'}
+                  className="form-input"
+                  value={editPassword}
+                  onChange={e => setEditPassword(e.target.value)}
+                  placeholder="비밀번호를 변경하려면 입력하세요"
+                  style={{ paddingRight: 45 }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowEditPassword(!showEditPassword)}
+                  style={{
+                    position: 'absolute',
+                    right: 8,
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    padding: '4px 8px',
+                    fontSize: 12,
+                    color: 'var(--muted2)',
+                    borderRadius: 4,
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.color = 'var(--accent)'}
+                  onMouseLeave={(e) => e.currentTarget.style.color = 'var(--muted2)'}
+                >
+                  {showEditPassword ? '숨기기' : '보기'}
+                </button>
+              </div>
               <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>
                 입력하지 않으면 비밀번호가 변경되지 않습니다. 최소 6자 이상 권장.
               </div>

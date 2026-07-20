@@ -26,6 +26,7 @@ export default function SettingsPage() {
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [changingPassword, setChangingPassword] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
 
   // 브라우저 알림 설정
   const [browserNotifEnabled, setBrowserNotifEnabled] = useState(true)
@@ -340,28 +341,80 @@ export default function SettingsPage() {
             <label className="form-label" style={{ marginBottom: 6, display: 'block' }}>
               {profile.password_set === false ? '비밀번호' : '새 비밀번호'}
             </label>
-            <input
-              type="password"
-              className="form-input"
-              placeholder="비밀번호 (8자 이상)"
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              disabled={changingPassword}
-            />
+            <div style={{ position: 'relative' }}>
+              <input
+                type={showPassword ? 'text' : 'password'}
+                className="form-input"
+                placeholder="비밀번호 (8자 이상)"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                disabled={changingPassword}
+                style={{ paddingRight: 45 }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                disabled={changingPassword}
+                style={{
+                  position: 'absolute',
+                  right: 8,
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: 'none',
+                  border: 'none',
+                  cursor: changingPassword ? 'not-allowed' : 'pointer',
+                  padding: '4px 8px',
+                  fontSize: 12,
+                  color: 'var(--muted2)',
+                  borderRadius: 4,
+                  opacity: changingPassword ? 0.5 : 1,
+                }}
+                onMouseEnter={(e) => !changingPassword && (e.currentTarget.style.color = 'var(--accent)')}
+                onMouseLeave={(e) => e.currentTarget.style.color = 'var(--muted2)'}
+              >
+                {showPassword ? '숨기기' : '보기'}
+              </button>
+            </div>
           </div>
 
           <div>
             <label className="form-label" style={{ marginBottom: 6, display: 'block' }}>
               {profile.password_set === false ? '비밀번호 확인' : '새 비밀번호 확인'}
             </label>
-            <input
-              type="password"
-              className="form-input"
-              placeholder="비밀번호 다시 입력"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              disabled={changingPassword}
-            />
+            <div style={{ position: 'relative' }}>
+              <input
+                type={showPassword ? 'text' : 'password'}
+                className="form-input"
+                placeholder="비밀번호 다시 입력"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                disabled={changingPassword}
+                style={{ paddingRight: 45 }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                disabled={changingPassword}
+                style={{
+                  position: 'absolute',
+                  right: 8,
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: 'none',
+                  border: 'none',
+                  cursor: changingPassword ? 'not-allowed' : 'pointer',
+                  padding: '4px 8px',
+                  fontSize: 12,
+                  color: 'var(--muted2)',
+                  borderRadius: 4,
+                  opacity: changingPassword ? 0.5 : 1,
+                }}
+                onMouseEnter={(e) => !changingPassword && (e.currentTarget.style.color = 'var(--accent)')}
+                onMouseLeave={(e) => e.currentTarget.style.color = 'var(--muted2)'}
+              >
+                {showPassword ? '숨기기' : '보기'}
+              </button>
+            </div>
           </div>
 
           <div>
