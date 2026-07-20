@@ -77,6 +77,13 @@ export default function AdminPage() {
   const [userRole, setUserRole] = useState('headhunter')
   const [userOrgId, setUserOrgId] = useState('')
   const [userInviteMethod, setUserInviteMethod] = useState<'fixed' | 'email'>('fixed') // 초대 방식
+  const [userPermissions, setUserPermissions] = useState<Permissions>({
+    jd: { read: true, write: false },
+    candidate: { read: true, write: false },
+    pipeline: { read: true, write: false },
+    recommendation: { execute: false },
+    board: { read: true, write: false }
+  })
   const [creatingUser, setCreatingUser] = useState(false)
 
   // 사용자 수정 폼
@@ -275,16 +282,23 @@ export default function AdminPage() {
     setCreatingUser(true)
     setError(null)
     try {
+      const body: any = {
+        email: userEmail,
+        full_name: userFullName,
+        role: userRole,
+        organization_id: userOrgId || null,
+        invite_method: userInviteMethod, // 'fixed' | 'email'
+      }
+
+      // Manager인 경우 permissions 추가
+      if (userRole === 'manager') {
+        body.permissions = userPermissions
+      }
+
       const res = await fetch('/api/admin/users', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: userEmail,
-          full_name: userFullName,
-          role: userRole,
-          organization_id: userOrgId || null,
-          invite_method: userInviteMethod, // 'fixed' | 'email'
-        }),
+        body: JSON.stringify(body),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
@@ -722,6 +736,130 @@ export default function AdminPage() {
                 </div>
               </div>
             )}
+
+            {/* Manager 권한 설정 (JOBIZIC Manager만) */}
+            {userRole === 'manager' && userOrgId === '369e2e56-3648-4d94-8413-a5b7dc07888c' && (
+              <div style={{ padding: 16, background: 'rgba(232, 255, 71, 0.1)', borderRadius: 8, marginBottom: 16, border: '1px solid rgba(232, 255, 71, 0.2)' }}>
+                <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 12 }}>
+                  🔐 권한 설정 (JOBIZIC Manager)
+                </div>
+
+                {/* JD 관리 */}
+                <div style={{ marginBottom: 12 }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 6 }}>JD 관리</div>
+                  <div style={{ display: 'flex', gap: 16 }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+                      <input
+                        type="checkbox"
+                        checked={userPermissions.jd.read}
+                        onChange={e => setUserPermissions({ ...userPermissions, jd: { ...userPermissions.jd, read: e.target.checked } })}
+                        style={{ width: 14, height: 14 }}
+                      />
+                      <span style={{ fontSize: 12 }}>조회</span>
+                    </label>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+                      <input
+                        type="checkbox"
+                        checked={userPermissions.jd.write}
+                        onChange={e => setUserPermissions({ ...userPermissions, jd: { ...userPermissions.jd, write: e.target.checked } })}
+                        style={{ width: 14, height: 14 }}
+                      />
+                      <span style={{ fontSize: 12 }}>수정</span>
+                    </label>
+                  </div>
+                </div>
+
+                {/* 후보자 관리 */}
+                <div style={{ marginBottom: 12 }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 6 }}>후보자 관리</div>
+                  <div style={{ display: 'flex', gap: 16 }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+                      <input
+                        type="checkbox"
+                        checked={userPermissions.candidate.read}
+                        onChange={e => setUserPermissions({ ...userPermissions, candidate: { ...userPermissions.candidate, read: e.target.checked } })}
+                        style={{ width: 14, height: 14 }}
+                      />
+                      <span style={{ fontSize: 12 }}>조회</span>
+                    </label>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+                      <input
+                        type="checkbox"
+                        checked={userPermissions.candidate.write}
+                        onChange={e => setUserPermissions({ ...userPermissions, candidate: { ...userPermissions.candidate, write: e.target.checked } })}
+                        style={{ width: 14, height: 14 }}
+                      />
+                      <span style={{ fontSize: 12 }}>수정</span>
+                    </label>
+                  </div>
+                </div>
+
+                {/* 파이프라인 */}
+                <div style={{ marginBottom: 12 }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 6 }}>파이프라인</div>
+                  <div style={{ display: 'flex', gap: 16 }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+                      <input
+                        type="checkbox"
+                        checked={userPermissions.pipeline.read}
+                        onChange={e => setUserPermissions({ ...userPermissions, pipeline: { ...userPermissions.pipeline, read: e.target.checked } })}
+                        style={{ width: 14, height: 14 }}
+                      />
+                      <span style={{ fontSize: 12 }}>조회</span>
+                    </label>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+                      <input
+                        type="checkbox"
+                        checked={userPermissions.pipeline.write}
+                        onChange={e => setUserPermissions({ ...userPermissions, pipeline: { ...userPermissions.pipeline, write: e.target.checked } })}
+                        style={{ width: 14, height: 14 }}
+                      />
+                      <span style={{ fontSize: 12 }}>수정</span>
+                    </label>
+                  </div>
+                </div>
+
+                {/* 후보자 추천 */}
+                <div style={{ marginBottom: 12 }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 6 }}>후보자 추천</div>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+                    <input
+                      type="checkbox"
+                      checked={userPermissions.recommendation.execute}
+                      onChange={e => setUserPermissions({ ...userPermissions, recommendation: { execute: e.target.checked } })}
+                      style={{ width: 14, height: 14 }}
+                    />
+                    <span style={{ fontSize: 12 }}>AI 추천 실행</span>
+                  </label>
+                </div>
+
+                {/* 게시판 */}
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 6 }}>게시판</div>
+                  <div style={{ display: 'flex', gap: 16 }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+                      <input
+                        type="checkbox"
+                        checked={userPermissions.board.read}
+                        onChange={e => setUserPermissions({ ...userPermissions, board: { ...userPermissions.board, read: e.target.checked } })}
+                        style={{ width: 14, height: 14 }}
+                      />
+                      <span style={{ fontSize: 12 }}>조회</span>
+                    </label>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+                      <input
+                        type="checkbox"
+                        checked={userPermissions.board.write}
+                        onChange={e => setUserPermissions({ ...userPermissions, board: { ...userPermissions.board, write: e.target.checked } })}
+                        style={{ width: 14, height: 14 }}
+                      />
+                      <span style={{ fontSize: 12 }}>작성</span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div style={{ display: 'flex', gap: 8 }}>
               <button className="btn btn-primary btn-sm" onClick={createUser} disabled={creatingUser || !userEmail}>
                 {creatingUser ? (userInviteMethod === 'fixed' ? '생성 중...' : '발송 중...') : (userInviteMethod === 'fixed' ? '🚀 사용자 생성' : '📧 초대 이메일 발송')}

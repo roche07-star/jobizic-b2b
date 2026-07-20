@@ -37,7 +37,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const { email, full_name, role, organization_id, invite_method } = await req.json()
+    const { email, full_name, role, organization_id, invite_method, permissions } = await req.json()
 
     if (!email) {
       return NextResponse.json({ error: '이메일은 필수입니다.' }, { status: 400 })
@@ -104,17 +104,24 @@ export async function POST(req: NextRequest) {
     console.log(`[CREATE USER] Success (${method}):`, email)
 
     // Profile upsert (없으면 생성, 있으면 업데이트)
+    const profileData: any = {
+      id: authData.user.id,
+      email,
+      organization_id,
+      full_name,
+      role: role || 'headhunter',
+      password_set: method === 'fixed' ? true : false,
+      is_active: true
+    }
+
+    // Manager인 경우 permissions 추가
+    if (permissions) {
+      profileData.permissions = permissions
+    }
+
     const { error: profileError } = await supabaseAdmin
       .from('profiles')
-      .upsert({
-        id: authData.user.id,
-        email,
-        organization_id,
-        full_name,
-        role: role || 'headhunter',
-        password_set: method === 'fixed' ? true : false,
-        is_active: true
-      }, {
+      .upsert(profileData, {
         onConflict: 'id',
         ignoreDuplicates: false
       })
