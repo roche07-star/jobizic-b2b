@@ -70,6 +70,7 @@ export async function POST(req: NextRequest) {
 
     // 관리자 이메일이 있으면 자동 초대
     let invitedUser = null
+    let userCreationError = null
     if (admin_email) {
       try {
         const isDev = process.env.DEV_MODE === 'true'
@@ -120,6 +121,7 @@ export async function POST(req: NextRequest) {
         if (authError) {
           console.error('[ORG CREATE] Auth error:', authError)
           console.error('[ORG CREATE] Full error details:', JSON.stringify(authError, null, 2))
+          userCreationError = authError.message || '사용자 생성 실패'
           // 에러를 throw 하지 않고 계속 진행 (조직은 생성됨)
           console.warn('[ORG CREATE] User creation failed but organization was created')
         }
@@ -155,6 +157,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       organization,
       invited_user: invitedUser,
+      user_creation_error: userCreationError,
     })
   } catch (e: any) {
     console.error('[admin/organizations POST]', e)

@@ -156,7 +156,8 @@ export default function AdminPage() {
             alert(`✅ 조직이 생성되고 ${orgAdminEmail}로 초대 이메일이 발송되었습니다!`)
           }
         } else {
-          alert(`✅ 조직은 생성되었으나 사용자 생성에 실패했습니다.\n수동으로 사용자를 추가해주세요.`)
+          const errorMsg = data.user_creation_error || '알 수 없는 오류'
+          alert(`✅ 조직은 생성되었으나 사용자 생성에 실패했습니다.\n\n오류: ${errorMsg}\n\n수동으로 사용자를 추가해주세요.`)
         }
       } else {
         alert('✅ 조직이 생성되었습니다!')
