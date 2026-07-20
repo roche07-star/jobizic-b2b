@@ -176,6 +176,18 @@ export default function CandidateNewPage() {
         <div>
           <div className="page-title">후보자 등록</div>
           <div className="page-sub">이력서를 붙여넣으면 AI가 자동으로 분석합니다</div>
+          <div style={{
+            marginTop: 12,
+            padding: '10px 14px',
+            background: 'rgba(255, 159, 67, 0.1)',
+            border: '1px solid rgba(255, 159, 67, 0.3)',
+            borderRadius: 8,
+            fontSize: 13,
+            color: '#d97706',
+            fontWeight: 500
+          }}>
+            ⚠️ 반드시 개인정보를 동의 받은 후보자만 등록하시기 바랍니다!
+          </div>
         </div>
       </div>
 
