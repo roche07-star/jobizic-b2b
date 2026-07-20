@@ -672,14 +672,17 @@ export default function AdminPage() {
               <div className="form-group" style={{ marginBottom: 0 }}>
                 <label className="form-label">역할</label>
                 <select className="form-select" value={userRole} onChange={e => setUserRole(e.target.value)}>
-                  <option value="admin">Super Admin</option>
+                  <optgroup label="JOBIZIC (운영사)">
+                    <option value="admin">Super Admin</option>
+                    <option value="manager">Manager</option>
+                  </optgroup>
                   <optgroup label="써치펌">
-                    <option value="owner">Owner (관리자)</option>
+                    <option value="owner">Owner</option>
                     <option value="headhunter">Headhunter</option>
-                    <option value="operator">Operator (직원)</option>
+                    <option value="operator">Operator</option>
                   </optgroup>
                   <optgroup label="채용사">
-                    <option value="manager">Manager</option>
+                    <option value="manager">Client Manager</option>
                   </optgroup>
                 </select>
               </div>
@@ -1010,14 +1013,17 @@ export default function AdminPage() {
               <div className="form-group" style={{ marginBottom: 0 }}>
                 <label className="form-label">역할</label>
                 <select className="form-select" value={editRole} onChange={e => setEditRole(e.target.value)}>
-                  <option value="admin">Super Admin</option>
+                  <optgroup label="JOBIZIC (운영사)">
+                    <option value="admin">Super Admin</option>
+                    <option value="manager">Manager</option>
+                  </optgroup>
                   <optgroup label="써치펌">
-                    <option value="owner">Owner (관리자)</option>
+                    <option value="owner">Owner</option>
                     <option value="headhunter">Headhunter</option>
-                    <option value="operator">Operator (직원)</option>
+                    <option value="operator">Operator</option>
                   </optgroup>
                   <optgroup label="채용사">
-                    <option value="manager">Manager</option>
+                    <option value="manager">Client Manager</option>
                   </optgroup>
                 </select>
               </div>
