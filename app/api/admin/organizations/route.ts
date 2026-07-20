@@ -136,7 +136,7 @@ export async function POST(req: NextRequest) {
               role: 'headhunter',
               organization_id: organization.id,
             },
-            redirectTo: `${origin}/auth/callback`,
+            redirectTo: `${origin}/auth/set-password`,
           })
           authData = result.data
           authError = result.error

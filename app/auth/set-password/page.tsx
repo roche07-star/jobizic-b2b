@@ -96,19 +96,47 @@ export default function SetPasswordPage() {
     try {
       const supabase = getSupabaseBrowser()
 
-      // 비밀번호 설정
+      // 1. 세션 확인
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) {
+        throw new Error('세션이 없습니다.')
+      }
+
+      // 2. Profile 생성/확인 (초대 이메일은 callback을 거치지 않으므로 여기서 생성)
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        throw new Error('사용자 정보를 찾을 수 없습니다.')
+      }
+
+      console.log('[SET PASSWORD] Ensuring profile exists for:', user.email)
+
+      // Profile upsert (없으면 생성, 있으면 무시)
+      const profileUpsertResponse = await fetch('/api/auth/ensure-profile', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          user_id: user.id,
+          email: user.email,
+          metadata: user.user_metadata
+        })
+      })
+
+      if (!profileUpsertResponse.ok) {
+        console.error('[SET PASSWORD] Profile upsert 실패')
+        // 계속 진행 (profile이 이미 있을 수 있음)
+      }
+
+      // 3. 비밀번호 설정
       const { error: updateError } = await supabase.auth.updateUser({
         password: password,
       })
 
       if (updateError) throw updateError
 
-      // profiles 테이블의 password_set을 true로 변경 (API 사용 - RLS bypass)
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!session) {
-        throw new Error('세션이 없습니다.')
-      }
-
+      // 4. password_set을 true로 변경
       const flagResponse = await fetch('/api/auth/set-password-flag', {
         method: 'POST',
         headers: {
@@ -120,17 +148,17 @@ export default function SetPasswordPage() {
       if (!flagResponse.ok) {
         const errorData = await flagResponse.json()
         console.error('[SET PASSWORD] password_set 업데이트 실패:', errorData)
-        throw new Error('비밀번호 설정 플래그 업데이트 실패')
+        throw new Error('비밀번호 설정 플래그 업데이트 실패: ' + (errorData.error || '알 수 없는 오류'))
       }
 
       console.log('[SET PASSWORD] password_set updated successfully')
 
       alert('✅ 비밀번호가 설정되었습니다!\n\n새 비밀번호로 다시 로그인해주세요.')
 
-      // 로그아웃 처리
+      // 5. 로그아웃 처리
       await supabase.auth.signOut()
 
-      // 로그인 페이지로 직접 이동 (무한루프 방지)
+      // 6. 로그인 페이지로 직접 이동
       window.location.replace('/login')
     } catch (err: any) {
       setError(err.message)
