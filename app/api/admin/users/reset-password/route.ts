@@ -12,9 +12,13 @@ export async function POST(req: NextRequest) {
 
     console.log('[RESET PASSWORD] Sending reset email to:', email)
 
+    // 현재 요청의 origin 가져오기
+    const origin = req.headers.get('origin') || req.headers.get('referer')?.split('/').slice(0, 3).join('/') || process.env.NEXT_PUBLIC_SITE_URL || 'https://jobizic-biz.vercel.app'
+    console.log('[RESET PASSWORD] Request origin:', origin)
+
     // Supabase Auth로 비밀번호 재설정 이메일 발송
     const { error } = await supabaseAdmin.auth.resetPasswordForEmail(email, {
-      redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://jobizic-biz.vercel.app'}/auth/reset-password`,
+      redirectTo: `${origin}/auth/reset-password`,
     })
 
     if (error) {
