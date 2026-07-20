@@ -1,5 +1,13 @@
 import { getSupabaseBrowser } from './supabase-browser'
 
+export interface Permissions {
+  jd: { read: boolean; write: boolean }
+  candidate: { read: boolean; write: boolean }
+  pipeline: { read: boolean; write: boolean }
+  recommendation: { execute: boolean }
+  board: { read: boolean; write: boolean }
+}
+
 export interface Profile {
   id: string
   organization_id: string | null
@@ -10,6 +18,7 @@ export interface Profile {
   allowed_jd_ids: string[] | null
   is_active: boolean
   password_set?: boolean
+  permissions?: Permissions | null
   organization?: {
     id: string
     name: string
@@ -115,4 +124,42 @@ export function canModifyData(profile: Profile | null): boolean {
   if (!profile) return false
   if (isJobizicManager(profile)) return false
   return true
+}
+
+// 세부 권한 체크 함수들
+export function hasPermission(
+  profile: Profile | null,
+  resource: 'jd' | 'candidate' | 'pipeline' | 'board',
+  action: 'read' | 'write'
+): boolean {
+  if (!profile) return false
+
+  // Admin은 모든 권한
+  if (profile.role === 'admin') return true
+
+  // Owner, Headhunter, Operator, Enterprise Manager는 모든 권한
+  if (profile.role === 'owner' || profile.role === 'headhunter' || profile.role === 'operator') return true
+  if (isEnterpriseManager(profile)) return true
+
+  // JOBIZIC Manager는 permissions 체크
+  if (isJobizicManager(profile) && profile.permissions) {
+    return profile.permissions[resource]?.[action] ?? false
+  }
+
+  return false
+}
+
+export function canExecuteRecommendation(profile: Profile | null): boolean {
+  if (!profile) return false
+
+  // Admin, Owner, Headhunter는 항상 가능
+  if (profile.role === 'admin' || profile.role === 'owner' || profile.role === 'headhunter') return true
+  if (isEnterpriseManager(profile)) return true
+
+  // JOBIZIC Manager는 permissions 체크
+  if (isJobizicManager(profile) && profile.permissions) {
+    return profile.permissions.recommendation?.execute ?? false
+  }
+
+  return false
 }

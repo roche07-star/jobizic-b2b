@@ -20,6 +20,14 @@ interface Organization {
   }>
 }
 
+interface Permissions {
+  jd: { read: boolean; write: boolean }
+  candidate: { read: boolean; write: boolean }
+  pipeline: { read: boolean; write: boolean }
+  recommendation: { execute: boolean }
+  board: { read: boolean; write: boolean }
+}
+
 interface User {
   id: string
   email: string
@@ -27,6 +35,7 @@ interface User {
   role: string
   organization_id: string | null
   is_active: boolean
+  permissions?: Permissions | null
   organizations: { id: string; name: string; type: string } | null
   created_at: string
   telegram_chat_id: string | null
@@ -78,6 +87,13 @@ export default function AdminPage() {
   const [editIsActive, setEditIsActive] = useState(true)
   const [editPassword, setEditPassword] = useState('')
   const [showEditPassword, setShowEditPassword] = useState(false)
+  const [editPermissions, setEditPermissions] = useState<Permissions>({
+    jd: { read: true, write: false },
+    candidate: { read: true, write: false },
+    pipeline: { read: true, write: false },
+    recommendation: { execute: false },
+    board: { read: true, write: false }
+  })
   const [updatingUser, setUpdatingUser] = useState(false)
 
   // 업무 이관
@@ -302,6 +318,19 @@ export default function AdminPage() {
     setEditOrgId(user.organization_id || '')
     setEditIsActive(user.is_active)
     setEditPassword('') // 비밀번호 필드 초기화
+
+    // Permissions 로드 (Manager인 경우)
+    if (user.permissions) {
+      setEditPermissions(user.permissions)
+    } else {
+      setEditPermissions({
+        jd: { read: true, write: false },
+        candidate: { read: true, write: false },
+        pipeline: { read: true, write: false },
+        recommendation: { execute: false },
+        board: { read: true, write: false }
+      })
+    }
   }
 
   async function updateUser() {
@@ -321,6 +350,11 @@ export default function AdminPage() {
         role: editRole,
         organization_id: editOrgId || null,
         is_active: editIsActive,
+      }
+
+      // Manager인 경우 permissions 추가
+      if (editRole === 'manager') {
+        body.permissions = editPermissions
       }
 
       // 비밀번호가 입력되었으면 추가
@@ -909,6 +943,129 @@ export default function AdminPage() {
                 <span className="form-label" style={{ marginBottom: 0 }}>활성 계정</span>
               </label>
             </div>
+
+            {/* Manager 권한 설정 (JOBIZIC Manager만) */}
+            {editRole === 'manager' && editOrgId === '369e2e56-3648-4d94-8413-a5b7dc07888c' && (
+              <div style={{ padding: 16, background: 'var(--bg3)', borderRadius: 8, marginBottom: 20 }}>
+                <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 12 }}>
+                  🔐 권한 설정 (JOBIZIC Manager)
+                </div>
+
+                {/* JD 관리 */}
+                <div style={{ marginBottom: 12 }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 6 }}>JD 관리</div>
+                  <div style={{ display: 'flex', gap: 16 }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+                      <input
+                        type="checkbox"
+                        checked={editPermissions.jd.read}
+                        onChange={e => setEditPermissions({ ...editPermissions, jd: { ...editPermissions.jd, read: e.target.checked } })}
+                        style={{ width: 14, height: 14 }}
+                      />
+                      <span style={{ fontSize: 12 }}>조회</span>
+                    </label>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+                      <input
+                        type="checkbox"
+                        checked={editPermissions.jd.write}
+                        onChange={e => setEditPermissions({ ...editPermissions, jd: { ...editPermissions.jd, write: e.target.checked } })}
+                        style={{ width: 14, height: 14 }}
+                      />
+                      <span style={{ fontSize: 12 }}>수정</span>
+                    </label>
+                  </div>
+                </div>
+
+                {/* 후보자 관리 */}
+                <div style={{ marginBottom: 12 }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 6 }}>후보자 관리</div>
+                  <div style={{ display: 'flex', gap: 16 }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+                      <input
+                        type="checkbox"
+                        checked={editPermissions.candidate.read}
+                        onChange={e => setEditPermissions({ ...editPermissions, candidate: { ...editPermissions.candidate, read: e.target.checked } })}
+                        style={{ width: 14, height: 14 }}
+                      />
+                      <span style={{ fontSize: 12 }}>조회</span>
+                    </label>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+                      <input
+                        type="checkbox"
+                        checked={editPermissions.candidate.write}
+                        onChange={e => setEditPermissions({ ...editPermissions, candidate: { ...editPermissions.candidate, write: e.target.checked } })}
+                        style={{ width: 14, height: 14 }}
+                      />
+                      <span style={{ fontSize: 12 }}>수정</span>
+                    </label>
+                  </div>
+                </div>
+
+                {/* 파이프라인 */}
+                <div style={{ marginBottom: 12 }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 6 }}>파이프라인</div>
+                  <div style={{ display: 'flex', gap: 16 }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+                      <input
+                        type="checkbox"
+                        checked={editPermissions.pipeline.read}
+                        onChange={e => setEditPermissions({ ...editPermissions, pipeline: { ...editPermissions.pipeline, read: e.target.checked } })}
+                        style={{ width: 14, height: 14 }}
+                      />
+                      <span style={{ fontSize: 12 }}>조회</span>
+                    </label>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+                      <input
+                        type="checkbox"
+                        checked={editPermissions.pipeline.write}
+                        onChange={e => setEditPermissions({ ...editPermissions, pipeline: { ...editPermissions.pipeline, write: e.target.checked } })}
+                        style={{ width: 14, height: 14 }}
+                      />
+                      <span style={{ fontSize: 12 }}>수정</span>
+                    </label>
+                  </div>
+                </div>
+
+                {/* 후보자 추천 */}
+                <div style={{ marginBottom: 12 }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 6 }}>후보자 추천</div>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+                    <input
+                      type="checkbox"
+                      checked={editPermissions.recommendation.execute}
+                      onChange={e => setEditPermissions({ ...editPermissions, recommendation: { execute: e.target.checked } })}
+                      style={{ width: 14, height: 14 }}
+                    />
+                    <span style={{ fontSize: 12 }}>AI 추천 실행</span>
+                  </label>
+                </div>
+
+                {/* 게시판 */}
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 6 }}>게시판</div>
+                  <div style={{ display: 'flex', gap: 16 }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+                      <input
+                        type="checkbox"
+                        checked={editPermissions.board.read}
+                        onChange={e => setEditPermissions({ ...editPermissions, board: { ...editPermissions.board, read: e.target.checked } })}
+                        style={{ width: 14, height: 14 }}
+                      />
+                      <span style={{ fontSize: 12 }}>조회</span>
+                    </label>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+                      <input
+                        type="checkbox"
+                        checked={editPermissions.board.write}
+                        onChange={e => setEditPermissions({ ...editPermissions, board: { ...editPermissions.board, write: e.target.checked } })}
+                        style={{ width: 14, height: 14 }}
+                      />
+                      <span style={{ fontSize: 12 }}>작성</span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* 업무 이관 UI */}
             {showTransferUI && (

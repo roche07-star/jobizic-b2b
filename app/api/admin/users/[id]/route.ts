@@ -25,14 +25,21 @@ export async function PATCH(
     }
 
     // profiles 테이블 업데이트
+    const updateData: any = {
+      full_name: body.full_name,
+      role: body.role,
+      organization_id: body.organization_id,
+      is_active: body.is_active,
+    }
+
+    // Manager인 경우 permissions도 업데이트
+    if (body.permissions) {
+      updateData.permissions = body.permissions
+    }
+
     const { data, error } = await supabaseAdmin
       .from('profiles')
-      .update({
-        full_name: body.full_name,
-        role: body.role,
-        organization_id: body.organization_id,
-        is_active: body.is_active,
-      })
+      .update(updateData)
       .eq('id', id)
       .select()
       .single()
