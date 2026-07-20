@@ -113,6 +113,19 @@ export async function POST(req: NextRequest) {
           // ===== 초대 이메일 방식 =====
           console.log('[ORG CREATE] Sending invite email to:', admin_email)
 
+          // 기존 사용자가 있으면 삭제 후 재초대
+          try {
+            const { data: existingUser } = await supabaseAdmin.auth.admin.listUsers()
+            const existing = existingUser.users.find(u => u.email === admin_email)
+
+            if (existing) {
+              console.log('[ORG CREATE] Deleting existing user for re-invite:', admin_email)
+              await supabaseAdmin.auth.admin.deleteUser(existing.id)
+            }
+          } catch (deleteError) {
+            console.log('[ORG CREATE] No existing user or delete failed (continuing):', deleteError)
+          }
+
           const result = await supabaseAdmin.auth.admin.inviteUserByEmail(admin_email, {
             data: {
               full_name: admin_name,

@@ -77,12 +77,63 @@ export async function GET(req: NextRequest) {
       hasOrgInMetadata
     })
 
-    // 고정 비밀번호 방식 (invited_at 없음 + org_id 있음) → profile만 동기화하고 대시보드로
-    // 초대 이메일 방식 (invited_at 있음 or type='invite') → 비밀번호 설정 페이지로
+    // 초대 이메일 방식 먼저 체크 (invited_at 있음 or type='invite')
+    if (isInvitedUser || type === 'invite') {
+      console.log('[AUTH CALLBACK] Invited user detected, setting up profile')
+
+      // Profile upsert (초대 이메일 방식)
+      if (hasOrgInMetadata && user?.id) {
+        const { organization_id, full_name, role } = user.user_metadata
+
+        console.log('[AUTH CALLBACK] Syncing profile from metadata (invite):', {
+          user_id: user.id,
+          organization_id,
+          full_name,
+          role
+        })
+
+        try {
+          const profileData: any = {
+            id: user.id,
+            email: user.email,
+            password_set: false, // 초대 이메일 방식 - 아직 비밀번호 미설정
+            is_active: true
+          }
+
+          if (organization_id) profileData.organization_id = organization_id
+          if (full_name) profileData.full_name = full_name
+          if (role) profileData.role = role
+
+          const { error: profileError } = await supabaseAdmin
+            .from('profiles')
+            .upsert(profileData, {
+              onConflict: 'id',
+              ignoreDuplicates: false
+            })
+
+          if (profileError) {
+            console.error('[AUTH CALLBACK] Profile upsert error:', profileError)
+          } else {
+            console.log('[AUTH CALLBACK] Profile upsert successful (invite)')
+          }
+        } catch (err) {
+          console.error('[AUTH CALLBACK] Profile upsert exception:', err)
+        }
+      }
+
+      console.log('[AUTH CALLBACK] Redirecting to set-password (invited user)')
+      const finalResponse = NextResponse.redirect(`${requestUrl.origin}/auth/set-password`)
+      response.cookies.getAll().forEach(cookie => {
+        finalResponse.cookies.set(cookie)
+      })
+      return finalResponse
+    }
+
+    // 고정 비밀번호 방식 (invited_at 없음 + org_id 있음)
     if (hasOrgInMetadata && user?.id) {
       const { organization_id, full_name, role } = user.user_metadata
 
-      console.log('[AUTH CALLBACK] Syncing profile from metadata:', {
+      console.log('[AUTH CALLBACK] Syncing profile from metadata (fixed password):', {
         user_id: user.id,
         organization_id,
         full_name,
@@ -112,21 +163,11 @@ export async function GET(req: NextRequest) {
         if (profileError) {
           console.error('[AUTH CALLBACK] Profile upsert error:', profileError)
         } else {
-          console.log('[AUTH CALLBACK] Profile upsert successful')
+          console.log('[AUTH CALLBACK] Profile upsert successful (fixed password)')
         }
       } catch (err) {
         console.error('[AUTH CALLBACK] Profile upsert exception:', err)
       }
-    }
-
-    // 초대 이메일 방식인 경우에만 비밀번호 설정 페이지로 (현재는 사용 안 함)
-    if (isInvitedUser || type === 'invite') {
-      console.log('[AUTH CALLBACK] Redirecting to set-password (invited user)')
-      const finalResponse = NextResponse.redirect(`${requestUrl.origin}/auth/set-password`)
-      response.cookies.getAll().forEach(cookie => {
-        finalResponse.cookies.set(cookie)
-      })
-      return finalResponse
     }
 
     // type에 따라 리다이렉트 경로 결정
