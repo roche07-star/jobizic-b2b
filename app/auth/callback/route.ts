@@ -69,79 +69,59 @@ export async function GET(req: NextRequest) {
     const isInvitedUser = user?.invited_at
     const hasOrgInMetadata = !!user?.user_metadata?.organization_id
 
-    // profiles 테이블에서 password_set 확인
-    let needsPasswordSetup = false
-    if (user?.id) {
-      const { data: profile } = await supabaseAdmin
-        .from('profiles')
-        .select('password_set, organization_id')
-        .eq('id', user.id)
-        .single()
-
-      needsPasswordSetup = profile?.password_set === false
-
-      console.log('[AUTH CALLBACK] Profile check:', {
-        user_id: user.id,
-        password_set: profile?.password_set,
-        profile_org_id: profile?.organization_id,
-        metadata_org_id: user.user_metadata?.organization_id
-      })
-    }
-
     console.log('[AUTH CALLBACK] User info:', {
       email: user?.email,
       type,
       invited_at: user?.invited_at,
       isInvitedUser,
-      hasOrgInMetadata,
-      needsPasswordSetup
+      hasOrgInMetadata
     })
 
-    // 초대받은 사용자는 무조건 비밀번호 설정 페이지로
-    if (isInvitedUser || type === 'invite' || hasOrgInMetadata || needsPasswordSetup) {
-      console.log('[AUTH CALLBACK] Redirecting to set-password (invited user)')
+    // 고정 비밀번호 방식 (invited_at 없음 + org_id 있음) → profile만 동기화하고 대시보드로
+    // 초대 이메일 방식 (invited_at 있음 or type='invite') → 비밀번호 설정 페이지로
+    if (hasOrgInMetadata && user?.id) {
+      const { organization_id, full_name, role } = user.user_metadata
 
-      // Profile 업데이트 (user_metadata → profiles 테이블)
-      if (user?.id && user?.user_metadata) {
-        const { organization_id, full_name, role } = user.user_metadata
+      console.log('[AUTH CALLBACK] Syncing profile from metadata:', {
+        user_id: user.id,
+        organization_id,
+        full_name,
+        role
+      })
 
-        console.log('[AUTH CALLBACK] Updating profile for invited user:', {
-          user_id: user.id,
-          organization_id,
-          full_name,
-          role
-        })
-
-        try {
-          // Profile upsert (없으면 생성, 있으면 업데이트)
-          const profileData: any = {
-            id: user.id,
-            email: user.email,
-            password_set: false, // 초대받은 사용자는 비밀번호 미설정 상태
-            is_active: true
-          }
-
-          if (organization_id) profileData.organization_id = organization_id
-          if (full_name) profileData.full_name = full_name
-          if (role) profileData.role = role
-
-          const { error: profileError } = await supabaseAdmin
-            .from('profiles')
-            .upsert(profileData, {
-              onConflict: 'id',
-              ignoreDuplicates: false
-            })
-
-          if (profileError) {
-            console.error('[AUTH CALLBACK] Profile upsert error:', profileError)
-          } else {
-            console.log('[AUTH CALLBACK] Profile upsert successful')
-          }
-        } catch (err) {
-          console.error('[AUTH CALLBACK] Profile upsert exception:', err)
+      try {
+        // Profile upsert (없으면 생성, 있으면 업데이트)
+        const profileData: any = {
+          id: user.id,
+          email: user.email,
+          password_set: true, // 고정 비밀번호로 이미 생성됨
+          is_active: true
         }
-      }
 
+        if (organization_id) profileData.organization_id = organization_id
+        if (full_name) profileData.full_name = full_name
+        if (role) profileData.role = role
+
+        const { error: profileError } = await supabaseAdmin
+          .from('profiles')
+          .upsert(profileData, {
+            onConflict: 'id',
+            ignoreDuplicates: false
+          })
+
+        if (profileError) {
+          console.error('[AUTH CALLBACK] Profile upsert error:', profileError)
+        } else {
+          console.log('[AUTH CALLBACK] Profile upsert successful')
+        }
+      } catch (err) {
+        console.error('[AUTH CALLBACK] Profile upsert exception:', err)
+      }
+    }
+
+    // 초대 이메일 방식인 경우에만 비밀번호 설정 페이지로 (현재는 사용 안 함)
+    if (isInvitedUser || type === 'invite') {
+      console.log('[AUTH CALLBACK] Redirecting to set-password (invited user)')
       const finalResponse = NextResponse.redirect(`${requestUrl.origin}/auth/set-password`)
       response.cookies.getAll().forEach(cookie => {
         finalResponse.cookies.set(cookie)

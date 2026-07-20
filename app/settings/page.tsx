@@ -163,9 +163,12 @@ export default function SettingsPage() {
         })
       }
 
-      success(profile.password_set === false
+      const successMsg = profile.password_set === false
         ? '✅ 비밀번호가 성공적으로 설정되었습니다!'
-        : '✅ 비밀번호가 성공적으로 변경되었습니다!')
+        : '✅ 비밀번호가 성공적으로 변경되었습니다!'
+
+      success(successMsg)
+      alert(successMsg) // 팝업으로도 표시
 
       setNewPassword('')
       setConfirmPassword('')
