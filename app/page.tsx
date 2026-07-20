@@ -460,7 +460,7 @@ export default function Dashboard() {
                     </td>
                     <td style={{ padding: '12px 8px' }}>
                       <span className="badge" style={{ fontSize: 11 }}>
-                        {member.role === 'owner' ? '오너' : member.role === 'headhunter' ? 'PM' : member.role === 'searcher' ? 'Searcher' : member.role}
+                        {member.role === 'owner' ? 'Owner' : member.role === 'headhunter' ? 'Headhunter' : member.role === 'operator' ? 'Operator' : member.role === 'manager' ? 'Manager' : member.role}
                       </span>
                     </td>
                     <td style={{ padding: '12px 8px', textAlign: 'center', fontSize: 14, fontWeight: 600 }}>{member.jdCount}</td>

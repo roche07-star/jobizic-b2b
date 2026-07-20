@@ -73,13 +73,10 @@ export default function SettingsPage() {
   function getRoleLabel(role: string) {
     const roleLabels: Record<string, string> = {
       'admin': 'Super Admin',
-      'owner': 'Owner',
-      'headhunter': 'PM',
-      'searcher': 'Searcher',
-      'client': '고객사',
-      'client_owner': '고객사 Owner',
-      'client_pm': '고객사 PM',
-      'client_searcher': '고객사 Searcher',
+      'owner': 'Owner (써치펌 관리자)',
+      'headhunter': 'Headhunter',
+      'operator': 'Operator (직원)',
+      'manager': 'Manager (채용사)',
     }
     return roleLabels[role] || role
   }

@@ -462,10 +462,11 @@ async function handleCallbackQuery(query: any) {
  */
 function getRoleKorean(role: string | undefined): string {
   const roleMap: Record<string, string> = {
-    admin: '관리자',
+    admin: 'Super Admin',
     owner: 'Owner',
-    headhunter: 'PM',
-    searcher: 'Searcher',
+    headhunter: 'Headhunter',
+    operator: 'Operator',
+    manager: 'Manager',
   }
   return roleMap[role || ''] || role || '사용자'
 }

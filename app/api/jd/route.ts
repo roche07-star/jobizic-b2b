@@ -125,16 +125,9 @@ export async function POST(req: NextRequest) {
         .eq('email', created_by)
         .single()
 
-      if (profile && profile.role === 'searcher') {
+      if (profile && profile.role === 'operator') {
         return NextResponse.json(
-          { error: 'Searcher는 JD를 등록할 수 없습니다. PM 또는 Owner에게 문의하세요.' },
-          { status: 403 }
-        )
-      }
-
-      if (profile && profile.role.startsWith('client_')) {
-        return NextResponse.json(
-          { error: '채용사 계정은 JD를 직접 등록할 수 없습니다.' },
+          { error: 'Operator는 JD를 등록할 수 없습니다. Owner 또는 Headhunter에게 문의하세요.' },
           { status: 403 }
         )
       }

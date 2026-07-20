@@ -89,7 +89,7 @@ export default function AdminPage() {
 
   useEffect(() => {
     getProfile().then(p => {
-      if (!p || (p.role !== 'admin' && p.role !== 'owner')) {
+      if (!p || (p.role !== 'admin' && p.role !== 'owner' && p.role !== 'manager')) {
         router.push('/')
         return
       }
@@ -431,7 +431,7 @@ export default function AdminPage() {
       )}
 
       {/* 시스템 설정 */}
-      {(profile.role === 'admin' || profile.role === 'owner') && (
+      {(profile.role === 'admin' || profile.role === 'owner' || profile.role === 'manager') && (
         <div className="card" style={{ marginBottom: 20 }}>
           <div className="card-title">시스템 설정</div>
           <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
@@ -622,14 +622,13 @@ export default function AdminPage() {
                 <label className="form-label">역할</label>
                 <select className="form-select" value={userRole} onChange={e => setUserRole(e.target.value)}>
                   <option value="admin">Super Admin</option>
-                  <option value="owner">오너 (써치펌 대표)</option>
-                  <option value="headhunter">PM (써치펌)</option>
-                  <option value="searcher">Searcher (써치펌)</option>
-                  <option value="client">고객사 (레거시)</option>
-                  <optgroup label="채용사 Role">
-                    <option value="client_owner">채용사 Owner</option>
-                    <option value="client_pm">채용사 PM</option>
-                    <option value="client_searcher">채용사 Searcher</option>
+                  <optgroup label="써치펌">
+                    <option value="owner">Owner (관리자)</option>
+                    <option value="headhunter">Headhunter</option>
+                    <option value="operator">Operator (직원)</option>
+                  </optgroup>
+                  <optgroup label="채용사">
+                    <option value="manager">Manager</option>
                   </optgroup>
                 </select>
               </div>
@@ -837,14 +836,13 @@ export default function AdminPage() {
                 <label className="form-label">역할</label>
                 <select className="form-select" value={editRole} onChange={e => setEditRole(e.target.value)}>
                   <option value="admin">Super Admin</option>
-                  <option value="owner">오너 (써치펌 대표)</option>
-                  <option value="headhunter">PM (써치펌)</option>
-                  <option value="searcher">Searcher (써치펌)</option>
-                  <option value="client">고객사 (레거시)</option>
-                  <optgroup label="채용사 Role">
-                    <option value="client_owner">채용사 Owner</option>
-                    <option value="client_pm">채용사 PM</option>
-                    <option value="client_searcher">채용사 Searcher</option>
+                  <optgroup label="써치펌">
+                    <option value="owner">Owner (관리자)</option>
+                    <option value="headhunter">Headhunter</option>
+                    <option value="operator">Operator (직원)</option>
+                  </optgroup>
+                  <optgroup label="채용사">
+                    <option value="manager">Manager</option>
                   </optgroup>
                 </select>
               </div>

@@ -173,7 +173,7 @@ export default function Nav() {
 
   const allLinks = [
     ...links,
-    ...((profile?.role === 'admin' || profile?.role === 'owner') ? adminLinks : [])
+    ...((profile?.role === 'admin' || profile?.role === 'owner' || profile?.role === 'manager') ? adminLinks : [])
   ]
 
   return (
@@ -194,7 +194,7 @@ export default function Nav() {
           </Link>
         ))}
         {(() => {
-          const shouldShow = profile?.role === 'admin' || profile?.role === 'owner'
+          const shouldShow = profile?.role === 'admin' || profile?.role === 'owner' || profile?.role === 'manager'
           console.log('[Nav] Should show admin links?', shouldShow, 'profile.role:', profile?.role)
           return shouldShow && adminLinks.map(l => (
             <Link
@@ -252,7 +252,7 @@ export default function Nav() {
                   whiteSpace: 'nowrap',
                 }}
               >
-                {l.href === '/admin' && profile?.role === 'owner' ? '조직 관리' : l.label}
+                {l.href === '/admin' && (profile?.role === 'owner' || profile?.role === 'manager') ? '조직 관리' : l.label}
               </Link>
             ))}
           </div>
@@ -269,8 +269,8 @@ export default function Nav() {
             {profile.organization && <span style={{ margin: '0 6px' }}>·</span>}
             <span className="nav-profile-name">{profile.full_name || profile.email}</span>
             {profile.role === 'admin' && <span style={{ color: 'var(--accent)', marginLeft: 6 }}>Super Admin</span>}
-            {profile.role === 'owner' && <span style={{ color: 'var(--accent)', marginLeft: 6 }}>오너</span>}
-            {profile.role === 'client' && <span style={{ color: 'var(--muted2)', marginLeft: 6 }}>고객사</span>}
+            {profile.role === 'owner' && <span style={{ color: 'var(--accent)', marginLeft: 6 }}>Owner</span>}
+            {profile.role === 'manager' && <span style={{ color: 'var(--accent)', marginLeft: 6 }}>Manager</span>}
           </div>
         )}
 

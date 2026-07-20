@@ -55,11 +55,11 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
         .eq('email', updated_by)
         .single()
 
-      if (profile && profile.role === 'searcher') {
+      if (profile && profile.role === 'operator') {
         const restrictedStages = ['클라이언트 제출', '1차 면접', '2차 면접', '최종 면접', '합격', '탈락', 'submitted', 'interview', 'offer', 'hired', 'rejected']
         if (restrictedStages.some(s => stage.toLowerCase().includes(s.toLowerCase()))) {
           return NextResponse.json(
-            { error: 'Searcher는 "제안" 단계까지만 진행할 수 있습니다. PM 또는 Owner에게 문의하세요.' },
+            { error: 'Operator는 "제안" 단계까지만 진행할 수 있습니다. Owner 또는 Headhunter에게 문의하세요.' },
             { status: 403 }
           )
         }
@@ -137,8 +137,8 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
             .eq('email', oldPipeline.candidate_created_by)
             .single()
 
-          // Searcher가 자신의 후보자이고, 본인이 변경한 것이 아니면 알림
-          if (candidateOwner && candidateOwner.id !== profile.id && candidateOwner.role === 'searcher') {
+          // Operator가 자신의 후보자이고, 본인이 변경한 것이 아니면 알림
+          if (candidateOwner && candidateOwner.id !== profile.id && candidateOwner.role === 'operator') {
             await createNotification({
               userId: candidateOwner.id,
               type: 'pipeline_stage',

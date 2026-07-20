@@ -77,9 +77,9 @@ export async function GET(req: NextRequest) {
       console.log('[pipeline] Filtering by user organization_id:', userProfile.organization_id)
       q = q.eq('organization_id', userProfile.organization_id)
 
-      if (role === 'searcher') {
-        // Searcher: 본인이 생성한 파이프라인만 (현재 조직 내에서)
-        console.log('[pipeline] Searcher: Filtering by created_by:', userEmail)
+      if (role === 'operator') {
+        // Operator: 본인이 생성한 파이프라인만 (현재 조직 내에서)
+        console.log('[pipeline] Operator: Filtering by created_by:', userEmail)
         q = q.eq('created_by', userEmail)
       } else if (role === 'headhunter') {
         // PM: 본인 JD에 연결된 파이프라인 + 본인이 추천한 파이프라인 (현재 조직 내에서)
@@ -327,8 +327,8 @@ export async function POST(req: NextRequest) {
           .eq('email', body.candidate_created_by)
           .single()
 
-        // Searcher가 자신의 후보자가 매칭된 경우만 알림
-        if (candidateOwner && candidateOwner.role === 'searcher') {
+        // Operator가 자신의 후보자가 매칭된 경우만 알림
+        if (candidateOwner && candidateOwner.role === 'operator') {
           await createNotification({
             userId: candidateOwner.id,
             type: 'assignment',
