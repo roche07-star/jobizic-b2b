@@ -33,26 +33,12 @@ export async function GET(req: NextRequest) {
     if (organizationId && role === 'admin') {
       // Admin만 organization_id 파라미터로 조직 선택 가능
       q = q.eq('organization_id', organizationId)
-    } else if (role === 'owner' && userEmail) {
-      // Owner는 자신의 조직 전체 JD 조회
-      const { data: ownerProfile } = await supabaseAdmin
-        .from('profiles')
-        .select('organization_id')
-        .eq('email', userEmail)
-        .single()
-
-      if (ownerProfile?.organization_id) {
-        console.log('[jd] Owner: Filtering by organization_id:', ownerProfile.organization_id)
-        q = q.eq('organization_id', ownerProfile.organization_id)
-      } else {
-        console.warn('[jd] Owner has no organization_id')
-      }
     }
 
-    // Admin과 Owner는 조직 전체 JD 조회
-    // headhunter는 본인 JD + 관심 JD + 활성 JD (현재 조직 내에서만)
+    // Admin은 조직 전체 JD 조회 (organizationId 파라미터로 선택)
+    // Owner/Headhunter는 본인 JD + 관심 JD + 활성 JD (현재 조직 내에서만)
     // 기타 사용자는 본인 JD 또는 활성 JD (현재 조직 내에서만)
-    if (role && role !== 'admin' && role !== 'owner' && userEmail) {
+    if (role && role !== 'admin' && userEmail) {
       // 먼저 현재 사용자의 organization_id 조회 (조직 격리를 위해 필수!)
       const { data: userProfile } = await supabaseAdmin
         .from('profiles')
@@ -69,8 +55,8 @@ export async function GET(req: NextRequest) {
       console.log('[jd] Filtering by user organization_id:', userProfile.organization_id)
       q = q.eq('organization_id', userProfile.organization_id)
 
-      if (role === 'headhunter') {
-        // headhunter: 관심 등록한 JD도 포함
+      if (role === 'headhunter' || role === 'owner') {
+        // Owner/Headhunter: 관심 등록한 JD도 포함
         const { data: interests } = await supabaseAdmin
           .from('jd_interests')
           .select('jd_id')

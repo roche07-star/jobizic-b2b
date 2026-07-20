@@ -38,14 +38,8 @@ export async function GET(req: NextRequest) {
       if (status) {
         query = query.eq('status', status)
       }
-    } else if (role === 'owner') {
-      // Owner: 본인 조직의 추천만
-      query = query.eq('organization_id', profile.organization_id)
-      if (status) {
-        query = query.eq('status', status)
-      }
-    } else if (role === 'headhunter') {
-      // Headhunter: 본인이 생성한 추천 OR 본인에게 추천된 것
+    } else if (role === 'owner' || role === 'headhunter') {
+      // Owner/Headhunter: 본인이 생성한 추천 OR 본인에게 추천된 것
       query = query.or(`recommended_by.eq.${profile.email},recommended_to.eq.${profile.email}`)
       if (status) {
         query = query.eq('status', status)
