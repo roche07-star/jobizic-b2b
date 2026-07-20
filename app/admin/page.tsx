@@ -431,7 +431,7 @@ export default function AdminPage() {
       )}
 
       {/* 시스템 설정 */}
-      {profile.role === 'admin' && (
+      {(profile.role === 'admin' || profile.role === 'owner') && (
         <div className="card" style={{ marginBottom: 20 }}>
           <div className="card-title">시스템 설정</div>
           <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>

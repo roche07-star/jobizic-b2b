@@ -106,7 +106,7 @@ export async function POST(req: NextRequest) {
             email_confirm: true, // 이메일 확인 불필요
             user_metadata: {
               full_name: admin_name,
-              role: 'headhunter',
+              role: 'owner',
               organization_id: organization.id,
             },
           })
@@ -133,7 +133,7 @@ export async function POST(req: NextRequest) {
           const result = await supabaseAdmin.auth.admin.inviteUserByEmail(admin_email, {
             data: {
               full_name: admin_name,
-              role: 'headhunter',
+              role: 'owner',
               organization_id: organization.id,
             },
             redirectTo: `${origin}/auth/set-password`,
