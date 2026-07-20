@@ -44,8 +44,14 @@ export async function GET(req: NextRequest) {
       if (status) {
         query = query.eq('status', status)
       }
+    } else if (role === 'headhunter') {
+      // Headhunter: 본인이 생성한 추천 OR 본인에게 추천된 것
+      query = query.or(`recommended_by.eq.${profile.email},recommended_to.eq.${profile.email}`)
+      if (status) {
+        query = query.eq('status', status)
+      }
     } else {
-      // PM: 본인에게 추천된 것만 조회
+      // 기타 role: 본인에게 추천된 것만 조회
       query = query.eq('recommended_to', profile.email)
       if (status) {
         query = query.eq('status', status)

@@ -91,7 +91,7 @@ export default function RecommendationsPage() {
     if (userRole) {
       if (activeTab === 'received') {
         loadRecommendations()
-      } else if (activeTab === 'manage' && userRole === 'admin') {
+      } else if (activeTab === 'manage' && (userRole === 'admin' || userRole === 'owner' || userRole === 'headhunter')) {
         loadActiveJDs()
         loadAdminRecommendations()
       }
@@ -223,14 +223,24 @@ export default function RecommendationsPage() {
   async function loadActiveJDs() {
     setJdLoading(true)
     try {
-      const res = await fetch('/api/jd?status=활성')
+      const profile = await getProfile()
+      if (!profile) return
+
+      // role과 user_email을 파라미터로 전달하여 권한별 필터링
+      const params = new URLSearchParams({
+        status: '활성',
+        role: profile.role,
+        user_email: profile.email
+      })
+
+      const res = await fetch(`/api/jd?${params}`)
       const data = await res.json()
 
       if (res.ok) {
         setActiveJDs(data.jds || [])
       }
     } catch (err) {
-      console.error('[admin recommendations] Load JDs error:', err)
+      console.error('[recommendations] Load JDs error:', err)
     } finally {
       setJdLoading(false)
     }
@@ -368,13 +378,15 @@ export default function RecommendationsPage() {
           <div className="page-sub">
             {userRole === 'admin'
               ? 'AI 후보 추천 관리 및 내가 받은 추천을 확인하세요'
+              : (userRole === 'owner' || userRole === 'headhunter')
+              ? '후보자 매칭 및 내가 받은 추천을 확인하세요'
               : '추천 받은 후보자를 확인하고 수락/거절하세요'}
           </div>
         </div>
       </div>
 
-      {/* Super Admin 탭 */}
-      {userRole === 'admin' && (
+      {/* 탭 (Admin, Owner, Headhunter) */}
+      {(userRole === 'admin' || userRole === 'owner' || userRole === 'headhunter') && (
         <div style={{ display: 'flex', gap: 12, marginBottom: 20 }}>
           <button
             className={`btn${activeTab === 'manage' ? ' btn-primary' : ' btn-ghost'}`}
