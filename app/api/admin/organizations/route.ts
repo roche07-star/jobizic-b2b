@@ -47,7 +47,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const { name, type, contact_email, contact_phone, admin_email, admin_name } = await req.json()
+    const { name, type, contact_email, contact_phone, admin_email, admin_name, invite_method } = await req.json()
 
     if (!name) {
       return NextResponse.json({ error: '조직명은 필수입니다.' }, { status: 400 })
@@ -68,41 +68,65 @@ export async function POST(req: NextRequest) {
 
     if (orgError) return NextResponse.json({ error: orgError.message }, { status: 500 })
 
-    // 관리자 이메일이 있으면 자동 생성 (고정 비밀번호)
+    // 관리자 이메일이 있으면 자동 생성
     let invitedUser = null
     let userCreationError = null
     const defaultPassword = 'jobizic112'
+    const method = invite_method || 'fixed' // 기본값: 고정 비밀번호
 
     if (admin_email) {
       try {
-        console.log('[ORG CREATE] Creating admin with fixed password:', admin_email)
+        let authData, authError
 
-        // 기존 사용자가 있으면 삭제 후 재생성
-        try {
-          const { data: existingUser } = await supabaseAdmin.auth.admin.listUsers()
-          const existing = existingUser.users.find(u => u.email === admin_email)
+        if (method === 'fixed') {
+          // ===== 고정 비밀번호 방식 =====
+          console.log('[ORG CREATE] Creating admin with fixed password:', admin_email)
 
-          if (existing) {
-            console.log('[ORG CREATE] Deleting existing user:', admin_email)
-            await supabaseAdmin.auth.admin.deleteUser(existing.id)
+          // 기존 사용자가 있으면 삭제 후 재생성
+          try {
+            const { data: existingUser } = await supabaseAdmin.auth.admin.listUsers()
+            const existing = existingUser.users.find(u => u.email === admin_email)
+
+            if (existing) {
+              console.log('[ORG CREATE] Deleting existing user:', admin_email)
+              await supabaseAdmin.auth.admin.deleteUser(existing.id)
+            }
+          } catch (deleteError) {
+            console.log('[ORG CREATE] No existing user or delete failed (continuing):', deleteError)
           }
-        } catch (deleteError) {
-          console.log('[ORG CREATE] No existing user or delete failed (continuing):', deleteError)
+
+          // 고정 비밀번호로 사용자 생성
+          const result = await supabaseAdmin.auth.admin.createUser({
+            email: admin_email,
+            password: defaultPassword,
+            email_confirm: true, // 이메일 확인 불필요
+            user_metadata: {
+              full_name: admin_name,
+              role: 'headhunter',
+              organization_id: organization.id,
+            },
+          })
+          authData = result.data
+          authError = result.error
+
+        } else if (method === 'email') {
+          // ===== 초대 이메일 방식 =====
+          console.log('[ORG CREATE] Sending invite email to:', admin_email)
+
+          const result = await supabaseAdmin.auth.admin.inviteUserByEmail(admin_email, {
+            data: {
+              full_name: admin_name,
+              role: 'headhunter',
+              organization_id: organization.id,
+            },
+            redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://jobizic-biz.vercel.app'}/auth/callback`,
+          })
+          authData = result.data
+          authError = result.error
         }
 
-        // 고정 비밀번호로 사용자 생성
-        const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
-          email: admin_email,
-          password: defaultPassword,
-          email_confirm: true, // 이메일 확인 불필요
-          user_metadata: {
-            full_name: admin_name,
-            role: 'headhunter',
-            organization_id: organization.id,
-          },
-        })
-
         console.log('[ORG CREATE] User creation result:', {
+          method,
           success: !authError,
           email: authData?.user?.email,
           error: authError?.message
@@ -126,7 +150,7 @@ export async function POST(req: NextRequest) {
               organization_id: organization.id,
               full_name: admin_name,
               role: 'headhunter',
-              password_set: true, // 고정 비밀번호로 생성되었으므로 true
+              password_set: method === 'fixed' ? true : false, // 고정 비밀번호: true, 초대 이메일: false
               is_active: true
             }, {
               onConflict: 'id',
@@ -140,7 +164,8 @@ export async function POST(req: NextRequest) {
           invitedUser = {
             email: admin_email,
             name: admin_name,
-            password: defaultPassword // 화면에 표시할 비밀번호
+            password: method === 'fixed' ? defaultPassword : null, // 고정 비밀번호만 표시
+            method: method
           }
           console.log('[ORG CREATE] Admin created successfully:', invitedUser)
         }

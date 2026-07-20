@@ -49,6 +49,7 @@ export default function AdminPage() {
   const [orgPhone, setOrgPhone] = useState('')
   const [orgAdminEmail, setOrgAdminEmail] = useState('') // 관리자 이메일
   const [orgAdminName, setOrgAdminName] = useState('') // 관리자 이름
+  const [inviteMethod, setInviteMethod] = useState<'fixed' | 'email'>('fixed') // 초대 방식
   const [creatingOrg, setCreatingOrg] = useState(false)
 
   // 조직 수정 폼
@@ -132,6 +133,7 @@ export default function AdminPage() {
           contact_phone: orgPhone,
           admin_email: orgAdminEmail || null,
           admin_name: orgAdminName || null,
+          invite_method: inviteMethod, // 'fixed' | 'email'
         }),
       })
       const data = await res.json()
@@ -146,12 +148,19 @@ export default function AdminPage() {
       setOrgPhone('')
       setOrgAdminEmail('')
       setOrgAdminName('')
+      setInviteMethod('fixed')
 
       if (orgAdminEmail) {
         if (data.invited_user) {
+          const method = data.invited_user.method
           const password = data.invited_user.password
-          if (password) {
+
+          if (method === 'fixed' && password) {
+            // 고정 비밀번호 방식
             alert(`✅ 조직 & 사용자 생성 완료!\n\n📧 로그인 정보:\n이메일: ${orgAdminEmail}\n🔑 비밀번호: ${password}\n\n※ 사용자에게 직접 전달해주세요.`)
+          } else if (method === 'email') {
+            // 초대 이메일 방식
+            alert(`✅ 조직이 생성되고 ${orgAdminEmail}로 초대 이메일이 발송되었습니다!\n\n사용자가 이메일에서 링크를 클릭하여 비밀번호를 설정할 수 있습니다.`)
           } else {
             alert(`✅ 조직이 생성되었습니다.\n\n사용자 정보를 확인할 수 없습니다.`)
           }
@@ -485,8 +494,46 @@ export default function AdminPage() {
             </div>
 
             {orgAdminEmail && (
-              <div style={{ fontSize: 11, color: 'var(--muted2)', marginBottom: 12, padding: 8, background: 'var(--bg)', borderRadius: 6 }}>
-                📧 {orgAdminEmail}로 초대 이메일이 자동 발송됩니다.
+              <div style={{ marginBottom: 16, padding: 12, background: 'var(--bg3)', borderRadius: 8, border: '1px solid var(--border)' }}>
+                <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 8, color: 'var(--text)' }}>
+                  🔑 계정 생성 방식
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  <label style={{ display: 'flex', alignItems: 'flex-start', gap: 8, cursor: 'pointer', padding: 8, borderRadius: 6, background: inviteMethod === 'fixed' ? 'var(--bg)' : 'transparent', border: inviteMethod === 'fixed' ? '1px solid var(--accent)' : '1px solid transparent' }}>
+                    <input
+                      type="radio"
+                      name="inviteMethod"
+                      value="fixed"
+                      checked={inviteMethod === 'fixed'}
+                      onChange={() => setInviteMethod('fixed')}
+                      style={{ marginTop: 2 }}
+                    />
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 2 }}>⚡ 빠른 생성 (고정 비밀번호)</div>
+                      <div style={{ fontSize: 11, color: 'var(--muted2)' }}>
+                        비밀번호: <code style={{ background: 'var(--bg)', padding: '2px 6px', borderRadius: 4, fontWeight: 600 }}>jobizic112</code><br />
+                        즉시 로그인 가능 · 테스트/개발용 추천
+                      </div>
+                    </div>
+                  </label>
+                  <label style={{ display: 'flex', alignItems: 'flex-start', gap: 8, cursor: 'pointer', padding: 8, borderRadius: 6, background: inviteMethod === 'email' ? 'var(--bg)' : 'transparent', border: inviteMethod === 'email' ? '1px solid var(--accent)' : '1px solid transparent' }}>
+                    <input
+                      type="radio"
+                      name="inviteMethod"
+                      value="email"
+                      checked={inviteMethod === 'email'}
+                      onChange={() => setInviteMethod('email')}
+                      style={{ marginTop: 2 }}
+                    />
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 2 }}>📧 초대 이메일 발송</div>
+                      <div style={{ fontSize: 11, color: 'var(--muted2)' }}>
+                        사용자가 직접 비밀번호 설정<br />
+                        이메일 검증 자동 · 프로덕션용 추천
+                      </div>
+                    </div>
+                  </label>
+                </div>
               </div>
             )}
 
