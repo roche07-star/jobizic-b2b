@@ -409,7 +409,7 @@ export default function RecommendationsPage() {
           {/* 활성 JD 목록 */}
           <div className="card" style={{ marginBottom: 24 }}>
             <div className="card-title">활성 JD 목록</div>
-            <div className="card-sub">PM이 활성화한 JD에 대해 AI 후보 찾기를 실행하세요</div>
+            <div className="card-sub">PM이 활성화한 JD에 대해 후보 찾기를 실행하세요</div>
 
             {jdLoading ? (
               <div className="empty">
@@ -469,7 +469,7 @@ export default function RecommendationsPage() {
                             AI 분석 중...
                           </>
                         ) : (
-                          '🤖 AI 후보 찾기'
+                          '후보찾기'
                         )}
                       </button>
                     </div>
