@@ -149,11 +149,11 @@ export default function AdminPage() {
 
       if (orgAdminEmail) {
         if (data.invited_user) {
-          const devPw = data.invited_user.dev_password
-          if (devPw) {
-            alert(`✅ [개발 모드] 조직 & 사용자 생성 완료!\n\n로그인 정보:\n이메일: ${orgAdminEmail}\n비밀번호: ${devPw}`)
+          const password = data.invited_user.password
+          if (password) {
+            alert(`✅ 조직 & 사용자 생성 완료!\n\n📧 로그인 정보:\n이메일: ${orgAdminEmail}\n🔑 비밀번호: ${password}\n\n※ 사용자에게 직접 전달해주세요.`)
           } else {
-            alert(`✅ 조직이 생성되고 ${orgAdminEmail}로 초대 이메일이 발송되었습니다!`)
+            alert(`✅ 조직이 생성되었습니다.\n\n사용자 정보를 확인할 수 없습니다.`)
           }
         } else {
           const errorMsg = data.user_creation_error || '알 수 없는 오류'

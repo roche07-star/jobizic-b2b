@@ -68,55 +68,45 @@ export async function POST(req: NextRequest) {
 
     if (orgError) return NextResponse.json({ error: orgError.message }, { status: 500 })
 
-    // 관리자 이메일이 있으면 자동 초대
+    // 관리자 이메일이 있으면 자동 생성 (고정 비밀번호)
     let invitedUser = null
     let userCreationError = null
+    const defaultPassword = 'jobizic112'
+
     if (admin_email) {
       try {
-        const isDev = process.env.DEV_MODE === 'true'
-        console.log('[ORG CREATE] Creating admin:', admin_email, 'DEV MODE:', isDev)
+        console.log('[ORG CREATE] Creating admin with fixed password:', admin_email)
 
-        let authData, authError
+        // 기존 사용자가 있으면 삭제 후 재생성
+        try {
+          const { data: existingUser } = await supabaseAdmin.auth.admin.listUsers()
+          const existing = existingUser.users.find(u => u.email === admin_email)
 
-        if (isDev) {
-          // 개발 모드: 임시 비밀번호로 바로 생성
-          const devPassword = process.env.DEV_DEFAULT_PASSWORD || 'test1234'
-          const result = await supabaseAdmin.auth.admin.createUser({
-            email: admin_email,
-            password: devPassword,
-            email_confirm: true,
-            user_metadata: {
-              full_name: admin_name,
-              role: 'headhunter',
-            },
-          })
-          authData = result.data
-          authError = result.error
-          console.log(`[ORG CREATE DEV] User created with password: ${devPassword}`)
-        } else {
-          // 프로덕션 모드: 이메일 초대
-          console.log('[ORG CREATE PROD] Sending invite email to:', admin_email)
-          console.log('[ORG CREATE PROD] Redirect URL:', `${process.env.NEXT_PUBLIC_SITE_URL || 'https://jobizic-biz.vercel.app'}/auth/callback`)
-
-          const result = await supabaseAdmin.auth.admin.inviteUserByEmail(admin_email, {
-            data: {
-              full_name: admin_name,
-              role: 'headhunter',
-              organization_id: organization.id,
-            },
-            redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://jobizic-biz.vercel.app'}/auth/callback`,
-          })
-          authData = result.data
-          authError = result.error
-
-          console.log('[ORG CREATE PROD] Invite result:', {
-            success: !authError,
-            user: authData?.user?.email,
-            error: authError?.message
-          })
+          if (existing) {
+            console.log('[ORG CREATE] Deleting existing user:', admin_email)
+            await supabaseAdmin.auth.admin.deleteUser(existing.id)
+          }
+        } catch (deleteError) {
+          console.log('[ORG CREATE] No existing user or delete failed (continuing):', deleteError)
         }
 
-        console.log('[ORG CREATE] Auth response:', { authData, authError })
+        // 고정 비밀번호로 사용자 생성
+        const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
+          email: admin_email,
+          password: defaultPassword,
+          email_confirm: true, // 이메일 확인 불필요
+          user_metadata: {
+            full_name: admin_name,
+            role: 'headhunter',
+            organization_id: organization.id,
+          },
+        })
+
+        console.log('[ORG CREATE] User creation result:', {
+          success: !authError,
+          email: authData?.user?.email,
+          error: authError?.message
+        })
 
         if (authError) {
           console.error('[ORG CREATE] Auth error:', authError)
@@ -127,24 +117,30 @@ export async function POST(req: NextRequest) {
         }
 
         if (authData?.user) {
-          // Profile 업데이트
+          // Profile upsert (없으면 생성, 있으면 업데이트)
           const { error: profileError } = await supabaseAdmin
             .from('profiles')
-            .update({
+            .upsert({
+              id: authData.user.id,
+              email: admin_email,
               organization_id: organization.id,
               full_name: admin_name,
               role: 'headhunter',
+              password_set: true, // 고정 비밀번호로 생성되었으므로 true
+              is_active: true
+            }, {
+              onConflict: 'id',
+              ignoreDuplicates: false
             })
-            .eq('id', authData.user.id)
 
           if (profileError) {
-            console.error('[ORG CREATE] Profile update error:', profileError)
+            console.error('[ORG CREATE] Profile upsert error:', profileError)
           }
 
           invitedUser = {
             email: admin_email,
             name: admin_name,
-            dev_password: isDev ? (process.env.DEV_DEFAULT_PASSWORD || 'test1234') : null
+            password: defaultPassword // 화면에 표시할 비밀번호
           }
           console.log('[ORG CREATE] Admin created successfully:', invitedUser)
         }
