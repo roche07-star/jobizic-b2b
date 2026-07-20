@@ -94,26 +94,41 @@ export default function SetPasswordPage() {
     setError(null)
 
     try {
+      const supabase = getSupabaseBrowser()
+
       // 비밀번호 설정
-      const { error: updateError } = await getSupabaseBrowser().auth.updateUser({
+      const { error: updateError } = await supabase.auth.updateUser({
         password: password,
       })
 
       if (updateError) throw updateError
 
-      // profiles 테이블의 password_set을 true로 변경
-      const { data: { user } } = await getSupabaseBrowser().auth.getUser()
-      if (user) {
-        await getSupabaseBrowser()
-          .from('profiles')
-          .update({ password_set: true })
-          .eq('id', user.id)
+      // profiles 테이블의 password_set을 true로 변경 (API 사용 - RLS bypass)
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) {
+        throw new Error('세션이 없습니다.')
       }
+
+      const flagResponse = await fetch('/api/auth/set-password-flag', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json'
+        }
+      })
+
+      if (!flagResponse.ok) {
+        const errorData = await flagResponse.json()
+        console.error('[SET PASSWORD] password_set 업데이트 실패:', errorData)
+        throw new Error('비밀번호 설정 플래그 업데이트 실패')
+      }
+
+      console.log('[SET PASSWORD] password_set updated successfully')
 
       alert('✅ 비밀번호가 설정되었습니다!\n\n새 비밀번호로 다시 로그인해주세요.')
 
       // 로그아웃 처리
-      await getSupabaseBrowser().auth.signOut()
+      await supabase.auth.signOut()
 
       // 로그인 페이지로 직접 이동 (무한루프 방지)
       window.location.replace('/login')
