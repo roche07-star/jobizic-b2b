@@ -678,7 +678,6 @@ export default function AdminPage() {
                   </option>
                 )
               })}
-              <option value="none">조직 미배정 ({users.filter(u => !u.organization_id).length}명)</option>
             </select>
           </div>
         )}
@@ -903,7 +902,6 @@ export default function AdminPage() {
           {users
             .filter(user => {
               if (selectedOrgFilter === 'all') return true
-              if (selectedOrgFilter === 'none') return !user.organization_id
               return user.organization_id === selectedOrgFilter
             })
             .map(user => (
