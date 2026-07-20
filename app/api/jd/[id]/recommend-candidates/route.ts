@@ -46,8 +46,8 @@ export async function POST(req: NextRequest, context: { params: Promise<{ id: st
       return NextResponse.json({ error: '인증이 필요합니다.' }, { status: 401 })
     }
 
-    // 권한 체크: super admin만 실행 가능
-    if (profile.role !== 'admin') {
+    // 권한 체크: admin, owner, headhunter 실행 가능
+    if (profile.role !== 'admin' && profile.role !== 'owner' && profile.role !== 'headhunter') {
       return NextResponse.json({ error: '권한이 없습니다.' }, { status: 403 })
     }
 
@@ -77,17 +77,35 @@ export async function POST(req: NextRequest, context: { params: Promise<{ id: st
 
     console.log('[recommend-candidates] Filtering candidates by skills:', allSkills)
 
-    // Super Admin: 모든 조직의 후보자를 대상으로 매칭 (조직 필터 제거)
-    const { data: allCandidates, error: candidatesError } = await supabaseAdmin
+    // 후보자 조회: 권한별 필터링
+    let candidatesQuery = supabaseAdmin
       .from('candidates')
       .select('*')
+
+    // Admin: 모든 조직의 후보자 (JD의 조직 기준)
+    // Owner/Headhunter: 자기 조직의 후보자만
+    if (profile.role === 'admin') {
+      // Admin은 JD의 조직 후보자로 제한 (또는 전체)
+      if (jd.organization_id) {
+        candidatesQuery = candidatesQuery.eq('organization_id', jd.organization_id)
+      }
+    } else {
+      // Owner/Headhunter: 자기 조직의 후보자만
+      if (profile.organization_id) {
+        candidatesQuery = candidatesQuery.eq('organization_id', profile.organization_id)
+      } else {
+        return NextResponse.json({ error: '조직 정보가 없습니다.' }, { status: 400 })
+      }
+    }
+
+    const { data: allCandidates, error: candidatesError } = await candidatesQuery
 
     if (candidatesError) {
       console.error('[recommend-candidates] Candidates query error:', candidatesError)
       return NextResponse.json({ error: '후보자 조회 실패' }, { status: 500 })
     }
 
-    console.log('[recommend-candidates] Total candidates in org:', allCandidates?.length || 0)
+    console.log('[recommend-candidates] Total candidates for matching:', allCandidates?.length || 0)
 
     // AI 분석 대상: 최대 50명 (점수 필터링 후 상위 10명만 DB 저장)
     const filteredCandidates = (allCandidates || []).slice(0, 50)
