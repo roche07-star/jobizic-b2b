@@ -82,20 +82,40 @@ export async function POST(req: NextRequest, context: { params: Promise<{ id: st
       .from('candidates')
       .select('*')
 
-    // Admin: 모든 조직의 후보자 (JD의 조직 기준)
-    // Owner/Headhunter: 자기 조직의 후보자만
     if (profile.role === 'admin') {
-      // Admin은 JD의 조직 후보자로 제한 (또는 전체)
+      // Admin: JD의 조직 후보자
       if (jd.organization_id) {
         candidatesQuery = candidatesQuery.eq('organization_id', jd.organization_id)
       }
-    } else {
-      // Owner/Headhunter: 자기 조직의 후보자만
-      if (profile.organization_id) {
-        candidatesQuery = candidatesQuery.eq('organization_id', profile.organization_id)
-      } else {
+    } else if (profile.role === 'owner' || profile.role === 'manager') {
+      // Owner/Manager: 본인 + Operator 후보자
+      if (!profile.organization_id) {
         return NextResponse.json({ error: '조직 정보가 없습니다.' }, { status: 400 })
       }
+
+      candidatesQuery = candidatesQuery.eq('organization_id', profile.organization_id)
+
+      // Operator 이메일 조회
+      const { data: operators } = await supabaseAdmin
+        .from('profiles')
+        .select('email')
+        .eq('organization_id', profile.organization_id)
+        .eq('role', 'operator')
+
+      const operatorEmails = operators?.map(o => o.email) || []
+      const allowedCreators = [profile.email, ...operatorEmails]
+
+      candidatesQuery = candidatesQuery.in('created_by', allowedCreators)
+
+    } else if (profile.role === 'headhunter' || profile.role === 'operator') {
+      // Headhunter/Operator: 본인 후보자만
+      if (!profile.organization_id) {
+        return NextResponse.json({ error: '조직 정보가 없습니다.' }, { status: 400 })
+      }
+
+      candidatesQuery = candidatesQuery
+        .eq('organization_id', profile.organization_id)
+        .eq('created_by', profile.email)
     }
 
     const { data: allCandidates, error: candidatesError } = await candidatesQuery

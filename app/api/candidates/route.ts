@@ -60,30 +60,43 @@ export async function GET(req: NextRequest) {
     // Role별 필터링
     console.log('[candidates] User:', userEmail, 'Role:', role)
 
-    // organization_id 필터링
-    if (organizationId && role === 'admin') {
-      // Admin만 organization_id 파라미터로 조직 선택 가능
-      q = q.eq('organization_id', organizationId)
-    } else if (role === 'owner' && userEmail) {
-      // Owner는 자신의 조직 전체 후보자 조회
-      const { data: ownerProfile } = await supabaseAdmin
+    // Role별 후보자 필터링
+    if (role === 'admin') {
+      // Admin: organization_id로 조직 선택 가능
+      if (organizationId) {
+        q = q.eq('organization_id', organizationId)
+      }
+    } else if ((role === 'owner' || role === 'manager') && userEmail) {
+      // Owner/Manager: 본인 + Operator가 등록한 후보자
+      const { data: userProfile } = await supabaseAdmin
         .from('profiles')
-        .select('organization_id')
+        .select('id, organization_id')
         .eq('email', userEmail)
         .single()
 
-      if (ownerProfile?.organization_id) {
-        console.log('[candidates] Owner: Filtering by organization_id:', ownerProfile.organization_id)
-        q = q.eq('organization_id', ownerProfile.organization_id)
-      } else {
-        console.warn('[candidates] Owner has no organization_id')
+      if (!userProfile?.organization_id) {
+        console.warn('[candidates] Owner/Manager has no organization_id:', userEmail)
+        return NextResponse.json({ candidates: [] }, { status: 200 })
       }
-    }
 
-    // Admin과 Owner는 조직 전체 후보자 조회
-    // 기타 사용자는 본인이 등록한 후보자만 조회 (현재 조직 내에서만)
-    if (role && role !== 'admin' && role !== 'owner' && userEmail) {
-      // 먼저 현재 사용자의 organization_id 조회 (조직 격리를 위해 필수!)
+      console.log('[candidates] Owner/Manager: Filtering by organization_id:', userProfile.organization_id)
+      q = q.eq('organization_id', userProfile.organization_id)
+
+      // Operator들의 이메일 조회
+      const { data: operators } = await supabaseAdmin
+        .from('profiles')
+        .select('email')
+        .eq('organization_id', userProfile.organization_id)
+        .eq('role', 'operator')
+
+      const operatorEmails = operators?.map(o => o.email) || []
+      const allowedCreators = [userEmail, ...operatorEmails]
+
+      console.log('[candidates] Owner/Manager can see candidates from:', allowedCreators)
+      q = q.in('created_by', allowedCreators)
+
+    } else if ((role === 'headhunter' || role === 'operator') && userEmail) {
+      // Headhunter/Operator: 본인만
       const { data: userProfile } = await supabaseAdmin
         .from('profiles')
         .select('organization_id')
@@ -95,8 +108,7 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ candidates: [] }, { status: 200 })
       }
 
-      // 조직 격리: 현재 조직의 후보자만 조회
-      console.log('[candidates] Filtering by organization_id:', userProfile.organization_id, 'and created_by:', userEmail)
+      console.log('[candidates] Headhunter/Operator: Filtering by organization_id:', userProfile.organization_id, 'and created_by:', userEmail)
       q = q.eq('organization_id', userProfile.organization_id)
       q = q.eq('created_by', userEmail)
     }
