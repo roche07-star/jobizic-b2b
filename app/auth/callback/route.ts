@@ -65,18 +65,40 @@ export async function GET(req: NextRequest) {
     // 사용자 정보 확인
     const user = sessionData?.user
 
-    // 초대받은 사용자인지 확인 (invited_at이 있으면 초대받은 사용자)
+    // 초대받은 사용자인지 확인 (여러 조건 체크)
     const isInvitedUser = user?.invited_at
+    const hasOrgInMetadata = !!user?.user_metadata?.organization_id
+
+    // profiles 테이블에서 password_set 확인
+    let needsPasswordSetup = false
+    if (user?.id) {
+      const { data: profile } = await supabaseAdmin
+        .from('profiles')
+        .select('password_set, organization_id')
+        .eq('id', user.id)
+        .single()
+
+      needsPasswordSetup = profile?.password_set === false
+
+      console.log('[AUTH CALLBACK] Profile check:', {
+        user_id: user.id,
+        password_set: profile?.password_set,
+        profile_org_id: profile?.organization_id,
+        metadata_org_id: user.user_metadata?.organization_id
+      })
+    }
 
     console.log('[AUTH CALLBACK] User info:', {
       email: user?.email,
       type,
       invited_at: user?.invited_at,
-      isInvitedUser
+      isInvitedUser,
+      hasOrgInMetadata,
+      needsPasswordSetup
     })
 
     // 초대받은 사용자는 무조건 비밀번호 설정 페이지로
-    if (isInvitedUser || type === 'invite') {
+    if (isInvitedUser || type === 'invite' || hasOrgInMetadata || needsPasswordSetup) {
       console.log('[AUTH CALLBACK] Redirecting to set-password (invited user)')
 
       // Profile 업데이트 (user_metadata → profiles 테이블)
