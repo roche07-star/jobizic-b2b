@@ -89,7 +89,10 @@ export default function AdminPage() {
 
   useEffect(() => {
     getProfile().then(p => {
-      if (!p || (p.role !== 'admin' && p.role !== 'owner' && p.role !== 'manager')) {
+      // JOBIZIC Manager는 조회 전용이므로 admin 페이지 접근 불가
+      const isJobizicManager = p?.role === 'manager' && p?.organization?.type === 'platform'
+
+      if (!p || (p.role !== 'admin' && p.role !== 'owner' && p.role !== 'manager') || isJobizicManager) {
         router.push('/')
         return
       }

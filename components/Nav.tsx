@@ -171,9 +171,13 @@ export default function Nav() {
     return null
   }
 
+  // JOBIZIC Manager는 조직 관리 메뉴 숨김
+  const isJobizicManager = profile?.role === 'manager' && profile?.organization?.type === 'platform'
+  const canAccessAdmin = (profile?.role === 'admin' || profile?.role === 'owner' || profile?.role === 'manager') && !isJobizicManager
+
   const allLinks = [
     ...links,
-    ...((profile?.role === 'admin' || profile?.role === 'owner' || profile?.role === 'manager') ? adminLinks : [])
+    ...(canAccessAdmin ? adminLinks : [])
   ]
 
   return (
@@ -194,9 +198,8 @@ export default function Nav() {
           </Link>
         ))}
         {(() => {
-          const shouldShow = profile?.role === 'admin' || profile?.role === 'owner' || profile?.role === 'manager'
-          console.log('[Nav] Should show admin links?', shouldShow, 'profile.role:', profile?.role)
-          return shouldShow && adminLinks.map(l => (
+          console.log('[Nav] Should show admin links?', canAccessAdmin, 'profile.role:', profile?.role)
+          return canAccessAdmin && adminLinks.map(l => (
             <Link
               key={l.href}
               href={l.href}

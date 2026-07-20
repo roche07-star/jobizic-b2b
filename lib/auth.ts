@@ -13,6 +13,7 @@ export interface Profile {
   organization?: {
     id: string
     name: string
+    type: string
   } | null
   // Telegram Integration
   telegram_chat_id?: number | null
@@ -66,7 +67,7 @@ export async function getProfile(): Promise<Profile | null> {
     .from('profiles')
     .select(`
       *,
-      organization:organizations(id, name)
+      organization:organizations(id, name, type)
     `)
     .eq('id', session.user.id)
     .single()
@@ -89,4 +90,29 @@ export async function getProfile(): Promise<Profile | null> {
 export async function getCurrentOrganizationId(): Promise<string | null> {
   const profile = await getProfile()
   return profile?.organization_id ?? null
+}
+
+// 권한 체크 헬퍼 함수들
+export function isJobizicManager(profile: Profile | null): boolean {
+  return profile?.role === 'manager' && profile?.organization?.type === 'platform'
+}
+
+export function isEnterpriseManager(profile: Profile | null): boolean {
+  return profile?.role === 'manager' && profile?.organization?.type === 'enterprise'
+}
+
+export function canManageOrganizations(profile: Profile | null): boolean {
+  // 조직 관리 권한: admin, owner, enterprise manager만
+  if (!profile) return false
+  if (profile.role === 'admin') return true
+  if (profile.role === 'owner') return true
+  if (isEnterpriseManager(profile)) return true
+  return false
+}
+
+export function canModifyData(profile: Profile | null): boolean {
+  // 데이터 수정 권한: JOBIZIC Manager 제외한 모든 role
+  if (!profile) return false
+  if (isJobizicManager(profile)) return false
+  return true
 }
