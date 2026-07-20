@@ -80,12 +80,26 @@ export default function Dashboard() {
 
   // URL fragment 체크 (초대 이메일 처리)
   useEffect(() => {
-    const hash = window.location.hash
-    if (hash && hash.includes('type=invite')) {
-      console.log('[Dashboard] Invite detected in fragment, redirecting to set-password')
-      // Fragment를 그대로 유지하면서 비밀번호 설정 페이지로 이동
-      router.replace(`/auth/set-password${hash}`)
+    async function checkFragment() {
+      const hash = window.location.hash
+      if (hash && hash.includes('type=invite')) {
+        console.log('[Dashboard] Invite detected in fragment')
+
+        // 이미 세션이 있으면 fragment 무시 (무한루프 방지)
+        const { data: { session } } = await getSupabaseBrowser().auth.getSession()
+        if (session) {
+          console.log('[Dashboard] Session exists, clearing fragment')
+          window.history.replaceState({}, '', '/')
+          return
+        }
+
+        // 세션 없으면 비밀번호 설정 페이지로
+        console.log('[Dashboard] No session, redirecting to set-password')
+        router.replace(`/auth/set-password${hash}`)
+      }
     }
+
+    checkFragment()
   }, [router])
 
   useEffect(() => {
