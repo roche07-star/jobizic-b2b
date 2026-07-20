@@ -95,7 +95,12 @@ export default function SetPasswordPage() {
           .eq('id', user.id)
       }
 
-      alert('✅ 비밀번호가 설정되었습니다!')
+      alert('✅ 비밀번호가 설정되었습니다!\n\n새 비밀번호로 다시 로그인해주세요.')
+
+      // 로그아웃 처리
+      await getSupabaseBrowser().auth.signOut()
+
+      // 로그인 페이지로 이동
       router.push('/')
     } catch (err: any) {
       setError(err.message)
