@@ -81,15 +81,16 @@ export async function GET(req: NextRequest) {
     if (isInvitedUser || type === 'invite') {
       console.log('[AUTH CALLBACK] Invited user detected, setting up profile')
 
-      // Profile upsert (초대 이메일 방식)
-      if (hasOrgInMetadata && user?.id) {
-        const { organization_id, full_name, role } = user.user_metadata
+      // Profile upsert (초대 이메일 방식) - organization_id 없어도 생성
+      if (user?.id) {
+        const { organization_id, full_name, role } = user.user_metadata || {}
 
         console.log('[AUTH CALLBACK] Syncing profile from metadata (invite):', {
           user_id: user.id,
           organization_id,
           full_name,
-          role
+          role,
+          has_metadata: !!user.user_metadata
         })
 
         try {
@@ -97,12 +98,12 @@ export async function GET(req: NextRequest) {
             id: user.id,
             email: user.email,
             password_set: false, // 초대 이메일 방식 - 아직 비밀번호 미설정
-            is_active: true
+            is_active: true,
+            role: role || 'headhunter' // 기본 role
           }
 
           if (organization_id) profileData.organization_id = organization_id
           if (full_name) profileData.full_name = full_name
-          if (role) profileData.role = role
 
           const { error: profileError } = await supabaseAdmin
             .from('profiles')
@@ -129,15 +130,16 @@ export async function GET(req: NextRequest) {
       return finalResponse
     }
 
-    // 고정 비밀번호 방식 (invited_at 없음 + org_id 있음)
-    if (hasOrgInMetadata && user?.id) {
-      const { organization_id, full_name, role } = user.user_metadata
+    // 고정 비밀번호 방식 (invited_at 없음) - organization_id 없어도 생성
+    if (user?.id) {
+      const { organization_id, full_name, role } = user.user_metadata || {}
 
       console.log('[AUTH CALLBACK] Syncing profile from metadata (fixed password):', {
         user_id: user.id,
         organization_id,
         full_name,
-        role
+        role,
+        has_metadata: !!user.user_metadata
       })
 
       try {
@@ -146,12 +148,12 @@ export async function GET(req: NextRequest) {
           id: user.id,
           email: user.email,
           password_set: true, // 고정 비밀번호로 이미 생성됨
-          is_active: true
+          is_active: true,
+          role: role || 'headhunter' // 기본 role
         }
 
         if (organization_id) profileData.organization_id = organization_id
         if (full_name) profileData.full_name = full_name
-        if (role) profileData.role = role
 
         const { error: profileError } = await supabaseAdmin
           .from('profiles')
