@@ -35,7 +35,7 @@ export default function SetPasswordPage() {
 
           if (error) {
             console.error('[SET PASSWORD] setSession error:', error)
-            router.push('/')
+            router.push('/login')
             return
           }
 
@@ -47,12 +47,26 @@ export default function SetPasswordPage() {
         }
       }
 
-      // 일반 세션 확인
-      const { data: { session } } = await supabase.auth.getSession()
+      // 일반 세션 확인 (callback에서 온 경우 쿠키 로딩 대기)
+      let session = null
+      let retries = 0
+      const maxRetries = 5
+
+      // 세션 로드 재시도 (타이밍 이슈 해결)
+      while (!session && retries < maxRetries) {
+        const { data: { session: currentSession } } = await supabase.auth.getSession()
+        session = currentSession
+
+        if (!session) {
+          console.log(`[SET PASSWORD] Session not found, retry ${retries + 1}/${maxRetries}`)
+          await new Promise(resolve => setTimeout(resolve, 300))
+          retries++
+        }
+      }
 
       if (!session) {
-        console.error('[SET PASSWORD] No session found, redirecting to login')
-        router.push('/')
+        console.error('[SET PASSWORD] No session found after retries, redirecting to login')
+        router.push('/login')
         return
       }
 
