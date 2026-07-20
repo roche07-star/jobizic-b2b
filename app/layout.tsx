@@ -5,7 +5,7 @@ import Footer from '@/components/Footer'
 import GlobalJobProgress from '@/components/GlobalJobProgress'
 
 export const metadata: Metadata = {
-  title: 'Jobizic Biz - 채용 플랫폼',
+  title: 'Jobizic Biz - 모두의 채용 플랫폼',
   description: '헤드헌터를 위한 AI 기반 JD 파싱 · 후보자 매칭 · 채용 파이프라인',
 }
 
