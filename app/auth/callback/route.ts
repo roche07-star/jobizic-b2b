@@ -105,17 +105,23 @@ export async function GET(req: NextRequest) {
           if (organization_id) profileData.organization_id = organization_id
           if (full_name) profileData.full_name = full_name
 
-          const { error: profileError } = await supabaseAdmin
+          const { data: upsertedData, error: profileError } = await supabaseAdmin
             .from('profiles')
             .upsert(profileData, {
               onConflict: 'id',
               ignoreDuplicates: false
             })
+            .select()
 
           if (profileError) {
             console.error('[AUTH CALLBACK] Profile upsert error:', profileError)
+            console.error('[AUTH CALLBACK] Error details:', {
+              code: profileError.code,
+              message: profileError.message,
+              details: profileError.details
+            })
           } else {
-            console.log('[AUTH CALLBACK] Profile upsert successful (invite)')
+            console.log('[AUTH CALLBACK] Profile upsert successful (invite):', upsertedData)
           }
         } catch (err) {
           console.error('[AUTH CALLBACK] Profile upsert exception:', err)
@@ -155,17 +161,23 @@ export async function GET(req: NextRequest) {
         if (organization_id) profileData.organization_id = organization_id
         if (full_name) profileData.full_name = full_name
 
-        const { error: profileError } = await supabaseAdmin
+        const { data: upsertedData, error: profileError } = await supabaseAdmin
           .from('profiles')
           .upsert(profileData, {
             onConflict: 'id',
             ignoreDuplicates: false
           })
+          .select()
 
         if (profileError) {
           console.error('[AUTH CALLBACK] Profile upsert error:', profileError)
+          console.error('[AUTH CALLBACK] Error details:', {
+            code: profileError.code,
+            message: profileError.message,
+            details: profileError.details
+          })
         } else {
-          console.log('[AUTH CALLBACK] Profile upsert successful (fixed password)')
+          console.log('[AUTH CALLBACK] Profile upsert successful (fixed password):', upsertedData)
         }
       } catch (err) {
         console.error('[AUTH CALLBACK] Profile upsert exception:', err)

@@ -55,7 +55,12 @@ export async function getSession() {
 
 export async function getProfile(): Promise<Profile | null> {
   const session = await getSession()
-  if (!session) return null
+  if (!session) {
+    console.log('[getProfile] No session')
+    return null
+  }
+
+  console.log('[getProfile] Fetching profile for user:', session.user.id, session.user.email)
 
   const { data, error} = await getSupabaseBrowser()
     .from('profiles')
@@ -67,10 +72,17 @@ export async function getProfile(): Promise<Profile | null> {
     .single()
 
   if (error) {
-    console.error('Profile fetch error:', error)
+    console.error('[getProfile] Profile fetch error:', error)
+    console.error('[getProfile] Error details:', {
+      code: error.code,
+      message: error.message,
+      details: error.details,
+      hint: error.hint
+    })
     return null
   }
 
+  console.log('[getProfile] Profile found:', data?.email, data?.role)
   return data
 }
 
