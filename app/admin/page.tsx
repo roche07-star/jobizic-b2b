@@ -108,6 +108,9 @@ export default function AdminPage() {
   const [transferTarget, setTransferTarget] = useState('')
   const [transferring, setTransferring] = useState(false)
 
+  // 사용자 조직 필터
+  const [selectedOrgFilter, setSelectedOrgFilter] = useState<string>('all')
+
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -647,7 +650,7 @@ export default function AdminPage() {
       {/* 사용자 관리 */}
       <div className="card">
         <div className="card-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span>사용자 관리 ({users.length})</span>
+          <span>사용자 관리 ({users.filter(u => selectedOrgFilter === 'all' || u.organization_id === selectedOrgFilter).length})</span>
           <button
             className="btn btn-primary btn-sm"
             onClick={() => setShowUserForm(!showUserForm)}
@@ -655,6 +658,30 @@ export default function AdminPage() {
             + 사용자 생성
           </button>
         </div>
+
+        {/* Super Admin 전용: 조직별 필터 */}
+        {profile?.role === 'admin' && (
+          <div style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 12 }}>
+            <label style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>조직 필터:</label>
+            <select
+              className="form-select"
+              value={selectedOrgFilter}
+              onChange={e => setSelectedOrgFilter(e.target.value)}
+              style={{ maxWidth: 300 }}
+            >
+              <option value="all">전체 조직 ({users.length}명)</option>
+              {organizations.map(org => {
+                const orgUserCount = users.filter(u => u.organization_id === org.id).length
+                return (
+                  <option key={org.id} value={org.id}>
+                    {org.name} ({orgUserCount}명)
+                  </option>
+                )
+              })}
+              <option value="none">조직 미배정 ({users.filter(u => !u.organization_id).length}명)</option>
+            </select>
+          </div>
+        )}
 
         {showUserForm && (
           <div style={{ padding: 16, background: 'var(--bg3)', borderRadius: 8, marginBottom: 16 }}>
@@ -873,7 +900,13 @@ export default function AdminPage() {
         )}
 
         <div style={{ display: 'grid', gap: 8 }}>
-          {users.map(user => (
+          {users
+            .filter(user => {
+              if (selectedOrgFilter === 'all') return true
+              if (selectedOrgFilter === 'none') return !user.organization_id
+              return user.organization_id === selectedOrgFilter
+            })
+            .map(user => (
             <div key={user.id} style={{ padding: 12, background: 'var(--bg3)', borderRadius: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div style={{ flex: 1 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
