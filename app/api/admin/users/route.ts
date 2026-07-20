@@ -128,6 +128,11 @@ export async function POST(req: NextRequest) {
 
     if (profileError) {
       console.error('[CREATE USER] Profile upsert error:', profileError)
+      console.error('[CREATE USER] Profile data:', profileData)
+      return NextResponse.json({
+        error: `프로필 생성 실패: ${profileError.message}`,
+        details: profileError
+      }, { status: 500 })
     }
 
     return NextResponse.json({
