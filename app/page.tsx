@@ -237,7 +237,7 @@ export default function Dashboard() {
       <div className="page-header">
         <div>
           <div className="page-title">대시보드</div>
-          <div className="page-sub">Jobizic Biz - AI ATS 플랫폼</div>
+          <div className="page-sub">채용 플랫폼</div>
         </div>
         {isAdmin && organizations.length > 0 && (
           <select
