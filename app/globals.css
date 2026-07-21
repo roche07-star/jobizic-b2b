@@ -93,7 +93,24 @@ body {
 .nav-desktop { display: flex; }
 .nav-profile-name { display: inline; }
 
-/* 모바일 반응형 (768px 이하) */
+/* 중간 화면 (1024px ~ 1200px) - 메뉴 간격 축소 */
+@media (max-width: 1200px) {
+  .nav { padding: 0 20px; gap: 24px; }
+  .nav-links { gap: 16px; }
+  .nav-link { font-size: 13px; }
+  .nav-logo { font-size: 16px; }
+}
+
+/* 작은 화면 (769px ~ 1023px) - 더 작은 간격 */
+@media (max-width: 1023px) {
+  .nav { padding: 0 16px; gap: 16px; }
+  .nav-links { gap: 12px; }
+  .nav-link { font-size: 12px; padding: 6px 10px; }
+  .nav-logo { font-size: 15px; }
+  .nav-profile { font-size: 11px !important; }
+}
+
+/* 모바일 (768px 이하) - 햄버거 메뉴 */
 @media (max-width: 768px) {
   .nav { padding: 0 12px; gap: 12px; }
   .nav-logo { font-size: 13px; }
