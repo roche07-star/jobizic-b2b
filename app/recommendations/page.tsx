@@ -374,12 +374,12 @@ export default function RecommendationsPage() {
 
       <div className="page-header">
         <div>
-          <div className="page-title">추천</div>
+          <div className="page-title">Searching</div>
           <div className="page-sub">
             {userRole === 'admin'
               ? 'AI 후보 추천 관리 및 내가 받은 추천을 확인하세요'
               : (userRole === 'owner' || userRole === 'headhunter')
-              ? '후보자 매칭 및 내가 받은 추천을 확인하세요'
+              ? 'Searching 및 내가 받은 추천을 확인하세요'
               : '추천 받은 후보자를 확인하고 수락/거절하세요'}
           </div>
         </div>
@@ -392,7 +392,7 @@ export default function RecommendationsPage() {
             className={`btn${activeTab === 'manage' ? ' btn-primary' : ' btn-ghost'}`}
             onClick={() => setActiveTab('manage')}
           >
-            후보자 추천 관리
+            Searching(Database)
           </button>
           <button
             className={`btn${activeTab === 'received' ? ' btn-primary' : ' btn-ghost'}`}
@@ -400,6 +400,21 @@ export default function RecommendationsPage() {
           >
             내가 받은 추천
           </button>
+        </div>
+      )}
+
+      {/* 내가 받은 추천 설명 */}
+      {activeTab === 'received' && (
+        <div style={{
+          padding: '12px 16px',
+          background: 'rgba(232, 255, 71, 0.1)',
+          borderRadius: 8,
+          marginBottom: 20,
+          border: '1px solid rgba(232, 255, 71, 0.2)'
+        }}>
+          <div style={{ fontSize: 13, color: 'var(--text)' }}>
+            💡 JD를 등록하시면 자사 헤드헌터가 적합한 후보자를 추천해드립니다.
+          </div>
         </div>
       )}
 
