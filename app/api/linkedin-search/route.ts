@@ -47,17 +47,21 @@ export async function POST(req: NextRequest) {
     // 4. JD 정보 가져오기 (jdId가 있는 경우)
     let jobPosition = position
     if (jdId && !position) {
-      const { data: jd } = await supabaseAdmin
+      const { data: jd, error: jdError } = await supabaseAdmin
         .from('job_descriptions')
-        .select('position, title')
+        .select('position')
         .eq('id', jdId)
         .single()
 
-      if (!jd) {
-        return NextResponse.json({ error: 'JD를 찾을 수 없습니다.' }, { status: 404 })
+      if (jdError || !jd) {
+        console.error('[LinkedIn Search] JD lookup error:', jdError)
+        return NextResponse.json({
+          error: 'JD를 찾을 수 없습니다.',
+          details: jdError?.message
+        }, { status: 404 })
       }
 
-      jobPosition = jd.position || jd.title || ''
+      jobPosition = jd.position || ''
     }
 
     if (!jobPosition) {

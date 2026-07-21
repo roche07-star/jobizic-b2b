@@ -100,6 +100,8 @@ export default function RecommendationsPage() {
       } else if (activeTab === 'manage' && (userRole === 'admin' || userRole === 'owner' || userRole === 'headhunter')) {
         loadActiveJDs()
         loadAdminRecommendations()
+      } else if (activeTab === 'linkedin' && (userRole === 'admin' || userRole === 'owner' || userRole === 'headhunter')) {
+        loadActiveJDs()
       }
     }
   }, [userRole, activeTab, statusFilter])
