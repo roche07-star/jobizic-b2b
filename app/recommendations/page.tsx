@@ -83,6 +83,12 @@ export default function RecommendationsPage() {
   const [editedEducation, setEditedEducation] = useState<string>('')
   const [editedCareerSummary, setEditedCareerSummary] = useState<string>('')
 
+  // LinkedIn 검색 state
+  const [linkedinSearching, setLinkedinSearching] = useState(false)
+  const [linkedinResults, setLinkedinResults] = useState<any[]>([])
+  const [selectedJdForLinkedin, setSelectedJdForLinkedin] = useState<string>('')
+  const [linkedinKeywords, setLinkedinKeywords] = useState<any>(null)
+
   useEffect(() => {
     checkAuth()
   }, [])
@@ -309,6 +315,47 @@ export default function RecommendationsPage() {
       console.error('[admin recommendations] Load error:', err)
     } finally {
       setAdminLoading(false)
+    }
+  }
+
+  // === LinkedIn 검색 함수 ===
+  async function searchLinkedIn() {
+    if (!selectedJdForLinkedin) {
+      error('JD를 선택해주세요')
+      return
+    }
+
+    setLinkedinSearching(true)
+    setLinkedinResults([])
+    setLinkedinKeywords(null)
+
+    try {
+      const res = await fetch('/api/linkedin-search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          jdId: selectedJdForLinkedin
+        })
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        throw new Error(data.error || '검색 실패')
+      }
+
+      setLinkedinResults(data.results || [])
+      setLinkedinKeywords(data.keywords || null)
+
+      if (data.results && data.results.length > 0) {
+        success(`✅ ${data.results.length}개의 LinkedIn 프로필을 찾았습니다!`)
+      } else {
+        info('검색 결과가 없습니다. 다른 JD를 선택해보세요.')
+      }
+    } catch (err: any) {
+      error(`❌ ${err.message || '검색 중 오류가 발생했습니다'}`)
+    } finally {
+      setLinkedinSearching(false)
     }
   }
 
@@ -878,10 +925,139 @@ export default function RecommendationsPage() {
       ) : activeTab === 'linkedin' ? (
         <div className="card">
           <div className="card-title">Searching(Linkedin)</div>
-          <div className="empty">
-            <div className="empty-icon">🚧</div>
-            <div className="empty-text">준비 중입니다</div>
+
+          {/* 검색 폼 */}
+          <div style={{ marginBottom: 20 }}>
+            <div style={{ display: 'flex', gap: 12, alignItems: 'flex-end' }}>
+              <div style={{ flex: 1 }}>
+                <label className="form-label">검색할 JD 선택</label>
+                <select
+                  className="form-select"
+                  value={selectedJdForLinkedin}
+                  onChange={e => setSelectedJdForLinkedin(e.target.value)}
+                  disabled={linkedinSearching}
+                >
+                  <option value="">JD를 선택하세요</option>
+                  {activeJDs.map(jd => (
+                    <option key={jd.id} value={jd.id}>
+                      {jd.position} ({jd.company})
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <button
+                className="btn btn-primary"
+                onClick={searchLinkedIn}
+                disabled={linkedinSearching || !selectedJdForLinkedin}
+                style={{ minWidth: 120 }}
+              >
+                {linkedinSearching ? '검색 중...' : '🔍 검색'}
+              </button>
+            </div>
+
+            {/* 추출된 키워드 표시 */}
+            {linkedinKeywords && (
+              <div style={{
+                marginTop: 12,
+                padding: 12,
+                background: 'var(--bg)',
+                borderRadius: 6,
+                fontSize: 12
+              }}>
+                <div style={{ fontWeight: 600, marginBottom: 6 }}>검색 키워드:</div>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  <span className="badge badge-활성">
+                    핵심: {linkedinKeywords.coreJob}
+                  </span>
+                  {linkedinKeywords.qualifiers?.map((q: string, i: number) => (
+                    <span key={i} className="badge">
+                      {q}
+                    </span>
+                  ))}
+                  {linkedinKeywords.skills?.map((s: string, i: number) => (
+                    <span key={i} className="badge badge-일반">
+                      {s}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
+
+          {/* 로딩 상태 */}
+          {linkedinSearching && (
+            <div className="empty">
+              <div className="spinner" style={{ margin: '0 auto 12px' }} />
+              <div style={{ fontSize: 12, color: 'var(--muted2)' }}>
+                Google에서 LinkedIn 프로필을 검색하고 있습니다...
+              </div>
+            </div>
+          )}
+
+          {/* 검색 결과 */}
+          {!linkedinSearching && linkedinResults.length > 0 && (
+            <div style={{ display: 'grid', gap: 12 }}>
+              {linkedinResults.map((result, index) => (
+                <div
+                  key={index}
+                  className="card"
+                  style={{
+                    padding: 16,
+                    background: 'var(--bg)',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s'
+                  }}
+                  onClick={() => window.open(result.url, '_blank')}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 4 }}>
+                        {result.title}
+                      </div>
+                      <div style={{ fontSize: 12, color: 'var(--muted2)', marginBottom: 8 }}>
+                        {result.snippet}
+                      </div>
+                      <div style={{ fontSize: 11, color: 'var(--accent)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                        🔗 {result.url}
+                      </div>
+                    </div>
+                    <button
+                      className="btn btn-ghost btn-sm"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        window.open(result.url, '_blank')
+                      }}
+                      style={{ flexShrink: 0 }}
+                    >
+                      프로필 보기
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* 빈 상태 */}
+          {!linkedinSearching && linkedinResults.length === 0 && linkedinKeywords && (
+            <div className="empty">
+              <div className="empty-icon">🔍</div>
+              <div className="empty-text">검색 결과가 없습니다</div>
+              <div style={{ fontSize: 12, color: 'var(--muted2)', marginTop: 8 }}>
+                다른 JD를 선택하거나 JD의 직무명을 더 명확하게 수정해보세요
+              </div>
+            </div>
+          )}
+
+          {/* 초기 상태 */}
+          {!linkedinSearching && linkedinResults.length === 0 && !linkedinKeywords && (
+            <div className="empty">
+              <div className="empty-icon">🔗</div>
+              <div className="empty-text">JD를 선택하고 검색을 시작하세요</div>
+              <div style={{ fontSize: 12, color: 'var(--muted2)', marginTop: 8 }}>
+                Google을 통해 LinkedIn 프로필을 검색합니다
+              </div>
+            </div>
+          )}
         </div>
       ) : loading ? (
         <div className="empty">

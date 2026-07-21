@@ -67,6 +67,13 @@ export async function POST(req: NextRequest) {
     if (method === 'fixed') {
       // ===== 고정 비밀번호 방식 =====
       console.log('[CREATE USER] Creating user with fixed password:', email)
+      console.log('[CREATE USER] User data:', {
+        email,
+        full_name,
+        role: role || 'headhunter',
+        organization_id,
+        permissions: permissions || 'none'
+      })
 
       const result = await supabaseAdmin.auth.admin.createUser({
         email,
@@ -98,7 +105,17 @@ export async function POST(req: NextRequest) {
     }
 
     if (authError || !authData?.user) {
-      return NextResponse.json({ error: authError?.message || '사용자 생성 실패' }, { status: 500 })
+      console.error('[CREATE USER] Auth creation failed:', authError)
+      console.error('[CREATE USER] Auth error details:', {
+        message: authError?.message,
+        status: authError?.status,
+        code: authError?.code,
+        name: authError?.name
+      })
+      return NextResponse.json({
+        error: authError?.message || '사용자 생성 실패',
+        details: authError
+      }, { status: 500 })
     }
 
     console.log(`[CREATE USER] Success (${method}):`, email)
