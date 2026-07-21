@@ -25,6 +25,7 @@ export async function GET(req: NextRequest) {
         phone,
         birth_year,
         location,
+        source,
         current_company,
         current_position,
         total_experience_years,

@@ -18,18 +18,18 @@ interface Notification {
 }
 
 const links = [
-  { href: '/', label: '대시보드' },
-  { href: '/jd', label: 'JD 관리' },
-  { href: '/candidates', label: '후보자 관리' },
-  { href: '/recommendations', label: 'Searching' },
-  { href: '/pipeline', label: '진행현황' },
-  { href: '/settlements', label: '정산 관리' },
-  { href: '/boards', label: '게시판' },
-  { href: '/settings', label: '설정' },
+  { href: '/', label: '대시보드', emoji: '📊' },
+  { href: '/jd', label: 'JD 관리', emoji: '📋' },
+  { href: '/candidates', label: '후보자 관리', emoji: '👥' },
+  { href: '/recommendations', label: 'Searching', emoji: '🔍' },
+  { href: '/pipeline', label: '진행현황', emoji: '📈' },
+  { href: '/settlements', label: '정산 관리', emoji: '💰' },
+  { href: '/boards', label: '게시판', emoji: '💬' },
+  { href: '/settings', label: '설정', emoji: '⚙️' },
 ]
 
 const adminLinks = [
-  { href: '/admin', label: '관리자' },
+  { href: '/admin', label: '관리자', emoji: '🔧' },
 ]
 
 export default function Nav() {
@@ -194,7 +194,8 @@ export default function Nav() {
             href={l.href}
             className={`nav-link${path === l.href || (l.href !== '/' && path.startsWith(l.href)) ? ' active' : ''}`}
           >
-            {l.label}
+            <span className="nav-link-emoji">{l.emoji}</span>
+            <span className="nav-link-text">{l.label}</span>
           </Link>
         ))}
         {(() => {
@@ -205,7 +206,8 @@ export default function Nav() {
               href={l.href}
               className={`nav-link${path === l.href || (l.href !== '/' && path.startsWith(l.href)) ? ' active' : ''}`}
             >
-              {profile?.role === 'admin' ? '관리자' : '조직 관리'}
+              <span className="nav-link-emoji">{l.emoji}</span>
+              <span className="nav-link-text">{profile?.role === 'admin' ? '관리자' : '조직 관리'}</span>
             </Link>
           ))
         })()}
@@ -243,7 +245,9 @@ export default function Nav() {
                 className={`mobile-nav-link${path === l.href || (l.href !== '/' && path.startsWith(l.href)) ? ' active' : ''}`}
                 onClick={() => setShowMobileMenu(false)}
                 style={{
-                  display: 'block',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 10,
                   padding: '14px 16px',
                   borderBottom: '1px solid var(--border)',
                   color: '#ffffff',
@@ -255,7 +259,8 @@ export default function Nav() {
                   whiteSpace: 'nowrap',
                 }}
               >
-                {l.href === '/admin' && (profile?.role === 'owner' || profile?.role === 'manager') ? '조직 관리' : l.label}
+                <span>{l.emoji}</span>
+                <span>{l.href === '/admin' && (profile?.role === 'owner' || profile?.role === 'manager') ? '조직 관리' : l.label}</span>
               </Link>
             ))}
           </div>

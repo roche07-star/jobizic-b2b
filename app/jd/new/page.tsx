@@ -37,7 +37,47 @@ export default function JDNewPage() {
   const [rawText, setRawText] = useState('')
   const [clientComment, setClientComment] = useState('')
 
+  // 이미지 분석
+  const [analyzingImage, setAnalyzingImage] = useState(false)
+
   const [error, setError] = useState<string | null>(null)
+
+  async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setAnalyzingImage(true)
+    setError(null)
+
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+
+      const res = await fetch('/api/jd/analyze-image', {
+        method: 'POST',
+        body: formData,
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        setError(data.error || '이미지 분석 실패')
+        return
+      }
+
+      // 추출된 텍스트를 rawText에 설정
+      setRawText(data.text)
+      alert('✅ 이미지에서 텍스트를 추출했습니다!')
+
+    } catch (err: any) {
+      console.error('[이미지 분석]', err)
+      setError('이미지 분석 중 오류가 발생했습니다.')
+    } finally {
+      setAnalyzingImage(false)
+      // input reset
+      e.target.value = ''
+    }
+  }
 
   async function handleSubmit() {
     if (!rawText.trim() || !company.trim() || !position.trim()) {
@@ -180,14 +220,54 @@ export default function JDNewPage() {
 
           {/* JD 내용 */}
           <div className="form-group">
-            <label className="form-label">JD 내용 *</label>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+              <label className="form-label" style={{ marginBottom: 0 }}>JD 내용 *</label>
+              <label
+                htmlFor="jd-image-upload"
+                className="btn btn-ghost btn-sm"
+                style={{
+                  cursor: analyzingImage ? 'not-allowed' : 'pointer',
+                  opacity: analyzingImage ? 0.6 : 1,
+                }}
+              >
+                {analyzingImage ? (
+                  <>
+                    <div className="spinner" style={{ width: 12, height: 12, borderWidth: 2, marginRight: 6 }} />
+                    이미지 분석 중...
+                  </>
+                ) : (
+                  '📷 이미지로 등록'
+                )}
+              </label>
+              <input
+                id="jd-image-upload"
+                type="file"
+                accept="image/*"
+                onChange={handleImageUpload}
+                disabled={analyzingImage}
+                style={{ display: 'none' }}
+              />
+            </div>
             <textarea
               className="form-textarea"
               style={{ minHeight: 280 }}
               placeholder="주요업무&#10;- 백엔드 API 개발 및 운영&#10;- 데이터베이스 설계 및 최적화&#10;&#10;자격조건&#10;- Node.js 또는 Java 개발 경력 3년 이상&#10;- RDBMS 실무 경험&#10;&#10;우대사항&#10;- AWS 클라우드 서비스 경험&#10;- MSA 아키텍처 설계 경험"
               value={rawText}
               onChange={e => setRawText(e.target.value)}
+              disabled={analyzingImage}
             />
+            {analyzingImage && (
+              <div style={{
+                marginTop: 8,
+                padding: 12,
+                background: 'var(--info-bg)',
+                borderRadius: 8,
+                fontSize: 13,
+                color: 'var(--info)'
+              }}>
+                💡 이미지에서 텍스트를 추출하고 있습니다. 잠시만 기다려주세요...
+              </div>
+            )}
           </div>
           <div className="form-group">
             <label className="form-label">클라이언트 코멘트 <span style={{ color: 'var(--text-tertiary)', fontWeight: 400 }}>(선택)</span></label>

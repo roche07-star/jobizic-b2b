@@ -45,6 +45,7 @@ interface Recommendation {
     id: string
     name: string
     email?: string | null
+    source?: string | null
     current_position: string | null
     total_experience_years: number | null
     education?: string[] | null
@@ -88,6 +89,7 @@ export default function RecommendationsPage() {
   const [linkedinResults, setLinkedinResults] = useState<any[]>([])
   const [selectedJdForLinkedin, setSelectedJdForLinkedin] = useState<string>('')
   const [linkedinKeywords, setLinkedinKeywords] = useState<any>(null)
+  const [linkedinSearchUrls, setLinkedinSearchUrls] = useState<any[]>([])
 
   useEffect(() => {
     checkAuth()
@@ -320,7 +322,7 @@ export default function RecommendationsPage() {
     }
   }
 
-  // === LinkedIn 검색 함수 ===
+  // === LinkedIn 검색 함수 (Google Custom Search API - 유료) ===
   async function searchLinkedIn() {
     if (!selectedJdForLinkedin) {
       error('JD를 선택해주세요')
@@ -350,12 +352,54 @@ export default function RecommendationsPage() {
       setLinkedinKeywords(data.keywords || null)
 
       if (data.results && data.results.length > 0) {
-        success(`✅ ${data.results.length}개의 LinkedIn 프로필을 찾았습니다!`)
+        success(`✅ ${data.results.length}개의 LinkedIn 프로필을 찾았습니다! (Google 검색)`)
       } else {
         info('검색 결과가 없습니다. 다른 JD를 선택해보세요.')
       }
     } catch (err: any) {
-      error(`❌ ${err.message || '검색 중 오류가 발생했습니다'}`)
+      error(`❌ Google 검색 실패: ${err.message || '검색 중 오류가 발생했습니다'}`)
+    } finally {
+      setLinkedinSearching(false)
+    }
+  }
+
+  // === LinkedIn 무료 검색 함수 (LinkedIn 직접 검색 - API 불필요) ===
+  async function searchLinkedInFree() {
+    if (!selectedJdForLinkedin) {
+      error('JD를 선택해주세요')
+      return
+    }
+
+    setLinkedinSearching(true)
+    setLinkedinResults([])
+    setLinkedinKeywords(null)
+    setLinkedinSearchUrls([])
+
+    try {
+      const res = await fetch('/api/linkedin-search-free', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          jdId: selectedJdForLinkedin
+        })
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        throw new Error(data.error || '검색 실패')
+      }
+
+      setLinkedinSearchUrls(data.searchUrls || [])
+      setLinkedinKeywords(data.keywords || null)
+
+      if (data.searchUrls && data.searchUrls.length > 0) {
+        success(`✅ ${data.searchUrls.length}개의 검색 옵션을 생성했습니다! 클릭해서 LinkedIn에서 검색하세요.`)
+      } else {
+        info('검색 옵션을 생성할 수 없습니다.')
+      }
+    } catch (err: any) {
+      error(`❌ 검색 URL 생성 실패: ${err.message || '오류가 발생했습니다'}`)
     } finally {
       setLinkedinSearching(false)
     }
@@ -698,6 +742,30 @@ export default function RecommendationsPage() {
                                 </div>
                               </div>
                               <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                                {/* 출처 뱃지 */}
+                                {rec.candidates.source && (
+                                  <span
+                                    className={`badge ${
+                                      rec.candidates.source === 'B2C' ? 'badge-활성' :
+                                      rec.candidates.source === 'Local' ? 'badge-일반' :
+                                      'badge-일반'
+                                    }`}
+                                    style={{
+                                      background:
+                                        rec.candidates.source === 'B2C' ? '#3b82f6' :
+                                        rec.candidates.source === 'Local' ? '#10b981' :
+                                        rec.candidates.source === 'B2B' ? '#8b5cf6' :
+                                        'var(--muted)',
+                                      color: 'white',
+                                      fontSize: 10
+                                    }}
+                                  >
+                                    {rec.candidates.source === 'B2C' ? '🔵 B2C' :
+                                     rec.candidates.source === 'Local' ? '🟢 Local' :
+                                     rec.candidates.source === 'B2B' ? '🟣 B2B' :
+                                     rec.candidates.source}
+                                  </span>
+                                )}
                                 <span className="badge badge-일반">매칭 {rec.match_score}점</span>
                                 <span className={`badge badge-${rec.recommendation === '추천' ? '활성' : '일반'}`}>
                                   {rec.recommendation}
@@ -767,9 +835,31 @@ export default function RecommendationsPage() {
                     <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 8 }}>
                       {adminSelected.job_descriptions.company} - {adminSelected.job_descriptions.position}
                     </div>
-                    <div style={{ fontSize: 14, color: 'var(--text-secondary)', marginBottom: 4 }}>
-                      👨‍💼 {adminSelected.candidates.name} ({adminSelected.candidates.current_position || '포지션 미상'})
-                      {adminSelected.candidates.total_experience_years && ` · 경력 ${adminSelected.candidates.total_experience_years}년`}
+                    <div style={{ fontSize: 14, color: 'var(--text-secondary)', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                      <span>
+                        👨‍💼 {adminSelected.candidates.name} ({adminSelected.candidates.current_position || '포지션 미상'})
+                        {adminSelected.candidates.total_experience_years && ` · 경력 ${adminSelected.candidates.total_experience_years}년`}
+                      </span>
+                      {/* 출처 뱃지 */}
+                      {adminSelected.candidates.source && (
+                        <span
+                          className="badge"
+                          style={{
+                            background:
+                              adminSelected.candidates.source === 'B2C' ? '#3b82f6' :
+                              adminSelected.candidates.source === 'Local' ? '#10b981' :
+                              adminSelected.candidates.source === 'B2B' ? '#8b5cf6' :
+                              'var(--muted)',
+                            color: 'white',
+                            fontSize: 10
+                          }}
+                        >
+                          {adminSelected.candidates.source === 'B2C' ? '🔵 B2C' :
+                           adminSelected.candidates.source === 'Local' ? '🟢 Local' :
+                           adminSelected.candidates.source === 'B2B' ? '🟣 B2B' :
+                           adminSelected.candidates.source}
+                        </span>
+                      )}
                     </div>
                     <div style={{ fontSize: 12, color: 'var(--text-tertiary)', marginTop: 8 }}>
                       PM: {adminSelected.recommended_to}
@@ -950,11 +1040,38 @@ export default function RecommendationsPage() {
               <button
                 className="btn btn-primary"
                 onClick={searchLinkedIn}
+                disabled={true}
+                style={{ minWidth: 120, opacity: 0.5, cursor: 'not-allowed' }}
+                title="Google API 설정 필요 (현재 비활성화)"
+              >
+                🔍 유료 검색
+              </button>
+              <button
+                className="btn btn-success"
+                onClick={searchLinkedInFree}
                 disabled={linkedinSearching || !selectedJdForLinkedin}
                 style={{ minWidth: 120 }}
               >
-                {linkedinSearching ? '검색 중...' : '🔍 검색'}
+                {linkedinSearching ? '검색 중...' : '✨ 무료 검색'}
               </button>
+            </div>
+
+            {/* 유료 검색 비활성화 안내 */}
+            <div style={{
+              marginTop: 8,
+              padding: 8,
+              background: 'var(--bg)',
+              borderRadius: 4,
+              fontSize: 11,
+              color: 'var(--muted2)',
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: 6
+            }}>
+              <span>ℹ️</span>
+              <span>
+                유료 검색(Google API)은 현재 비활성화되어 있습니다. 무료 검색을 사용하세요!
+              </span>
             </div>
 
             {/* 추출된 키워드 표시 */}
@@ -972,12 +1089,12 @@ export default function RecommendationsPage() {
                     핵심: {linkedinKeywords.coreJob}
                   </span>
                   {linkedinKeywords.qualifiers?.map((q: string, i: number) => (
-                    <span key={i} className="badge">
+                    <span key={`qualifier-${i}-${q}`} className="badge">
                       {q}
                     </span>
                   ))}
                   {linkedinKeywords.skills?.map((s: string, i: number) => (
-                    <span key={i} className="badge badge-일반">
+                    <span key={`skill-${i}-${s}`} className="badge badge-일반">
                       {s}
                     </span>
                   ))}
@@ -991,12 +1108,97 @@ export default function RecommendationsPage() {
             <div className="empty">
               <div className="spinner" style={{ margin: '0 auto 12px' }} />
               <div style={{ fontSize: 12, color: 'var(--muted2)' }}>
-                Google에서 LinkedIn 프로필을 검색하고 있습니다...
+                검색 옵션을 생성하고 있습니다...
               </div>
             </div>
           )}
 
-          {/* 검색 결과 */}
+          {/* 무료 검색: LinkedIn 검색 URL 목록 */}
+          {!linkedinSearching && linkedinSearchUrls.length > 0 && (
+            <div style={{ marginTop: 20 }}>
+              <div style={{
+                fontSize: 13,
+                fontWeight: 600,
+                marginBottom: 12,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8
+              }}>
+                <span>🔗 LinkedIn에서 검색하기</span>
+                <span style={{ fontSize: 11, color: 'var(--muted2)', fontWeight: 400 }}>
+                  (클릭하면 LinkedIn이 새 탭에서 열립니다)
+                </span>
+              </div>
+              <div style={{ display: 'grid', gap: 10 }}>
+                {linkedinSearchUrls.map((searchUrl, index) => (
+                  <div
+                    key={`search-url-${index}-${searchUrl.label}`}
+                    className="card"
+                    style={{
+                      padding: 14,
+                      background: 'var(--bg)',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                      border: '1px solid var(--border)'
+                    }}
+                    onClick={() => window.open(searchUrl.url, '_blank')}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.borderColor = 'var(--accent)'
+                      e.currentTarget.style.transform = 'translateY(-1px)'
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.borderColor = 'var(--border)'
+                      e.currentTarget.style.transform = 'translateY(0)'
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
+                      <div style={{ flex: 1 }}>
+                        <div style={{
+                          fontSize: 13,
+                          fontWeight: 600,
+                          marginBottom: 4,
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 6
+                        }}>
+                          {index === 0 && <span className="badge badge-활성" style={{ fontSize: 10 }}>추천</span>}
+                          {searchUrl.label}
+                        </div>
+                        <div style={{ fontSize: 12, color: 'var(--muted2)' }}>
+                          {searchUrl.description}
+                        </div>
+                      </div>
+                      <div style={{
+                        fontSize: 20,
+                        color: 'var(--accent)',
+                        flexShrink: 0
+                      }}>
+                        →
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div style={{
+                marginTop: 12,
+                padding: 12,
+                background: 'var(--bg)',
+                borderRadius: 6,
+                fontSize: 11,
+                color: 'var(--muted2)',
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: 8
+              }}>
+                <span>💡</span>
+                <span>
+                  LinkedIn 로그인이 필요합니다. 여러 검색 옵션을 시도해서 최적의 후보자를 찾아보세요!
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* 유료 검색 결과 (Google API) */}
           {!linkedinSearching && linkedinResults.length > 0 && (
             <div style={{ display: 'grid', gap: 12 }}>
               {linkedinResults.map((result, index) => (
@@ -1040,10 +1242,10 @@ export default function RecommendationsPage() {
           )}
 
           {/* 빈 상태 */}
-          {!linkedinSearching && linkedinResults.length === 0 && linkedinKeywords && (
+          {!linkedinSearching && linkedinResults.length === 0 && linkedinSearchUrls.length === 0 && linkedinKeywords && (
             <div className="empty">
               <div className="empty-icon">🔍</div>
-              <div className="empty-text">검색 결과가 없습니다</div>
+              <div className="empty-text">검색 옵션을 생성할 수 없습니다</div>
               <div style={{ fontSize: 12, color: 'var(--muted2)', marginTop: 8 }}>
                 다른 JD를 선택하거나 JD의 직무명을 더 명확하게 수정해보세요
               </div>
@@ -1132,6 +1334,26 @@ export default function RecommendationsPage() {
                   </div>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'flex-end' }}>
+                  {/* 출처 뱃지 */}
+                  {rec.candidates.source && (
+                    <span
+                      className="badge"
+                      style={{
+                        background:
+                          rec.candidates.source === 'B2C' ? '#3b82f6' :
+                          rec.candidates.source === 'Local' ? '#10b981' :
+                          rec.candidates.source === 'B2B' ? '#8b5cf6' :
+                          'var(--muted)',
+                        color: 'white',
+                        fontSize: 10
+                      }}
+                    >
+                      {rec.candidates.source === 'B2C' ? '🔵 B2C' :
+                       rec.candidates.source === 'Local' ? '🟢 Local' :
+                       rec.candidates.source === 'B2B' ? '🟣 B2B' :
+                       rec.candidates.source}
+                    </span>
+                  )}
                   <span className="badge badge-활성">매칭 {rec.match_score}점</span>
                   {rec.status === 'accepted' && (
                     <span className="badge badge-활성" style={{ fontSize: 11 }}>✅ 수락됨</span>
@@ -1169,9 +1391,31 @@ export default function RecommendationsPage() {
                 <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 8 }}>
                   {selected.job_descriptions.company} - {selected.job_descriptions.position}
                 </div>
-                <div style={{ fontSize: 14, color: 'var(--text-secondary)', marginBottom: 8 }}>
-                  👨‍💼 {selected.candidates.name} ({selected.candidates.current_position || '포지션 미상'})
-                  {selected.candidates.total_experience_years && ` · 경력 ${selected.candidates.total_experience_years}년`}
+                <div style={{ fontSize: 14, color: 'var(--text-secondary)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                  <span>
+                    👨‍💼 {selected.candidates.name} ({selected.candidates.current_position || '포지션 미상'})
+                    {selected.candidates.total_experience_years && ` · 경력 ${selected.candidates.total_experience_years}년`}
+                  </span>
+                  {/* 출처 뱃지 */}
+                  {selected.candidates.source && (
+                    <span
+                      className="badge"
+                      style={{
+                        background:
+                          selected.candidates.source === 'B2C' ? '#3b82f6' :
+                          selected.candidates.source === 'Local' ? '#10b981' :
+                          selected.candidates.source === 'B2B' ? '#8b5cf6' :
+                          'var(--muted)',
+                        color: 'white',
+                        fontSize: 10
+                      }}
+                    >
+                      {selected.candidates.source === 'B2C' ? '🔵 B2C' :
+                       selected.candidates.source === 'Local' ? '🟢 Local' :
+                       selected.candidates.source === 'B2B' ? '🟣 B2B' :
+                       selected.candidates.source}
+                    </span>
+                  )}
                 </div>
 
                 {/* 학력 */}

@@ -163,6 +163,7 @@ export default function Dashboard() {
       ]).then(([jdData, candidateData, pipelineData, interestData]) => {
         const jds = jdData.jds ?? []
         const candidates = candidateData.candidates ?? []
+        const totalCandidatesCount = candidateData.total ?? 0  // ✅ total 사용
         const pipeline = pipelineData.pipeline ?? []
         const interestIds = interestData.jd_ids ?? []
 
@@ -180,7 +181,7 @@ export default function Dashboard() {
         setStats({
           totalJDs: jds.length,
           interestJDs: interestCount,
-          totalCandidates: candidates.length,
+          totalCandidates: totalCandidatesCount,  // ✅ total 사용
           thisMonthMatches: thisMonth,
           activePipelines: pipeline.filter((p: any) => p.is_active).length,
         })

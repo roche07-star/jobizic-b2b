@@ -626,11 +626,21 @@ export default function JDPage() {
   async function toggleInterest(jdId: string) {
     const isInterested = interests.includes(jdId)
 
+    console.log('[toggleInterest]', { jdId, userId, isInterested })
+
     if (isInterested) {
       // 관심 해제
       const res = await fetch(`/api/jd/interests?user_id=${userId}&jd_id=${jdId}`, { method: 'DELETE' })
+      const data = await res.json()
+
+      console.log('[toggleInterest DELETE]', { ok: res.ok, data })
+
       if (res.ok) {
         setInterests(prev => prev.filter(id => id !== jdId))
+        alert('✅ 관심 JD에서 해제되었습니다')
+      } else {
+        console.error('[toggleInterest DELETE] 실패:', data)
+        alert('❌ 관심 해제 실패: ' + (data.error || '알 수 없는 오류'))
       }
     } else {
       // 관심 등록
@@ -639,10 +649,21 @@ export default function JDPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ user_id: userId, jd_id: jdId })
       })
+      const data = await res.json()
+
+      console.log('[toggleInterest POST]', { ok: res.ok, data })
+
       if (res.ok) {
         setInterests(prev => [...prev, jdId])
         // 관심 등록 후 자동으로 관심 JD 탭으로 전환
         setViewMode('interest')
+        alert('✅ 관심 JD로 등록되었습니다')
+
+        console.log('[toggleInterest] interests 업데이트:', [...interests, jdId])
+        console.log('[toggleInterest] viewMode 전환: interest')
+      } else {
+        console.error('[toggleInterest POST] 실패:', data)
+        alert('❌ 관심 등록 실패: ' + (data.error || '알 수 없는 오류'))
       }
     }
   }

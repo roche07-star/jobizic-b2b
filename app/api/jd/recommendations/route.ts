@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
         *,
         job_descriptions!inner(id, company, position, created_by),
         candidates!inner(
-          id, name, email, current_position, total_experience_years,
+          id, name, email, source, current_position, total_experience_years,
           education, career_summary, desired_salary, metadata
         )
       `)

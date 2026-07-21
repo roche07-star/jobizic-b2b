@@ -25,6 +25,7 @@ interface Candidate {
   phone: string | null
   birth_year: number | null
   location: string | null
+  source?: string | null
   current_company: string | null
   current_position: string | null
   total_experience_years: number | null
@@ -105,6 +106,7 @@ function getFinalEducation(education: string[] | undefined): string {
 
 export default function CandidatesPage() {
   const [candidates, setCandidates] = useState<Candidate[]>([])
+  const [totalCount, setTotalCount] = useState(0)
   const [loading, setLoading] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
   const [hasMore, setHasMore] = useState(false)
@@ -126,6 +128,7 @@ export default function CandidatesPage() {
   const [orgMembers, setOrgMembers] = useState<User[]>([])
   const [isEditing, setIsEditing] = useState(false)
   const [analyzing, setAnalyzing] = useState(false)
+  const [reanalyzing, setReanalyzing] = useState<string | null>(null)
   const [analysisStep, setAnalysisStep] = useState(0)
   const [editForm, setEditForm] = useState<Partial<Candidate>>({})
   const [comments, setComments] = useState<any[]>([])
@@ -288,6 +291,7 @@ export default function CandidatesPage() {
         .then(r => r.json())
         .then(d => {
           setCandidates(d.candidates ?? [])
+          setTotalCount(d.total ?? 0)
           setHasMore(d.hasMore ?? false)
         })
         .finally(() => setLoading(false))
@@ -326,6 +330,32 @@ export default function CandidatesPage() {
     } catch (error) {
       console.error('삭제 중 오류:', error)
       alert('❌ 삭제 중 오류가 발생했습니다')
+    }
+  }
+
+  async function reanalyzeCandidate(id: string) {
+    if (!confirm('이 후보자를 재분석할까요? (기존 분석 결과가 업데이트됩니다)')) return
+
+    setReanalyzing(id)
+
+    try {
+      const res = await fetch(`/api/candidates/${id}/reanalyze`, { method: 'POST' })
+      const data = await res.json()
+
+      if (!res.ok) {
+        alert('❌ 재분석 실패: ' + (data.error || '알 수 없는 오류'))
+        setReanalyzing(null)
+        return
+      }
+
+      alert('✅ 재분석이 완료되었습니다')
+
+      // 목록 새로고침
+      window.location.reload()
+    } catch (error) {
+      console.error('재분석 중 오류:', error)
+      alert('❌ 재분석 중 오류가 발생했습니다')
+      setReanalyzing(null)
     }
   }
 
@@ -680,7 +710,7 @@ export default function CandidatesPage() {
       <div className="page-header">
         <div>
           <div className="page-title">후보자 관리</div>
-          <div className="page-sub">총 {candidates.length}명</div>
+          <div className="page-sub">{candidates.length}명 (총 {totalCount}명)</div>
         </div>
         <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
           {isAdmin && organizations.length > 0 && (
@@ -841,7 +871,7 @@ export default function CandidatesPage() {
               }
             >
               <div className="jd-card-top">
-                <div className="jd-company">{candidate.current_company ?? '프리랜서'}</div>
+                <div className="jd-company">{candidate.current_company ?? '회사명 미기재'}</div>
                 <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
                   {candidate.organization && (
                     <span style={{
@@ -879,7 +909,30 @@ export default function CandidatesPage() {
                   <span className={`badge badge-${candidate.status}`}>{candidate.status}</span>
                 </div>
               </div>
-              <div className="jd-position" style={{ marginBottom: 4 }}>{candidate.name || '이름 미상'}</div>
+              <div className="jd-position" style={{ marginBottom: 4, display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span>{candidate.name || '이름 미상'}</span>
+                {/* 출처 뱃지 */}
+                {candidate.source && (
+                  <span
+                    className="badge"
+                    style={{
+                      background:
+                        candidate.source === 'B2C' ? '#3b82f6' :
+                        candidate.source === 'Local' ? '#10b981' :
+                        candidate.source === 'B2B' ? '#8b5cf6' :
+                        'var(--muted)',
+                      color: 'white',
+                      fontSize: 10,
+                      padding: '2px 6px'
+                    }}
+                  >
+                    {candidate.source === 'B2C' ? '🔵 B2C' :
+                     candidate.source === 'Local' ? '🟢 Local' :
+                     candidate.source === 'B2B' ? '🟣 B2B' :
+                     candidate.source}
+                  </span>
+                )}
+              </div>
               <div style={{ fontSize: 13, color: 'var(--muted2)', marginBottom: 6 }}>
                 {candidate.current_position ?? '—'} · {candidate.total_experience_years ? `${candidate.total_experience_years}년` : '경력 미상'}
               </div>
@@ -892,7 +945,6 @@ export default function CandidatesPage() {
               <div className="jd-meta">
                 {candidate.location && <span className="jd-tag">📍 {candidate.location}</span>}
                 {candidate.market_value && <span className="jd-tag">💰 {candidate.market_value}</span>}
-                <span className={`jd-tag badge-${candidate.job_search_status}`}>{candidate.job_search_status}</span>
               </div>
               {candidate.pipeline && candidate.pipeline.filter(p => p.is_active).length > 0 && (
                 <div style={{ marginTop: 10, display: 'flex', flexWrap: 'wrap', gap: 6 }}>
@@ -918,7 +970,7 @@ export default function CandidatesPage() {
               )}
               {(candidate.skills?.length > 0 || candidate.tech_stack?.length > 0) && (
                 <div className="skills-wrap" style={{ marginTop: 10 }}>
-                  {[...(candidate.skills ?? []), ...(candidate.tech_stack ?? [])].slice(0, 5).map(s => <span key={s} className="skill-chip">{s}</span>)}
+                  {[...(candidate.skills ?? []), ...(candidate.tech_stack ?? [])].slice(0, 5).map((s, i) => <span key={`skill-${i}-${s}`} className="skill-chip">{s}</span>)}
                   {([...(candidate.skills ?? []), ...(candidate.tech_stack ?? [])].length > 5) && <span className="skill-chip" style={{ opacity: 0.5 }}>+{([...(candidate.skills ?? []), ...(candidate.tech_stack ?? [])].length - 5)}</span>}
                 </div>
               )}
@@ -930,6 +982,21 @@ export default function CandidatesPage() {
                   <button className="btn btn-primary btn-sm" onClick={() => updateStatus(candidate.id, '제안중')}>제안</button>
                 )}
                 <button className="btn btn-ghost btn-sm" onClick={() => updateStatus(candidate.id, '보류')}>보류</button>
+                <button
+                  className="btn btn-info btn-sm"
+                  onClick={() => reanalyzeCandidate(candidate.id)}
+                  disabled={reanalyzing === candidate.id}
+                  style={{ opacity: reanalyzing === candidate.id ? 0.6 : 1 }}
+                >
+                  {reanalyzing === candidate.id ? (
+                    <>
+                      <div className="spinner" style={{ width: 12, height: 12, borderWidth: 2, marginRight: 6 }} />
+                      재분석 중...
+                    </>
+                  ) : (
+                    '🔄 재분석'
+                  )}
+                </button>
                 <button className="btn btn-danger btn-sm" onClick={() => deleteCandidate(candidate.id)}>삭제</button>
               </div>
             </div>
@@ -961,15 +1028,37 @@ export default function CandidatesPage() {
           <div className="modal" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
               <div>
-                <div style={{ fontSize: 12, color: 'var(--muted2)', marginBottom: 4 }}>{selected.current_company ?? '프리랜서'} · {selected.current_position}</div>
-                <div className="modal-title">{selected.name}</div>
+                <div style={{ fontSize: 12, color: 'var(--muted2)', marginBottom: 4 }}>{selected.current_company ?? '회사명 미기재'} · {selected.current_position}</div>
+                <div className="modal-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span>{selected.name}</span>
+                  {/* 출처 뱃지 */}
+                  {selected.source && (
+                    <span
+                      className="badge"
+                      style={{
+                        background:
+                          selected.source === 'B2C' ? '#3b82f6' :
+                          selected.source === 'Local' ? '#10b981' :
+                          selected.source === 'B2B' ? '#8b5cf6' :
+                          'var(--muted)',
+                        color: 'white',
+                        fontSize: 11,
+                        padding: '3px 8px'
+                      }}
+                    >
+                      {selected.source === 'B2C' ? '🔵 B2C' :
+                       selected.source === 'Local' ? '🟢 Local' :
+                       selected.source === 'B2B' ? '🟣 B2B' :
+                       selected.source}
+                    </span>
+                  )}
+                </div>
               </div>
               <button className="modal-close" onClick={() => closeModal()}>✕</button>
             </div>
 
             <div style={{ display: 'flex', gap: 6, marginBottom: 20 }}>
               <span className={`badge badge-${selected.status}`}>{selected.status}</span>
-              <span className={`badge badge-${selected.job_search_status}`}>{selected.job_search_status}</span>
               {selected.total_experience_years && <span className="badge badge-일반">{selected.total_experience_years}년 경력</span>}
             </div>
 
@@ -1029,7 +1118,7 @@ export default function CandidatesPage() {
                   <div style={{ marginBottom: 16 }}>
                     <div className="form-label">적합한 포지션</div>
                     <div className="skills-wrap">
-                      {selected.ideal_roles.map(r => <span key={r} className="skill-chip preferred">{r}</span>)}
+                      {selected.ideal_roles.map((r, i) => <span key={`role-${i}-${r}`} className="skill-chip preferred">{r}</span>)}
                     </div>
                   </div>
                 )}
@@ -1153,6 +1242,21 @@ export default function CandidatesPage() {
                       👥 소유권 이전
                     </button>
                   )}
+                  <button
+                    className="btn btn-info"
+                    onClick={() => reanalyzeCandidate(selected.id)}
+                    disabled={reanalyzing === selected.id}
+                    style={{ opacity: reanalyzing === selected.id ? 0.6 : 1 }}
+                  >
+                    {reanalyzing === selected.id ? (
+                      <>
+                        <div className="spinner" style={{ width: 14, height: 14, borderWidth: 2, marginRight: 8 }} />
+                        재분석 중...
+                      </>
+                    ) : (
+                      '🔄 재분석'
+                    )}
+                  </button>
                   <button className="btn btn-danger" onClick={() => { deleteCandidate(selected.id); closeModal() }}>삭제</button>
                 </>
               ) : (

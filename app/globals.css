@@ -75,6 +75,16 @@ body {
   font-weight: 500;
   text-decoration: none;
   transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.nav-link-emoji {
+  font-size: 16px;
+  flex-shrink: 0;
+}
+.nav-link-text {
+  white-space: nowrap;
 }
 .nav-link:hover {
   background: var(--bg-3);
@@ -101,11 +111,13 @@ body {
   .nav-logo { font-size: 16px; }
 }
 
-/* 작은 화면 (769px ~ 1023px) - 더 작은 간격 */
+/* 작은 화면 (769px ~ 1023px) - 이모지만 표시 */
 @media (max-width: 1023px) {
   .nav { padding: 0 16px; gap: 16px; }
-  .nav-links { gap: 12px; }
-  .nav-link { font-size: 12px; padding: 6px 10px; }
+  .nav-links { gap: 8px; }
+  .nav-link { font-size: 12px; padding: 8px 12px; }
+  .nav-link-text { display: none; } /* 텍스트 숨기기 */
+  .nav-link-emoji { font-size: 18px; } /* 이모지 크게 */
   .nav-logo { font-size: 15px; }
   .nav-profile { font-size: 11px !important; }
 }
