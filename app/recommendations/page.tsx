@@ -58,7 +58,7 @@ interface Recommendation {
 export default function RecommendationsPage() {
   const { toasts, success, error, info, removeToast: onRemove } = useToast()
   const [userRole, setUserRole] = useState<string>('')
-  const [activeTab, setActiveTab] = useState<'received' | 'manage'>('received')
+  const [activeTab, setActiveTab] = useState<'received' | 'manage' | 'linkedin'>('received')
 
   // 내가 받은 추천 state
   const [recommendations, setRecommendations] = useState<Recommendation[]>([])
@@ -393,6 +393,12 @@ export default function RecommendationsPage() {
             onClick={() => setActiveTab('manage')}
           >
             Searching(Database)
+          </button>
+          <button
+            className={`btn${activeTab === 'linkedin' ? ' btn-primary' : ' btn-ghost'}`}
+            onClick={() => setActiveTab('linkedin')}
+          >
+            Searching(Linkedin)
           </button>
           <button
             className={`btn${activeTab === 'received' ? ' btn-primary' : ' btn-ghost'}`}
@@ -869,6 +875,14 @@ export default function RecommendationsPage() {
             </div>
           )}
         </>
+      ) : activeTab === 'linkedin' ? (
+        <div className="card">
+          <div className="card-title">Searching(Linkedin)</div>
+          <div className="empty">
+            <div className="empty-icon">🚧</div>
+            <div className="empty-text">준비 중입니다</div>
+          </div>
+        </div>
       ) : loading ? (
         <div className="empty">
           <div className="spinner" style={{ margin: '0 auto 12px' }} />
