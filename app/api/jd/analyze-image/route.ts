@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
+import { handleAnthropicError } from '@/lib/handle-anthropic-error'
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY!,
@@ -90,9 +91,13 @@ export async function POST(req: NextRequest) {
 
   } catch (error: any) {
     console.error('[JD 이미지 분석]', error)
+
+    const errorResponse = handleAnthropicError(error)
+
     return NextResponse.json({
-      error: '이미지 분석 중 오류가 발생했습니다.',
-      details: error.message,
+      error: errorResponse.userMessage,
+      shouldContact: errorResponse.shouldContact,
+      errorCode: errorResponse.error,
     }, { status: 500 })
   }
 }

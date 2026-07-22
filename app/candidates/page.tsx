@@ -343,7 +343,7 @@ export default function CandidatesPage() {
       const data = await res.json()
 
       if (!res.ok) {
-        alert('❌ 재분석 실패: ' + (data.error || '알 수 없는 오류'))
+        alert('❌ ' + (data.error || '재분석 실패'))
         setReanalyzing(null)
         return
       }

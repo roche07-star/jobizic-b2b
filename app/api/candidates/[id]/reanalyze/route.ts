@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import Anthropic from '@anthropic-ai/sdk'
+import { handleAnthropicError } from '@/lib/handle-anthropic-error'
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY!,
@@ -253,9 +254,13 @@ ${candidate.raw_resume}
 
   } catch (error: any) {
     console.error('[재분석 API]', error)
+
+    const errorResponse = handleAnthropicError(error)
+
     return NextResponse.json({
-      error: '재분석 중 오류가 발생했습니다.',
-      details: error.message,
+      error: errorResponse.userMessage,
+      shouldContact: errorResponse.shouldContact,
+      errorCode: errorResponse.error,
     }, { status: 500 })
   }
 }
