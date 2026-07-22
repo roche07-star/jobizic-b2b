@@ -3,6 +3,7 @@ import Anthropic from '@anthropic-ai/sdk'
 import { getCandidateParsePrompt, getJDParsePrompt, getMatchingPrompt } from '@/lib/prompts/base-headhunter'
 import { createClient } from '@supabase/supabase-js'
 import { callClaude } from '@/lib/claude-client'
+import { handleAnthropicError } from '@/lib/handle-anthropic-error'
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -384,13 +385,14 @@ export async function POST(
     console.error('[jobs/process] Error:', error)
 
     const { id: jobId } = await params
+    const errorResponse = handleAnthropicError(error)
 
     // Job 실패 처리
     await supabase
       .from('jobs')
       .update({
         status: 'failed',
-        error: error.message,
+        error: errorResponse.userMessage,
         progress: 0,
         message: '분석 실패',
         completed_at: new Date().toISOString()
@@ -398,7 +400,9 @@ export async function POST(
       .eq('id', jobId)
 
     return NextResponse.json({
-      error: error.message || 'Processing failed'
+      error: errorResponse.userMessage,
+      shouldContact: errorResponse.shouldContact,
+      errorCode: errorResponse.error
     }, { status: 500 })
   }
 }
