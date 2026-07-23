@@ -587,7 +587,13 @@ ${manualForm.total_experience_years ? `경력: ${manualForm.total_experience_yea
       }
 
       // 목록 새로고침
-      const refreshRes = await fetch(`/api/pipeline?user_email=${profile.email}&role=${profile.role}${selectedOrgId !== '전체' ? `&organization_id=${selectedOrgId}` : ''}`)
+      const params = new URLSearchParams({
+        role: profile.role,
+        user_email: profile.email,
+        ...(profile.role === 'admin' && selectedOrgId !== '전체' && { organization_id: selectedOrgId }),
+        ...(profile.role !== 'admin' && profile.organization_id && { organization_id: profile.organization_id })
+      })
+      const refreshRes = await fetch(`/api/pipeline?${params}`)
       const refreshData = await refreshRes.json()
       setPipeline(refreshData.pipeline ?? [])
 
