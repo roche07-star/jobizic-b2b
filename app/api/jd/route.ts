@@ -55,10 +55,11 @@ export async function GET(req: NextRequest) {
         console.log('[jd] Only interests mode - User:', userEmail, 'Interests:', interestedJdIds.length, 'JDs')
 
         if (interestedJdIds.length > 0) {
-          q = q.in('id', interestedJdIds)
+          // 관심 등록한 JD OR 본인이 만든 JD
+          q = q.or(`id.in.(${interestedJdIds.join(',')}),created_by.eq.${userEmail}`)
         } else {
-          // 관심 JD가 없으면 빈 결과 반환
-          q = q.eq('id', '00000000-0000-0000-0000-000000000000')
+          // 관심 등록한 JD가 없으면 본인이 만든 JD만
+          q = q.eq('created_by', userEmail)
         }
       }
     }
