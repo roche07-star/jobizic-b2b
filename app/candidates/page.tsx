@@ -290,7 +290,8 @@ export default function CandidatesPage() {
         role: profile.role,
         user_email: profile.email,
         ...(profile.role === 'admin' && selectedOrgId !== '전체' && { organization_id: selectedOrgId }),
-        ...(profile.role !== 'admin' && profile.organization_id && { organization_id: profile.organization_id })
+        ...(profile.role !== 'admin' && profile.organization_id && { organization_id: profile.organization_id }),
+        ...(search.trim() && { search: search.trim() })
       })
 
       fetch(`/api/candidates?${params}`)
@@ -304,7 +305,7 @@ export default function CandidatesPage() {
         .finally(() => setLoading(false))
     }
     loadCandidates()
-  }, [selectedOrgId])
+  }, [selectedOrgId, search])
 
   // 모달 열릴 때 코멘트 로드
   useEffect(() => {
@@ -645,18 +646,9 @@ export default function CandidatesPage() {
   // 기본 필터 (상태)
   const filtered = filter === '전체' ? candidates : candidates.filter(c => c.status === filter)
 
-  // 검색 (이름, 이메일, 회사, 직무)
-  const searched = search.trim()
-    ? filtered.filter(c =>
-        c.name?.toLowerCase().includes(search.toLowerCase()) ||
-        c.email?.toLowerCase().includes(search.toLowerCase()) ||
-        c.current_company?.toLowerCase().includes(search.toLowerCase()) ||
-        c.current_position?.toLowerCase().includes(search.toLowerCase())
-      )
-    : filtered
-
-  // 고급 필터
-  let advanced = searched
+  // 검색은 API에서 처리 (useEffect dependency에 search 추가됨)
+  // 고급 필터만 클라이언트에서 처리
+  let advanced = filtered
 
   // 스킬 검색
   if (skillSearch.trim()) {
