@@ -575,8 +575,7 @@ ${manualForm.total_experience_years ? `경력: ${manualForm.total_experience_yea
           candidate_id: candidateData.id,
           organization_id: profile.organization_id,
           created_by: profile.email,
-          stage: '검토',
-          is_manual: true // 직접 입력 플래그
+          stage: '검토'
         })
       })
 
