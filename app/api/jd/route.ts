@@ -36,10 +36,36 @@ export async function GET(req: NextRequest) {
       q = q.eq('organization_id', organizationId)
     }
 
+    // only_interests=true: 모든 role에서 관심 JD만 필터링 (조직 무관)
+    if (onlyInterests && userEmail) {
+      const { data: userProfile } = await supabaseAdmin
+        .from('profiles')
+        .select('id')
+        .eq('email', userEmail)
+        .single()
+
+      if (userProfile) {
+        const { data: interests } = await supabaseAdmin
+          .from('jd_interests')
+          .select('jd_id')
+          .eq('user_id', userProfile.id)
+
+        const interestedJdIds = interests?.map(i => i.jd_id) ?? []
+
+        console.log('[jd] Only interests mode - User:', userEmail, 'Interests:', interestedJdIds.length, 'JDs')
+
+        if (interestedJdIds.length > 0) {
+          q = q.in('id', interestedJdIds)
+        } else {
+          // 관심 JD가 없으면 빈 결과 반환
+          q = q.eq('id', '00000000-0000-0000-0000-000000000000')
+        }
+      }
+    }
     // Admin은 조직 전체 JD 조회 (organizationId 파라미터로 선택)
     // Owner/Headhunter는 본인 JD + 관심 JD + 활성 JD (현재 조직 내에서만)
     // 기타 사용자는 본인 JD 또는 활성 JD (현재 조직 내에서만)
-    if (role && role !== 'admin' && userEmail) {
+    else if (role && role !== 'admin' && userEmail) {
       // 먼저 현재 사용자의 organization_id 조회 (조직 격리를 위해 필수!)
       const { data: userProfile } = await supabaseAdmin
         .from('profiles')
@@ -63,33 +89,20 @@ export async function GET(req: NextRequest) {
 
         console.log('[jd] User interests:', interestedJdIds.length, 'JDs')
 
-        if (onlyInterests) {
-          // only_interests=true: 관심 JD만 (조직 무관, status 필터는 별도 적용)
-          console.log('[jd] Only showing interested JDs (no org filter)')
-          if (interestedJdIds.length > 0) {
-            q = q.in('id', interestedJdIds)
-          } else {
-            // 관심 JD가 없으면 빈 결과 반환
-            q = q.eq('id', '00000000-0000-0000-0000-000000000000') // 존재하지 않는 ID
-          }
-        } else {
-          // 일반 조회: 조직 격리 적용
-          console.log('[jd] Filtering by user organization_id:', userProfile.organization_id)
-          q = q.eq('organization_id', userProfile.organization_id)
+        // 일반 조회: 조직 격리 적용
+        console.log('[jd] Filtering by user organization_id:', userProfile.organization_id)
+        q = q.eq('organization_id', userProfile.organization_id)
 
-          if (interestedJdIds.length > 0) {
-            // 일반 조회: 본인 JD OR 관심 JD OR 활성 JD (현재 조직 내에서만)
-            q = q.or(`created_by.eq.${userEmail},id.in.(${interestedJdIds.join(',')}),status.eq.활성`)
-          } else {
-            // 관심 JD 없으면 본인 JD OR 활성 JD (현재 조직 내에서만)
-            q = q.or(`created_by.eq.${userEmail},status.eq.활성`)
-          }
+        if (interestedJdIds.length > 0) {
+          // 일반 조회: 본인 JD OR 관심 JD OR 활성 JD (현재 조직 내에서만)
+          q = q.or(`created_by.eq.${userEmail},id.in.(${interestedJdIds.join(',')}),status.eq.활성`)
+        } else {
+          // 관심 JD 없으면 본인 JD OR 활성 JD (현재 조직 내에서만)
+          q = q.or(`created_by.eq.${userEmail},status.eq.활성`)
         }
       } else {
         // 기타 role: 본인 JD OR 활성 JD (현재 조직 내에서만)
-        if (!onlyInterests) {
-          q = q.eq('organization_id', userProfile.organization_id)
-        }
+        q = q.eq('organization_id', userProfile.organization_id)
         q = q.or(`created_by.eq.${userEmail},status.eq.활성`)
       }
     }
