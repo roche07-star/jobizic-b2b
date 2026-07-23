@@ -486,13 +486,13 @@ export default function RecommendationsPage() {
           <button
             className="btn"
             style={activeTab === 'manage' ? {
-              background: 'var(--bg-elevated)',
-              color: 'var(--text-primary)',
-              border: '2px solid var(--accent)'
+              background: '#1a1a1a',
+              color: 'white',
+              border: 'none'
             } : {
-              background: 'var(--bg-base)',
-              color: 'var(--text-secondary)',
-              border: '1px solid var(--border)'
+              background: '#f3f4f6',
+              color: '#6b7280',
+              border: 'none'
             }}
             onClick={() => setActiveTab('manage')}
           >
@@ -501,13 +501,13 @@ export default function RecommendationsPage() {
           <button
             className="btn"
             style={activeTab === 'linkedin' ? {
-              background: 'var(--bg-elevated)',
-              color: 'var(--text-primary)',
-              border: '2px solid var(--accent)'
+              background: '#1a1a1a',
+              color: 'white',
+              border: 'none'
             } : {
-              background: 'var(--bg-base)',
-              color: 'var(--text-secondary)',
-              border: '1px solid var(--border)'
+              background: '#f3f4f6',
+              color: '#6b7280',
+              border: 'none'
             }}
             onClick={() => setActiveTab('linkedin')}
           >
@@ -516,13 +516,13 @@ export default function RecommendationsPage() {
           <button
             className="btn"
             style={activeTab === 'received' ? {
-              background: 'var(--bg-elevated)',
-              color: 'var(--text-primary)',
-              border: '2px solid var(--accent)'
+              background: '#1a1a1a',
+              color: 'white',
+              border: 'none'
             } : {
-              background: 'var(--bg-base)',
-              color: 'var(--text-secondary)',
-              border: '1px solid var(--border)'
+              background: '#f3f4f6',
+              color: '#6b7280',
+              border: 'none'
             }}
             onClick={() => setActiveTab('received')}
           >
