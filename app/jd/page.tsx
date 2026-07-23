@@ -422,8 +422,7 @@ export default function JDPage() {
         body: JSON.stringify({
           jd_id: selected.id,
           candidate_id: candidateId,
-          stage: '검토',
-          match_analysis: candidateMatches[candidateId]
+          stage: '검토'
         })
       })
 
@@ -1854,13 +1853,23 @@ export default function JDPage() {
                               )}
                             </button>
                           ) : (
-                            <button
-                              className="btn btn-success btn-sm"
-                              onClick={() => addCandidateToPipeline(candidate.id)}
-                              style={{ minWidth: 100 }}
-                            >
-                              ✅ 프로세스 추가
-                            </button>
+                            <>
+                              <button
+                                className="btn btn-ghost btn-sm"
+                                onClick={() => {
+                                  alert(`📊 매칭 분석 결과\n\n점수: ${match.match_score}점\n추천: ${match.recommendation}\n\n${match.summary || '분석 요약 없음'}`)
+                                }}
+                              >
+                                📊 분석 보기
+                              </button>
+                              <button
+                                className="btn btn-success btn-sm"
+                                onClick={() => addCandidateToPipeline(candidate.id)}
+                                style={{ minWidth: 100 }}
+                              >
+                                ✅ 프로세스 추가
+                              </button>
+                            </>
                           )}
                         </div>
                       </div>
