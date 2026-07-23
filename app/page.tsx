@@ -142,89 +142,45 @@ export default function Dashboard() {
 
   useEffect(() => {
     async function loadData() {
-      const profile = await getProfile()
-      if (!profile) {
-        router.push('/login')
-        return
-      }
+      setLoading(true)
 
-      const params = new URLSearchParams({
-        role: profile.role,
-        user_email: profile.email,
-        ...(profile.role === 'admin' && selectedOrgId !== '전체' && { organization_id: selectedOrgId }),
-        ...(profile.role !== 'admin' && profile.organization_id && { organization_id: profile.organization_id })
-      })
-
-      Promise.all([
-        fetch(`/api/jd?${params}`).then(r => r.json()),
-        fetch(`/api/candidates?${params}`).then(r => r.json()),
-        fetch(`/api/pipeline?${params}`).then(r => r.json()),
-        fetch(`/api/jd/interests?user_id=${profile.id}`).then(r => r.json()),
-      ]).then(([jdData, candidateData, pipelineData, interestData]) => {
-        const jds = jdData.jds ?? []
-        const candidates = candidateData.candidates ?? []
-        const totalCandidatesCount = candidateData.total ?? 0  // ✅ total 사용
-        const pipeline = pipelineData.pipeline ?? []
-        const interestIds = interestData.jd_ids ?? []
-
-        // 이번 달 매칭 계산
-        const now = new Date()
-        const thisMonth = pipeline.filter((p: any) => {
-          const created = new Date(p.created_at)
-          return created.getMonth() === now.getMonth() && created.getFullYear() === now.getFullYear()
-        }).length
-
-        // 관심 JD 계산: 내 JD + 관심 등록한 JD
-        const myJDs = jds.filter((jd: any) => jd.created_by === profile.email).length
-        const interestCount = myJDs + interestIds.length
-
-        setStats({
-          totalJDs: jds.length,
-          interestJDs: interestCount,
-          totalCandidates: totalCandidatesCount,  // ✅ total 사용
-          thisMonthMatches: thisMonth,
-          activePipelines: pipeline.filter((p: any) => p.is_active).length,
-        })
-
-        // 최근 JD: 관심 JD 우선 + 채용 프로세스 현황 추가
-        const interestJDs = jds.filter((jd: any) =>
-          jd.created_by === profile.email || interestIds.includes(jd.id)
-        ).map((jd: any) => {
-          // 각 JD별 채용 프로세스 카운트
-          const jdPipelines = pipeline.filter((p: any) => p.jd_id === jd.id)
-          const activePipelines = jdPipelines.filter((p: any) => p.is_active)
-
-          return {
-            ...jd,
-            pipelineCount: jdPipelines.length,
-            activePipelineCount: activePipelines.length,
-          }
-        })
-        setRecentJDs(interestJDs)
-
-        // Admin/Owner/PM인 경우 추가 통계 로드
-        if (profile.role === 'admin' || profile.role === 'owner' || profile.role === 'headhunter') {
-          // Admin: 선택한 조직, Owner/PM: 자신의 조직
-          const orgId = profile.role === 'admin'
-            ? selectedOrgId !== '전체' ? selectedOrgId : ''
-            : profile.organization_id || ''
-
-          if (orgId) {
-            const statsParams = new URLSearchParams({
-              role: profile.role,
-              organization_id: orgId,
-              user_email: profile.email, // PM은 본인 데이터만
-            })
-            fetch(`/api/dashboard/stats?${statsParams}`)
-              .then(r => r.json())
-              .then(data => setDashboardStats(data))
-              .catch(err => console.error('Failed to load dashboard stats:', err))
-          }
+      try {
+        const profile = await getProfile()
+        if (!profile) {
+          router.push('/login')
+          return
         }
-      }).finally(() => setLoading(false))
+
+        const params = new URLSearchParams({
+          role: profile.role,
+          user_email: profile.email,
+          user_id: profile.id,
+          ...(profile.role === 'admin' && selectedOrgId !== '전체' && { organization_id: selectedOrgId }),
+          ...(profile.role !== 'admin' && profile.organization_id && { organization_id: profile.organization_id })
+        })
+
+        // 통합 API 호출 (6개 → 1개)
+        const res = await fetch(`/api/dashboard?${params}`)
+        const data = await res.json()
+
+        if (res.ok) {
+          setStats(data.stats)
+          setRecentJDs(data.recentJDs)
+          setDashboardStats(data.dashboardStats)
+          if (data.organizations) {
+            setOrganizations(data.organizations)
+          }
+        } else {
+          console.error('[Dashboard] API error:', data.error)
+        }
+      } catch (error) {
+        console.error('[Dashboard] Load error:', error)
+      } finally {
+        setLoading(false)
+      }
     }
     loadData()
-  }, [selectedOrgId])
+  }, [selectedOrgId, router])
 
   const statsData = [
     { label: '⭐ 관심 JD', value: loading ? '—' : stats.interestJDs.toString() },
