@@ -243,7 +243,8 @@ export default function RecommendationsPage() {
         role: profile.role,
         user_email: profile.email,
         only_interests: 'true',
-        ...(profile.role !== 'admin' && profile.organization_id && { organization_id: profile.organization_id })
+        // 관심 JD 조회 시에는 admin도 본인 조직 기준으로 필터링
+        ...(profile.organization_id && { organization_id: profile.organization_id })
       })
 
       const res = await fetch(`/api/jd?${params}`)
