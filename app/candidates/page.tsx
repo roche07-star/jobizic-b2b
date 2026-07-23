@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { getProfile } from '@/lib/auth'
 import { downloadCandidatesAsCSV } from '@/lib/csv-export'
-import AnalysisProgress from '@/components/AnalysisProgress'
 import { useToast } from '@/hooks/useToast'
 import ToastContainer from '@/components/ToastContainer'
 
@@ -1587,18 +1586,6 @@ export default function CandidatesPage() {
         </div>
       )}
 
-      {/* Analysis Progress */}
-      {analyzing && (
-        <AnalysisProgress
-          steps={[
-            '이력서 파일 읽는 중...',
-            'AI 분석 중 (약 30초 소요)',
-            '결과 생성 중...'
-          ]}
-          currentStep={analysisStep}
-          estimatedTime={30}
-        />
-      )}
 
       {/* JD 추천 모달 */}
       {showJdRecommendModal && selected && (
