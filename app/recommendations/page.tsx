@@ -484,19 +484,46 @@ export default function RecommendationsPage() {
       {(userRole === 'admin' || userRole === 'owner' || userRole === 'headhunter') && (
         <div style={{ display: 'flex', gap: 12, marginBottom: 20 }}>
           <button
-            className={`btn${activeTab === 'manage' ? ' btn-primary' : ' btn-ghost'}`}
+            className="btn"
+            style={activeTab === 'manage' ? {
+              background: 'var(--bg-elevated)',
+              color: 'var(--text-primary)',
+              border: '2px solid var(--accent)'
+            } : {
+              background: 'var(--bg-base)',
+              color: 'var(--text-secondary)',
+              border: '1px solid var(--border)'
+            }}
             onClick={() => setActiveTab('manage')}
           >
             Searching(Database)
           </button>
           <button
-            className={`btn${activeTab === 'linkedin' ? ' btn-primary' : ' btn-ghost'}`}
+            className="btn"
+            style={activeTab === 'linkedin' ? {
+              background: 'var(--bg-elevated)',
+              color: 'var(--text-primary)',
+              border: '2px solid var(--accent)'
+            } : {
+              background: 'var(--bg-base)',
+              color: 'var(--text-secondary)',
+              border: '1px solid var(--border)'
+            }}
             onClick={() => setActiveTab('linkedin')}
           >
             Searching(Linkedin)
           </button>
           <button
-            className={`btn${activeTab === 'received' ? ' btn-primary' : ' btn-ghost'}`}
+            className="btn"
+            style={activeTab === 'received' ? {
+              background: 'var(--bg-elevated)',
+              color: 'var(--text-primary)',
+              border: '2px solid var(--accent)'
+            } : {
+              background: 'var(--bg-base)',
+              color: 'var(--text-secondary)',
+              border: '1px solid var(--border)'
+            }}
             onClick={() => setActiveTab('received')}
           >
             내가 받은 추천
