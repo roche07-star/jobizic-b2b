@@ -140,7 +140,7 @@ BEGIN
   RAISE NOTICE 'Profiles 테이블: 2개 인덱스';
   RAISE NOTICE '=================================================';
   RAISE NOTICE '총 16개 인덱스 생성 완료';
-  RAISE NOTICE '예상 성능 개선: DB 응답 시간 30-40% 단축';
+  RAISE NOTICE '예상 성능 개선: DB 응답 시간 30-40%% 단축';
   RAISE NOTICE '=================================================';
 END $$;
 
