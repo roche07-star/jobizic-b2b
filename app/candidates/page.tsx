@@ -107,6 +107,7 @@ function getFinalEducation(education: string[] | undefined): string {
 export default function CandidatesPage() {
   const [candidates, setCandidates] = useState<Candidate[]>([])
   const [totalCount, setTotalCount] = useState(0)
+  const [statusCounts, setStatusCounts] = useState<Record<string, number>>({})
   const [loading, setLoading] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
   const [hasMore, setHasMore] = useState(false)
@@ -292,6 +293,7 @@ export default function CandidatesPage() {
         .then(d => {
           setCandidates(d.candidates ?? [])
           setTotalCount(d.total ?? 0)
+          setStatusCounts(d.statusCounts ?? {})
           setHasMore(d.hasMore ?? false)
         })
         .finally(() => setLoading(false))
@@ -830,7 +832,7 @@ export default function CandidatesPage() {
       <div className="filter-bar">
         {STATUS_FILTERS.map(f => (
           <button key={f} className={`filter-btn${filter === f ? ' active' : ''}`} onClick={() => setFilter(f)}>
-            {f} <span style={{ opacity: 0.6 }}>({f === '전체' ? totalCount : candidates.filter(c => c.status === f).length})</span>
+            {f} <span style={{ opacity: 0.6 }}>({f === '전체' ? totalCount : (statusCounts[f] ?? 0)})</span>
           </button>
         ))}
       </div>

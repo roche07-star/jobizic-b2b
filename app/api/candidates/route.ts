@@ -114,6 +114,48 @@ export async function GET(req: NextRequest) {
       q = q.eq('created_by', userEmail)
     }
 
+    // Status별 카운트 계산 (필터 적용 전 전체 데이터 기준)
+    const statusCounts: Record<string, number> = {}
+    const statuses = ['검토중', '활성', '제안중', '합격', '보류']
+
+    for (const s of statuses) {
+      let countQuery = supabaseAdmin
+        .from('candidates')
+        .select('id', { count: 'exact', head: true })
+
+      // 동일한 role/organization 필터 적용
+      if (role && role !== 'admin' && userEmail) {
+        const { data: userProfile } = await supabaseAdmin
+          .from('profiles')
+          .select('id, organization_id')
+          .eq('email', userEmail)
+          .single()
+
+        if (userProfile?.organization_id) {
+          countQuery = countQuery.eq('organization_id', userProfile.organization_id)
+
+          if (role === 'headhunter' || role === 'operator') {
+            countQuery = countQuery.eq('created_by', userEmail)
+          } else if (role === 'owner' || role === 'manager') {
+            const { data: operators } = await supabaseAdmin
+              .from('profiles')
+              .select('email')
+              .eq('organization_id', userProfile.organization_id)
+              .eq('role', 'operator')
+
+            const operatorEmails = operators?.map(o => o.email) || []
+            const allowedCreators = [userEmail, ...operatorEmails]
+            countQuery = countQuery.in('created_by', allowedCreators)
+          }
+        }
+      } else if (organizationId && role === 'admin') {
+        countQuery = countQuery.eq('organization_id', organizationId)
+      }
+
+      const { count: statusCount } = await countQuery.eq('status', s)
+      statusCounts[s] = statusCount || 0
+    }
+
     if (status) q = q.eq('status', status)
     if (search) {
       q = q.or(`name.ilike.%${search}%,email.ilike.%${search}%,current_company.ilike.%${search}%,current_position.ilike.%${search}%`)
@@ -137,6 +179,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({
       candidates: data ?? [],
       total: count || 0,
+      statusCounts,
       hasMore: (offset + limit) < (count || 0),
       offset,
       limit
