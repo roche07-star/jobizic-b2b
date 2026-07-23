@@ -10,6 +10,7 @@ export async function GET(req: NextRequest) {
     const role = req.nextUrl.searchParams.get('role')
     const userEmail = req.nextUrl.searchParams.get('user_email')
     const status = req.nextUrl.searchParams.get('status')
+    const onlyInterests = req.nextUrl.searchParams.get('only_interests') === 'true'
 
     let q = supabaseAdmin
       .from('job_descriptions')
@@ -64,8 +65,16 @@ export async function GET(req: NextRequest) {
 
         const interestedJdIds = interests?.map(i => i.jd_id) ?? []
 
-        if (interestedJdIds.length > 0) {
-          // 본인 JD OR 관심 JD OR 활성 JD (현재 조직 내에서만)
+        if (onlyInterests) {
+          // only_interests=true: 관심 JD만 (status 필터는 별도로 적용됨)
+          if (interestedJdIds.length > 0) {
+            q = q.in('id', interestedJdIds)
+          } else {
+            // 관심 JD가 없으면 빈 결과 반환
+            q = q.eq('id', '00000000-0000-0000-0000-000000000000') // 존재하지 않는 ID
+          }
+        } else if (interestedJdIds.length > 0) {
+          // 일반 조회: 본인 JD OR 관심 JD OR 활성 JD (현재 조직 내에서만)
           q = q.or(`created_by.eq.${userEmail},id.in.(${interestedJdIds.join(',')}),status.eq.활성`)
         } else {
           // 관심 JD 없으면 본인 JD OR 활성 JD (현재 조직 내에서만)
