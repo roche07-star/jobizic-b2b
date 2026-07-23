@@ -1005,13 +1005,35 @@ ${manualForm.total_experience_years ? `경력: ${manualForm.total_experience_yea
                     <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8 }}>
                       {item.job_descriptions.position}
                     </div>
-                    {item.match_score !== null && (
-                      <div style={{
-                        fontSize: 11,
-                        color: item.match_score >= 80 ? 'var(--success)' : item.match_score >= 60 ? 'var(--warn)' : 'var(--muted2)',
-                        marginBottom: 8
-                      }}>
-                        매칭: {item.match_score}점
+                    <div style={{
+                      fontSize: 11,
+                      color: item.match_score !== null
+                        ? (item.match_score >= 80 ? 'var(--success)' : item.match_score >= 60 ? 'var(--warn)' : 'var(--muted2)')
+                        : 'var(--muted)',
+                      marginBottom: 8
+                    }}>
+                      {item.match_score !== null
+                        ? `매칭: ${item.match_score}점`
+                        : '📊 매칭 분석 필요'}
+                      {item.skill_match_rate !== null && item.match_score !== null && (
+                        <span style={{ marginLeft: 8, color: 'var(--muted2)' }}>
+                          (스킬 {item.skill_match_rate}%)
+                        </span>
+                      )}
+                    </div>
+                    {/* 매칭 분석 요약 */}
+                    {item.match_score !== null && (item.strength_for_jd?.length > 0 || item.concerns?.length > 0) && (
+                      <div style={{ fontSize: 10, color: 'var(--muted2)', marginBottom: 8 }}>
+                        {item.strength_for_jd?.length > 0 && (
+                          <div style={{ color: 'var(--success)', marginBottom: 2 }}>
+                            ✅ 강점 {item.strength_for_jd.length}개
+                          </div>
+                        )}
+                        {item.concerns?.length > 0 && (
+                          <div style={{ color: 'var(--warn)' }}>
+                            ⚠️ 우려 {item.concerns.length}개
+                          </div>
+                        )}
                       </div>
                     )}
                     {item.next_action && (
