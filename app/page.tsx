@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { getProfile } from '@/lib/auth'
 import { getSupabaseBrowser } from '@/lib/supabase-browser'
+import { SkeletonCard, SkeletonJDCard, SkeletonTable } from '@/components/SkeletonCard'
 
 interface JD {
   id: string
@@ -69,6 +70,8 @@ export default function Dashboard() {
   })
   const [recentJDs, setRecentJDs] = useState<JD[]>([])
   const [loading, setLoading] = useState(true)
+  const [statsLoading, setStatsLoading] = useState(true)
+  const [dashboardStatsLoading, setDashboardStatsLoading] = useState(false)
   const [isAdmin, setIsAdmin] = useState(false)
   const [isOwner, setIsOwner] = useState(false)
   const [isOwnerOrPM, setIsOwnerOrPM] = useState(false)
@@ -143,6 +146,8 @@ export default function Dashboard() {
   useEffect(() => {
     async function loadData() {
       setLoading(true)
+      setStatsLoading(true)
+      setDashboardStatsLoading(false)
 
       try {
         const profile = await getProfile()
@@ -164,18 +169,31 @@ export default function Dashboard() {
         const data = await res.json()
 
         if (res.ok) {
+          // 1단계: 중요 데이터 먼저 표시 (즉시)
           setStats(data.stats)
           setRecentJDs(data.recentJDs)
-          setDashboardStats(data.dashboardStats)
           if (data.organizations) {
             setOrganizations(data.organizations)
           }
+          setStatsLoading(false)
+          setLoading(false)
+
+          // 2단계: 대시보드 통계는 약간 딜레이 후 표시 (UX 개선)
+          if (data.dashboardStats) {
+            setDashboardStatsLoading(true)
+            setTimeout(() => {
+              setDashboardStats(data.dashboardStats)
+              setDashboardStatsLoading(false)
+            }, 100)
+          }
         } else {
           console.error('[Dashboard] API error:', data.error)
+          setStatsLoading(false)
+          setLoading(false)
         }
       } catch (error) {
         console.error('[Dashboard] Load error:', error)
-      } finally {
+        setStatsLoading(false)
         setLoading(false)
       }
     }
@@ -220,12 +238,21 @@ export default function Dashboard() {
       </div>
 
       <div className="stats-grid">
-        {statsData.map(s => (
-          <div key={s.label} className="stat-card">
-            <div className="stat-value">{s.value}</div>
-            <div className="stat-label">{s.label}</div>
-          </div>
-        ))}
+        {statsLoading ? (
+          <>
+            <SkeletonCard />
+            <SkeletonCard />
+            <SkeletonCard />
+            <SkeletonCard />
+          </>
+        ) : (
+          statsData.map(s => (
+            <div key={s.label} className="stat-card">
+              <div className="stat-value">{s.value}</div>
+              <div className="stat-label">{s.label}</div>
+            </div>
+          ))
+        )}
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
@@ -252,9 +279,11 @@ export default function Dashboard() {
 
         <div className="card">
           <div className="card-title">⭐ 관심 JD</div>
-          {loading ? (
-            <div style={{ padding: '24px', textAlign: 'center' }}>
-              <div className="spinner" style={{ margin: '0 auto' }} />
+          {statsLoading ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <SkeletonJDCard />
+              <SkeletonJDCard />
+              <SkeletonJDCard />
             </div>
           ) : recentJDs.length === 0 ? (
             <div className="empty" style={{ padding: '24px' }}>
@@ -314,9 +343,21 @@ export default function Dashboard() {
       </div>
 
       {/* Admin/Owner/PM 공통: JD & 채용 프로세스 현황 */}
-      {(isAdmin || isOwnerOrPM) && dashboardStats && (
+      {(isAdmin || isOwnerOrPM) && (
         <>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginTop: 20 }}>
+          {dashboardStatsLoading ? (
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginTop: 20 }}>
+              <div className="card">
+                <div className="card-title">JD 현황</div>
+                <SkeletonTable />
+              </div>
+              <div className="card">
+                <div className="card-title">채용 프로세스 현황</div>
+                <SkeletonTable />
+              </div>
+            </div>
+          ) : dashboardStats ? (
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginTop: 20 }}>
             {/* JD 상태별 */}
             <div className="card">
               <div className="card-title">
@@ -389,11 +430,17 @@ export default function Dashboard() {
               </div>
             </div>
           </div>
+          ) : null}
         </>
       )}
 
       {/* Admin/Owner 전용: 팀 멤버 활동 통계 */}
-      {(isAdmin || isOwner) && dashboardStats && (
+      {(isAdmin || isOwner) && (dashboardStatsLoading ? (
+        <div className="card" style={{ marginTop: 20 }}>
+          <div className="card-title">팀 멤버 활동 현황</div>
+          <SkeletonTable />
+        </div>
+      ) : dashboardStats && (
         <div className="card" style={{ marginTop: 20 }}>
           <div className="card-title">팀 멤버 활동 현황</div>
           <div style={{ overflowX: 'auto' }}>
@@ -430,7 +477,7 @@ export default function Dashboard() {
             </table>
           </div>
         </div>
-      )}
+      ))}
 
       {/* 단계별 상세 모달 */}
       {selectedStage && (
