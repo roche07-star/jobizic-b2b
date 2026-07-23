@@ -566,8 +566,7 @@ export default function CandidatesPage() {
         body: JSON.stringify({
           jd_id: jdId,
           candidate_id: selected.id,
-          stage: '검토',
-          match_analysis: jdMatches[jdId]
+          stage: '신규'
         })
       })
 

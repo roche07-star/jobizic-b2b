@@ -379,21 +379,11 @@ export default function JDPage() {
     }
   }
 
-  // JD 선택 시 매칭 결과 불러오기
+  // JD 선택 시 매칭 결과 초기화
   async function selectJD(jd: JD) {
     setSelected(jd)
-
-    // 기존 매칭 결과 불러오기
-    try {
-      const res = await fetch(`/api/pipeline/match?jd_id=${jd.id}`)
-      if (res.ok) {
-        const matches = await res.json()
-        setCandidateMatches(matches)
-        console.log('[selectJD] 기존 매칭 결과 불러옴:', Object.keys(matches).length, '개')
-      }
-    } catch (err) {
-      console.error('[selectJD] 매칭 결과 불러오기 실패:', err)
-    }
+    // 이전 분석 결과 초기화 (새로 분석하도록)
+    setCandidateMatches({})
   }
 
   // JD-후보자 매칭 분석
