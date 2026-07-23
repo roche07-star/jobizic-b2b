@@ -28,7 +28,38 @@ export async function GET(req: NextRequest) {
     const { data, error } = await q
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-    return NextResponse.json({ users: data })
+
+    // 각 사용자별 분석 건수 조회
+    const usersWithCounts = await Promise.all(
+      (data || []).map(async (user) => {
+        // 후보자 분석 건수
+        const { count: candidatesCount } = await supabaseAdmin
+          .from('candidates')
+          .select('*', { count: 'exact', head: true })
+          .eq('created_by', user.email)
+
+        // JD 분석 건수
+        const { count: jdsCount } = await supabaseAdmin
+          .from('job_descriptions')
+          .select('*', { count: 'exact', head: true })
+          .eq('created_by', user.email)
+
+        // JD-후보자 매칭 분석 건수
+        const { count: pipelinesCount } = await supabaseAdmin
+          .from('pipeline')
+          .select('*', { count: 'exact', head: true })
+          .eq('created_by', user.email)
+
+        return {
+          ...user,
+          candidates_count: candidatesCount || 0,
+          jds_count: jdsCount || 0,
+          pipelines_count: pipelinesCount || 0,
+        }
+      })
+    )
+
+    return NextResponse.json({ users: usersWithCounts })
   } catch (e: any) {
     console.error('[admin/users GET]', e)
     return NextResponse.json({ error: e.message || '조회 중 오류가 발생했습니다.' }, { status: 500 })

@@ -41,6 +41,9 @@ interface User {
   telegram_chat_id: string | null
   telegram_username: string | null
   telegram_verified_at: string | null
+  candidates_count?: number
+  jds_count?: number
+  pipelines_count?: number
 }
 
 export default function AdminPage() {
@@ -930,6 +933,13 @@ export default function AdminPage() {
                   {user.organizations && ` · ${user.organizations.name}`}
                   {user.telegram_username && ` · @${user.telegram_username}`}
                 </div>
+                {(user.candidates_count !== undefined || user.jds_count !== undefined || user.pipelines_count !== undefined) && (
+                  <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 6, display: 'flex', gap: 12 }}>
+                    <span title="후보자 분석 건수">👤 후보자: <strong>{user.candidates_count || 0}</strong></span>
+                    <span title="JD 분석 건수">📋 JD: <strong>{user.jds_count || 0}</strong></span>
+                    <span title="JD-후보자 매칭 분석 건수">🔗 매칭: <strong>{user.pipelines_count || 0}</strong></span>
+                  </div>
+                )}
               </div>
               <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                 <span className={`badge ${user.is_active ? 'badge-활성' : 'badge-보류'}`}>
@@ -947,7 +957,7 @@ export default function AdminPage() {
                   onClick={() => resetPassword(user.email)}
                   style={{ fontSize: 11 }}
                 >
-                  🔒 초기화
+                  비번초기화
                 </button>
                 <button
                   className="btn btn-danger btn-sm"
