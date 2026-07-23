@@ -136,6 +136,9 @@ export default function CandidatesPage() {
   const [showCommentForm, setShowCommentForm] = useState(false)
   const [processingJobId, setProcessingJobId] = useState<string | null>(null)
   const [processingProgress, setProcessingProgress] = useState(0)
+  const [candidateMatches, setCandidateMatches] = useState<Record<string, any>>({})
+  const [showMatchDetailModal, setShowMatchDetailModal] = useState(false)
+  const [selectedMatchDetail, setSelectedMatchDetail] = useState<any>(null)
   const [processingStep, setProcessingStep] = useState(0) // 0: 읽기, 1: 분석, 2: 생성, 3: 완료
   const [showJdRecommendModal, setShowJdRecommendModal] = useState(false)
   const [jds, setJds] = useState<any[]>([])
@@ -311,6 +314,25 @@ export default function CandidatesPage() {
     if (selected?.id) {
       loadComments(selected.id)
     }
+  }, [selected?.id])
+
+  // 후보자 선택 시 매칭 분석 결과 로드
+  useEffect(() => {
+    async function loadMatches() {
+      if (!selected?.id) return
+
+      try {
+        const res = await fetch(`/api/pipeline/match?candidate_id=${selected.id}`)
+        if (res.ok) {
+          const matches = await res.json()
+          setCandidateMatches(matches)
+          console.log('[loadMatches] 매칭 결과 로드:', Object.keys(matches).length, '개')
+        }
+      } catch (err) {
+        console.error('[loadMatches] 실패:', err)
+      }
+    }
+    loadMatches()
   }, [selected?.id])
 
   // JD 추천 모달 열릴 때 JD 목록 로드
@@ -1223,6 +1245,62 @@ export default function CandidatesPage() {
                     </ul>
                   </div>
                 )}
+
+                {/* 진행 중인 프로세스 & 매칭 분석 */}
+                {selected.pipeline && selected.pipeline.filter((p: any) => p.is_active).length > 0 && (
+                  <div style={{ marginBottom: 20 }}>
+                    <div className="form-label">진행 중인 프로세스</div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      {selected.pipeline.filter((p: any) => p.is_active).map((p: any) => {
+                        const match = candidateMatches[p.jd_id]
+                        return (
+                          <div
+                            key={p.id}
+                            style={{
+                              padding: 12,
+                              background: 'var(--surface-secondary)',
+                              borderRadius: 8,
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              alignItems: 'center',
+                              gap: 12
+                            }}
+                          >
+                            <div style={{ flex: 1 }}>
+                              <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 4 }}>
+                                {p.job_descriptions.company ?? '회사'} - {p.job_descriptions.position}
+                              </div>
+                              <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
+                                단계: {p.stage}
+                              </div>
+                            </div>
+                            {match && (
+                              <button
+                                className="btn btn-ghost btn-sm"
+                                onClick={() => {
+                                  setSelectedMatchDetail(match)
+                                  setShowMatchDetailModal(true)
+                                }}
+                                style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: 6,
+                                  background: match.match_score >= 80 ? 'rgba(34, 197, 94, 0.1)' : match.match_score >= 70 ? 'rgba(234, 179, 8, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+                                  color: match.match_score >= 80 ? '#22c55e' : match.match_score >= 70 ? '#eab308' : '#ef4444'
+                                }}
+                              >
+                                <span style={{ fontSize: 16, fontWeight: 700 }}>{match.match_score}점</span>
+                                <span style={{ fontSize: 11 }}>
+                                  {match.recommendation === '추천' ? '✅' : match.recommendation === '보류' ? '⏸️' : '❌'}
+                                </span>
+                              </button>
+                            )}
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
               </>
             ) : (
               <>
@@ -1688,6 +1766,93 @@ export default function CandidatesPage() {
                 💡 각 JD의 "매칭 분석" 버튼을 클릭하면 AI가 후보자와의 적합도를 분석합니다.
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* 매칭 분석 상세 모달 */}
+      {showMatchDetailModal && selectedMatchDetail && (
+        <div className="overlay" onClick={() => setShowMatchDetailModal(false)}>
+          <div className="modal" style={{ maxWidth: 700 }} onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <div className="modal-title">📊 매칭 분석 결과</div>
+              <button className="modal-close" onClick={() => setShowMatchDetailModal(false)}>✕</button>
+            </div>
+
+            <div style={{ padding: 24 }}>
+              {/* 점수 및 추천 */}
+              <div style={{ marginBottom: 24, display: 'flex', gap: 16, alignItems: 'center' }}>
+                <div style={{
+                  fontSize: 48,
+                  fontWeight: 700,
+                  color: selectedMatchDetail.match_score >= 80 ? '#22c55e' : selectedMatchDetail.match_score >= 70 ? '#eab308' : '#ef4444'
+                }}>
+                  {selectedMatchDetail.match_score}점
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 14, color: 'var(--text-secondary)', marginBottom: 4 }}>최종 추천</div>
+                  <div style={{ fontSize: 20, fontWeight: 600 }}>
+                    {selectedMatchDetail.recommendation === '추천' ? '✅ 추천' : selectedMatchDetail.recommendation === '보류' ? '⏸️ 보류' : '❌ 부적합'}
+                  </div>
+                </div>
+              </div>
+
+              {/* 매칭 이유 */}
+              {selectedMatchDetail.match_reason && (
+                <div style={{ marginBottom: 24 }}>
+                  <h4 style={{ fontSize: 14, fontWeight: 600, marginBottom: 8, color: 'var(--text-secondary)' }}>💬 매칭 이유</h4>
+                  <p style={{ fontSize: 14, lineHeight: 1.6, color: 'var(--text)' }}>{selectedMatchDetail.match_reason}</p>
+                </div>
+              )}
+
+              {/* 스킬 매칭률 & 경력 매칭 */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 24 }}>
+                {selectedMatchDetail.skill_match_rate !== undefined && (
+                  <div style={{ padding: 16, background: 'var(--surface-secondary)', borderRadius: 8 }}>
+                    <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4 }}>스킬 매칭률</div>
+                    <div style={{ fontSize: 24, fontWeight: 700 }}>{selectedMatchDetail.skill_match_rate}%</div>
+                  </div>
+                )}
+                {selectedMatchDetail.experience_match && (
+                  <div style={{ padding: 16, background: 'var(--surface-secondary)', borderRadius: 8 }}>
+                    <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4 }}>경력 매칭</div>
+                    <div style={{ fontSize: 14, fontWeight: 600 }}>{selectedMatchDetail.experience_match}</div>
+                  </div>
+                )}
+              </div>
+
+              {/* 강점 */}
+              {selectedMatchDetail.strength_for_jd && selectedMatchDetail.strength_for_jd.length > 0 && (
+                <div style={{ marginBottom: 24 }}>
+                  <h4 style={{ fontSize: 14, fontWeight: 600, marginBottom: 12, color: 'var(--text-secondary)' }}>✅ 강점</h4>
+                  <ul style={{ margin: 0, paddingLeft: 20 }}>
+                    {selectedMatchDetail.strength_for_jd.map((item: string, i: number) => (
+                      <li key={i} style={{ fontSize: 14, lineHeight: 1.8, color: 'var(--text)' }}>{item}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* 우려사항 */}
+              {selectedMatchDetail.concerns && selectedMatchDetail.concerns.length > 0 && (
+                <div style={{ marginBottom: 24 }}>
+                  <h4 style={{ fontSize: 14, fontWeight: 600, marginBottom: 12, color: 'var(--text-secondary)' }}>⚠️ 우려사항</h4>
+                  <ul style={{ margin: 0, paddingLeft: 20 }}>
+                    {selectedMatchDetail.concerns.map((item: string, i: number) => (
+                      <li key={i} style={{ fontSize: 14, lineHeight: 1.8, color: 'var(--text)' }}>{item}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* 다음 단계 */}
+              {selectedMatchDetail.next_steps && (
+                <div style={{ padding: 16, background: 'var(--info-bg)', borderRadius: 8 }}>
+                  <h4 style={{ fontSize: 14, fontWeight: 600, marginBottom: 8, color: 'var(--info)' }}>🎯 다음 단계</h4>
+                  <p style={{ fontSize: 14, lineHeight: 1.6, color: 'var(--info)', margin: 0 }}>{selectedMatchDetail.next_steps}</p>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}

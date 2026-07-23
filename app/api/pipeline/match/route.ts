@@ -408,31 +408,42 @@ ${candidateResume}
   }
 }
 
-// GET: JD에 대한 모든 매칭 결과 조회
+// GET: JD 또는 후보자에 대한 모든 매칭 결과 조회
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url)
     const jdId = searchParams.get('jd_id')
+    const candidateId = searchParams.get('candidate_id')
 
-    if (!jdId) {
-      return NextResponse.json({ error: 'jd_id가 필요합니다.' }, { status: 400 })
+    if (!jdId && !candidateId) {
+      return NextResponse.json({ error: 'jd_id 또는 candidate_id가 필요합니다.' }, { status: 400 })
     }
 
-    // JD의 모든 매칭 결과 조회
-    const { data, error } = await supabaseAdmin
+    // 매칭 결과 조회
+    let query = supabaseAdmin
       .from('jd_candidate_matches')
       .select('*')
-      .eq('jd_id', jdId)
+
+    if (jdId) {
+      query = query.eq('jd_id', jdId)
+    }
+    if (candidateId) {
+      query = query.eq('candidate_id', candidateId)
+    }
+
+    const { data, error } = await query
 
     if (error) {
       console.error('[pipeline/match] GET error:', error)
       return NextResponse.json({ error: 'DB 조회 실패' }, { status: 500 })
     }
 
-    // candidate_id를 key로 하는 객체로 변환
+    // jd_id로 조회 시 candidate_id를 key로, candidate_id로 조회 시 jd_id를 key로
     const matches: Record<string, any> = {}
+    const keyField = jdId ? 'candidate_id' : 'jd_id'
+
     data.forEach(match => {
-      matches[match.candidate_id] = {
+      matches[match[keyField]] = {
         match_score: match.match_score,
         match_reason: match.match_reason,
         skill_match_rate: match.skill_match_rate,
@@ -440,7 +451,9 @@ export async function GET(req: NextRequest) {
         strength_for_jd: match.strength_for_jd,
         concerns: match.concerns,
         recommendation: match.recommendation,
-        next_steps: match.next_steps
+        next_steps: match.next_steps,
+        jd_id: match.jd_id,
+        candidate_id: match.candidate_id
       }
     })
 
