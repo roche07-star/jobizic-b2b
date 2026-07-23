@@ -900,7 +900,17 @@ ${manualForm.total_experience_years ? `경력: ${manualForm.total_experience_yea
             </button>
           )}
           <button className="btn btn-primary" onClick={() => setShowAddModal(true)}>+ JD-후보자 매칭</button>
-          <button className="btn btn-success" onClick={() => setShowManualAddModal(true)}>+ 후보자 추가</button>
+          <button
+            className="btn"
+            style={{
+              background: '#10b981',
+              color: 'white',
+              border: 'none'
+            }}
+            onClick={() => setShowManualAddModal(true)}
+          >
+            + 후보자 추가
+          </button>
         </div>
       </div>
 
