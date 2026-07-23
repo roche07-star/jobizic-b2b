@@ -106,10 +106,10 @@ export default function RecommendationsPage() {
     if (userRole) {
       if (activeTab === 'received') {
         loadRecommendations()
-      } else if (activeTab === 'manage' && (userRole === 'admin' || userRole === 'owner' || userRole === 'headhunter')) {
+      } else if (activeTab === 'manage') {
         loadActiveJDs()
         loadAdminRecommendations()
-      } else if (activeTab === 'linkedin' && (userRole === 'admin' || userRole === 'owner' || userRole === 'headhunter')) {
+      } else if (activeTab === 'linkedin') {
         loadActiveJDs()
       }
     }
@@ -614,7 +614,7 @@ export default function RecommendationsPage() {
       )}
 
       {/* 후보자 추천 관리 탭 */}
-      {activeTab === 'manage' && (userRole === 'admin' || userRole === 'owner' || userRole === 'headhunter') ? (
+      {activeTab === 'manage' ? (
         <>
           {/* 활성 JD 목록 */}
           <div className="card" style={{ marginBottom: 24 }}>
