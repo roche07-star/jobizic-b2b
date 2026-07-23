@@ -237,10 +237,12 @@ export default function RecommendationsPage() {
       if (!profile) return
 
       // role과 user_email을 파라미터로 전달하여 권한별 필터링
+      // only_interests=true: 관심 등록한 JD 중 활성인 것만 표시
       const params = new URLSearchParams({
         status: '활성',
         role: profile.role,
-        user_email: profile.email
+        user_email: profile.email,
+        only_interests: 'true'
       })
 
       const res = await fetch(`/api/jd?${params}`)
