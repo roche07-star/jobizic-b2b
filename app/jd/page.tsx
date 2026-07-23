@@ -422,7 +422,7 @@ export default function JDPage() {
         body: JSON.stringify({
           jd_id: selected.id,
           candidate_id: candidateId,
-          stage: '검토'
+          stage: '신규'
         })
       })
 
