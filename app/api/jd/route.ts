@@ -52,10 +52,6 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ jds: [] }, { status: 200 })
       }
 
-      // 조직 격리: 현재 조직의 JD만 조회
-      console.log('[jd] Filtering by user organization_id:', userProfile.organization_id)
-      q = q.eq('organization_id', userProfile.organization_id)
-
       if (role === 'headhunter' || role === 'owner') {
         // Owner/Headhunter: 관심 등록한 JD도 포함
         const { data: interests } = await supabaseAdmin
@@ -65,23 +61,35 @@ export async function GET(req: NextRequest) {
 
         const interestedJdIds = interests?.map(i => i.jd_id) ?? []
 
+        console.log('[jd] User interests:', interestedJdIds.length, 'JDs')
+
         if (onlyInterests) {
-          // only_interests=true: 관심 JD만 (status 필터는 별도로 적용됨)
+          // only_interests=true: 관심 JD만 (조직 무관, status 필터는 별도 적용)
+          console.log('[jd] Only showing interested JDs (no org filter)')
           if (interestedJdIds.length > 0) {
             q = q.in('id', interestedJdIds)
           } else {
             // 관심 JD가 없으면 빈 결과 반환
             q = q.eq('id', '00000000-0000-0000-0000-000000000000') // 존재하지 않는 ID
           }
-        } else if (interestedJdIds.length > 0) {
-          // 일반 조회: 본인 JD OR 관심 JD OR 활성 JD (현재 조직 내에서만)
-          q = q.or(`created_by.eq.${userEmail},id.in.(${interestedJdIds.join(',')}),status.eq.활성`)
         } else {
-          // 관심 JD 없으면 본인 JD OR 활성 JD (현재 조직 내에서만)
-          q = q.or(`created_by.eq.${userEmail},status.eq.활성`)
+          // 일반 조회: 조직 격리 적용
+          console.log('[jd] Filtering by user organization_id:', userProfile.organization_id)
+          q = q.eq('organization_id', userProfile.organization_id)
+
+          if (interestedJdIds.length > 0) {
+            // 일반 조회: 본인 JD OR 관심 JD OR 활성 JD (현재 조직 내에서만)
+            q = q.or(`created_by.eq.${userEmail},id.in.(${interestedJdIds.join(',')}),status.eq.활성`)
+          } else {
+            // 관심 JD 없으면 본인 JD OR 활성 JD (현재 조직 내에서만)
+            q = q.or(`created_by.eq.${userEmail},status.eq.활성`)
+          }
         }
       } else {
         // 기타 role: 본인 JD OR 활성 JD (현재 조직 내에서만)
+        if (!onlyInterests) {
+          q = q.eq('organization_id', userProfile.organization_id)
+        }
         q = q.or(`created_by.eq.${userEmail},status.eq.활성`)
       }
     }

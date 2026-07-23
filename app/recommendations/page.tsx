@@ -254,8 +254,21 @@ export default function RecommendationsPage() {
         ...(profile.organization_id && { organization_id: profile.organization_id })
       })
 
+      console.log('[recommendations] Loading active JDs with params:', Object.fromEntries(params))
+      console.log('[recommendations] Profile:', { email: profile.email, role: profile.role, org_id: profile.organization_id })
+
       const res = await fetch(`/api/jd?${params}`)
       const data = await res.json()
+
+      console.log('[recommendations] Active JDs loaded:', data.jds?.length, 'JDs')
+      if (data.jds) {
+        console.log('[recommendations] JDs:', data.jds.map((jd: any) => ({
+          company: jd.company,
+          position: jd.position,
+          org_id: jd.organization_id,
+          created_by: jd.created_by
+        })))
+      }
 
       if (res.ok) {
         setActiveJDs(data.jds || [])
