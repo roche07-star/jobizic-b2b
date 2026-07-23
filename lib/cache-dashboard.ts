@@ -1,9 +1,11 @@
-// 대시보드 캐싱 유틸리티 (Vercel KV)
-import { kv } from '@vercel/kv'
+// 대시보드 캐싱 유틸리티 (메모리 캐시 - 무료)
 
 interface CacheOptions {
   ttl?: number // 초 단위
 }
+
+// 메모리 캐시 (서버 재시작 시 초기화)
+const memoryCache = new Map<string, { data: any; timestamp: number }>()
 
 export async function getCachedDashboard(
   userEmail: string,
@@ -13,18 +15,19 @@ export async function getCachedDashboard(
   const cacheKey = `dashboard:${userEmail}:${organizationId || 'none'}`
 
   try {
-    const cached = await kv.get(cacheKey)
+    const cached = memoryCache.get(cacheKey)
 
-    if (cached && typeof cached === 'object' && 'timestamp' in cached) {
-      const age = Date.now() - (cached.timestamp as number)
+    if (cached) {
+      const age = Date.now() - cached.timestamp
       if (age < (options.ttl! * 1000)) {
         console.log('[cache] Dashboard hit:', cacheKey, `age: ${age}ms`)
-        return (cached as any).data
+        return cached.data
+      } else {
+        memoryCache.delete(cacheKey)
       }
     }
   } catch (error) {
     console.error('[cache] Get failed:', error)
-    // Vercel KV 에러 시 null 반환 (캐시 없이 진행)
   }
 
   return null
@@ -40,15 +43,15 @@ export async function setCachedDashboard(
   const ttl = options.ttl ?? 60
 
   try {
-    await kv.set(
-      cacheKey,
-      { data, timestamp: Date.now() },
-      { ex: ttl }
-    )
+    memoryCache.set(cacheKey, { data, timestamp: Date.now() })
     console.log('[cache] Dashboard set:', cacheKey, `ttl: ${ttl}s`)
+
+    // TTL 후 자동 삭제
+    setTimeout(() => {
+      memoryCache.delete(cacheKey)
+    }, ttl * 1000)
   } catch (error) {
     console.error('[cache] Set failed:', error)
-    // Vercel KV 에러 시 무시 (캐시 없이 진행)
   }
 }
 
@@ -56,7 +59,7 @@ export async function invalidateDashboard(userEmail?: string, organizationId?: s
   if (userEmail && organizationId !== undefined) {
     const cacheKey = `dashboard:${userEmail}:${organizationId || 'none'}`
     try {
-      await kv.del(cacheKey)
+      memoryCache.delete(cacheKey)
       console.log('[cache] Dashboard invalidated:', cacheKey)
     } catch (error) {
       console.error('[cache] Delete failed:', error)
