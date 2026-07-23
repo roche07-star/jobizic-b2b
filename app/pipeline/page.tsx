@@ -25,6 +25,7 @@ interface Candidate {
   status: string
   skills: string[]
   tech_stack: string[]
+  source?: string | null
 }
 
 interface PipelineItem {
@@ -83,6 +84,16 @@ export default function PipelinePage() {
   const [userEmail, setUserEmail] = useState('')
   const [organizations, setOrganizations] = useState<Organization[]>([])
   const [selectedOrgId, setSelectedOrgId] = useState<string>('전체')
+  const [showManualAddModal, setShowManualAddModal] = useState(false)
+  const [manualForm, setManualForm] = useState({
+    jd_id: '',
+    name: '',
+    email: '',
+    phone: '',
+    current_company: '',
+    education: '',
+    total_experience_years: ''
+  })
 
   // 백그라운드 처리 상태
   const [processingJobId, setProcessingJobId] = useState<string | null>(null)
@@ -493,6 +504,94 @@ export default function PipelinePage() {
     }
   }
 
+  // 수동 후보자 추가
+  async function addManualCandidate() {
+    if (!manualForm.jd_id || !manualForm.name) {
+      error('JD와 이름은 필수입니다.')
+      return
+    }
+
+    setMatching(true)
+    try {
+      const profile = await getProfile()
+      if (!profile?.organization_id) {
+        error('조직 정보가 없습니다.')
+        setMatching(false)
+        return
+      }
+
+      // 1. 먼저 candidates 테이블에 후보자 생성
+      const candidateRes = await fetch('/api/candidates', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: manualForm.name,
+          email: manualForm.email || null,
+          phone: manualForm.phone || null,
+          current_company: manualForm.current_company || null,
+          education: manualForm.education ? [manualForm.education] : [],
+          total_experience_years: manualForm.total_experience_years ? parseInt(manualForm.total_experience_years) : null,
+          organization_id: profile.organization_id,
+          created_by: profile.email,
+          status: '검토중',
+          source: 'Manual' // 직접 입력 플래그
+        })
+      })
+
+      if (!candidateRes.ok) {
+        const data = await candidateRes.json()
+        error(data.error || '후보자 생성 실패')
+        setMatching(false)
+        return
+      }
+
+      const candidateData = await candidateRes.json()
+
+      // 2. 프로세스에 추가
+      const pipelineRes = await fetch('/api/pipeline', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          jd_id: manualForm.jd_id,
+          candidate_id: candidateData.id,
+          organization_id: profile.organization_id,
+          created_by: profile.email,
+          stage: '검토',
+          is_manual: true // 직접 입력 플래그
+        })
+      })
+
+      if (!pipelineRes.ok) {
+        const data = await pipelineRes.json()
+        error(data.error || '프로세스 추가 실패')
+        setMatching(false)
+        return
+      }
+
+      // 목록 새로고침
+      const refreshRes = await fetch(`/api/pipeline?user_email=${profile.email}&role=${profile.role}${selectedOrgId !== '전체' ? `&organization_id=${selectedOrgId}` : ''}`)
+      const refreshData = await refreshRes.json()
+      setPipeline(refreshData.pipeline ?? [])
+
+      success('✅ 후보자가 프로세스에 추가되었습니다!')
+      setShowManualAddModal(false)
+      setManualForm({
+        jd_id: '',
+        name: '',
+        email: '',
+        phone: '',
+        current_company: '',
+        education: '',
+        total_experience_years: ''
+      })
+    } catch (err) {
+      console.error('[addManualCandidate] Error:', err)
+      error('추가 중 오류가 발생했습니다.')
+    } finally {
+      setMatching(false)
+    }
+  }
+
   async function updateStage(id: string, stage: string) {
     const profile = await getProfile()
     if (!profile) {
@@ -727,7 +826,7 @@ export default function PipelinePage() {
 
       <div className="page-header">
         <div>
-          <div className="page-title">채용 프로세스</div>
+          <div className="page-title">채용 진행 현황</div>
           <div className="page-sub">총 {activePipeline.length}건 진행 중</div>
 
           {/* 안내 문구 */}
@@ -776,7 +875,8 @@ export default function PipelinePage() {
               📥 엑셀 다운로드
             </button>
           )}
-          <button className="btn btn-primary" onClick={() => setShowAddModal(true)}>+ JD-후보자 추가</button>
+          <button className="btn btn-primary" onClick={() => setShowAddModal(true)}>+ JD-후보자 매칭</button>
+          <button className="btn btn-success" onClick={() => setShowManualAddModal(true)}>+ 후보자 추가</button>
         </div>
       </div>
 
@@ -838,6 +938,18 @@ export default function PipelinePage() {
                     }}>
                       <span>👤</span>
                       <span>{item.candidates.name}</span>
+                      {item.candidates.source === 'Manual' && (
+                        <span style={{
+                          fontSize: 9,
+                          padding: '2px 6px',
+                          background: 'rgba(59, 130, 246, 0.1)',
+                          color: '#3b82f6',
+                          borderRadius: 4,
+                          fontWeight: 600
+                        }}>
+                          직접 입력
+                        </span>
+                      )}
                       {item.created_by_user && (
                         <span style={{ fontSize: 10, color: 'var(--muted)', marginLeft: 'auto' }}>
                           추천: {item.created_by_user.full_name || item.created_by_user.email.split('@')[0]}
@@ -1142,6 +1254,111 @@ export default function PipelinePage() {
               disabled={!selectedJd || !selectedCandidate || matching}
             >
               {matching ? <><div className="spinner" /> AI 매칭 분석 중...</> : '✅ 프로세스에 추가'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* 수동 후보자 추가 모달 */}
+      {showManualAddModal && (
+        <div className="overlay" onClick={() => setShowManualAddModal(false)}>
+          <div className="modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <div className="modal-title">후보자 추가 (직접 입력)</div>
+              <button className="modal-close" onClick={() => setShowManualAddModal(false)}>✕</button>
+            </div>
+
+            <div className="form-group" style={{ marginBottom: 16 }}>
+              <label className="form-label">JD 선택 *</label>
+              <select
+                className="form-select"
+                value={manualForm.jd_id}
+                onChange={e => setManualForm({ ...manualForm, jd_id: e.target.value })}
+              >
+                <option value="">JD를 선택하세요</option>
+                {jds.filter(j => j.company).map(jd => (
+                  <option key={jd.id} value={jd.id}>
+                    {jd.company} - {jd.position}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="form-group" style={{ marginBottom: 16 }}>
+              <label className="form-label">이름 *</label>
+              <input
+                className="form-input"
+                placeholder="예: 홍길동"
+                value={manualForm.name}
+                onChange={e => setManualForm({ ...manualForm, name: e.target.value })}
+              />
+            </div>
+
+            <div className="form-row" style={{ marginBottom: 16, gap: 16 }}>
+              <div style={{ flex: 1 }}>
+                <label className="form-label">이메일</label>
+                <input
+                  className="form-input"
+                  type="email"
+                  placeholder="예: example@example.com"
+                  value={manualForm.email}
+                  onChange={e => setManualForm({ ...manualForm, email: e.target.value })}
+                />
+              </div>
+              <div style={{ flex: 1 }}>
+                <label className="form-label">전화번호</label>
+                <input
+                  className="form-input"
+                  placeholder="예: 010-1234-5678"
+                  value={manualForm.phone}
+                  onChange={e => setManualForm({ ...manualForm, phone: e.target.value })}
+                />
+              </div>
+            </div>
+
+            <div className="form-row" style={{ marginBottom: 16, gap: 16 }}>
+              <div style={{ flex: 1 }}>
+                <label className="form-label">현재 회사</label>
+                <input
+                  className="form-input"
+                  placeholder="예: 네이버"
+                  value={manualForm.current_company}
+                  onChange={e => setManualForm({ ...manualForm, current_company: e.target.value })}
+                />
+              </div>
+              <div style={{ flex: 1 }}>
+                <label className="form-label">최종학력</label>
+                <input
+                  className="form-input"
+                  placeholder="예: 서울대학교 컴퓨터공학과 학사"
+                  value={manualForm.education}
+                  onChange={e => setManualForm({ ...manualForm, education: e.target.value })}
+                />
+              </div>
+            </div>
+
+            <div className="form-group" style={{ marginBottom: 20 }}>
+              <label className="form-label">경력 년수</label>
+              <input
+                className="form-input"
+                type="number"
+                placeholder="예: 5"
+                value={manualForm.total_experience_years}
+                onChange={e => setManualForm({ ...manualForm, total_experience_years: e.target.value })}
+              />
+            </div>
+
+            <div style={{ padding: 12, background: 'var(--info-bg)', borderRadius: 8, marginBottom: 16, fontSize: 13, color: 'var(--info)' }}>
+              💡 직접 입력한 후보자는 AI 매칭 점수 없이 프로세스에 추가되며, "직접 입력" 뱃지가 표시됩니다.
+            </div>
+
+            <button
+              className="btn btn-primary"
+              style={{ width: '100%', justifyContent: 'center' }}
+              onClick={addManualCandidate}
+              disabled={!manualForm.jd_id || !manualForm.name || matching}
+            >
+              {matching ? <><div className="spinner" /> 추가 중...</> : '✅ 프로세스에 추가'}
             </button>
           </div>
         </div>

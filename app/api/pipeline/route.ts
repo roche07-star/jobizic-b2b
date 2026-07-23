@@ -51,7 +51,7 @@ export async function GET(req: NextRequest) {
           id, company, position, priority, created_by, required_skills, preferred_skills
         ),
         candidates (
-          id, name, email, current_company, current_position, status, skills, tech_stack
+          id, name, email, current_company, current_position, status, skills, tech_stack, source
         )
       `, { count: 'exact' })
       .order('created_at', { ascending: false })
