@@ -77,6 +77,13 @@ export default function RecommendationsPage() {
   const [sending, setSending] = useState(false)
   const [adminCommentText, setAdminCommentText] = useState('')
   const [statusFilter, setStatusFilter] = useState<'pending' | 'recommended' | 'all'>('pending')
+
+  // 후보찾기 사용 횟수 state
+  const [searchUsage, setSearchUsage] = useState<{
+    remaining: number
+    total: number
+    unlimited: boolean
+  }>({ remaining: 3, total: 3, unlimited: false })
   const [recommendingJdId, setRecommendingJdId] = useState<string | null>(null)
   const [minScores, setMinScores] = useState<Record<string, number>>({})
   const [editedCurrentSalary, setEditedCurrentSalary] = useState<string>('')
@@ -253,6 +260,13 @@ export default function RecommendationsPage() {
       if (res.ok) {
         setActiveJDs(data.jds || [])
       }
+
+      // 후보찾기 사용 횟수 로드
+      const usageRes = await fetch(`/api/search-usage?user_id=${profile.id}&user_type=${profile.user_type || ''}`)
+      const usageData = await usageRes.json()
+      if (usageRes.ok) {
+        setSearchUsage(usageData)
+      }
     } catch (err) {
       console.error('[recommendations] Load JDs error:', err)
     } finally {
@@ -262,6 +276,45 @@ export default function RecommendationsPage() {
 
   async function findRecommendedCandidates(jdId: string) {
     if (recommendingJdId) return
+
+    // 사용 횟수 체크 및 증가
+    const profile = await getProfile()
+    if (!profile) {
+      error('로그인이 필요합니다.')
+      return
+    }
+
+    // super admin이 아니면 사용 횟수 체크
+    if (profile.user_type !== 'SUPER_ADMIN') {
+      if (searchUsage.remaining <= 0) {
+        error(`하루 사용 가능 횟수(${searchUsage.total}회)를 초과했습니다.`)
+        return
+      }
+
+      // 사용 횟수 증가
+      const usageRes = await fetch('/api/search-usage', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: profile.id,
+          user_type: profile.user_type
+        })
+      })
+
+      const usageData = await usageRes.json()
+
+      if (!usageRes.ok) {
+        error(usageData.error || '사용 횟수 증가 실패')
+        return
+      }
+
+      // 사용 횟수 업데이트
+      setSearchUsage({
+        remaining: usageData.remaining,
+        total: searchUsage.total,
+        unlimited: false
+      })
+    }
 
     const minScore = minScores[jdId] || 70
 
@@ -553,7 +606,21 @@ export default function RecommendationsPage() {
         <>
           {/* 활성 JD 목록 */}
           <div className="card" style={{ marginBottom: 24 }}>
-            <div className="card-title">활성 JD 목록</div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+              <div className="card-title" style={{ marginBottom: 0 }}>활성 JD 목록</div>
+              {!searchUsage.unlimited && (
+                <div style={{
+                  fontSize: 13,
+                  padding: '4px 12px',
+                  background: searchUsage.remaining > 0 ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+                  color: searchUsage.remaining > 0 ? '#10b981' : '#ef4444',
+                  borderRadius: 4,
+                  fontWeight: 600
+                }}>
+                  오늘 남은 후보찾기: {searchUsage.remaining}/{searchUsage.total}회
+                </div>
+              )}
+            </div>
             <div className="card-sub">PM이 활성화한 JD에 대해 후보 찾기를 실행하세요</div>
 
             {jdLoading ? (

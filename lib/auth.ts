@@ -14,6 +14,7 @@ export interface Profile {
   email: string
   full_name: string | null
   role: 'admin' | 'owner' | 'headhunter' | 'operator' | 'manager'
+  user_type?: 'SUPER_ADMIN' | 'MANAGER' | 'HEADHUNTER' | 'JOBSEEKER' | null
   client_company_name: string | null
   allowed_jd_ids: string[] | null
   is_active: boolean
