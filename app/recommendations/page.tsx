@@ -245,13 +245,12 @@ export default function RecommendationsPage() {
 
       // role과 user_email을 파라미터로 전달하여 권한별 필터링
       // only_interests=true: 관심 등록한 JD 중 활성인 것만 표시
+      // organization_id는 전달하지 않음 (관심 JD는 조직 무관)
       const params = new URLSearchParams({
         status: '활성',
         role: profile.role,
         user_email: profile.email,
-        only_interests: 'true',
-        // 관심 JD 조회 시에는 admin도 본인 조직 기준으로 필터링
-        ...(profile.organization_id && { organization_id: profile.organization_id })
+        only_interests: 'true'
       })
 
       console.log('[recommendations] Loading active JDs with params:', Object.fromEntries(params))
