@@ -419,10 +419,17 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'jd_id 또는 candidate_id가 필요합니다.' }, { status: 400 })
     }
 
-    // 매칭 결과 조회
+    // 매칭 결과 조회 (JD 정보 포함)
     let query = supabaseAdmin
       .from('jd_candidate_matches')
-      .select('*')
+      .select(`
+        *,
+        job_descriptions (
+          id,
+          company,
+          position
+        )
+      `)
 
     if (jdId) {
       query = query.eq('jd_id', jdId)
@@ -453,7 +460,10 @@ export async function GET(req: NextRequest) {
         recommendation: match.recommendation,
         next_steps: match.next_steps,
         jd_id: match.jd_id,
-        candidate_id: match.candidate_id
+        candidate_id: match.candidate_id,
+        // JD 정보 추가
+        jd_company: match.job_descriptions?.company,
+        jd_position: match.job_descriptions?.position
       }
     })
 

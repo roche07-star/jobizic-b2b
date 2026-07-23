@@ -1187,9 +1187,12 @@ export default function CandidatesPage() {
                         setShowMatchDetailModal(true)
                       }}
                     >
-                      <span>📊 {match.match_score}점</span>
-                      <span style={{ fontSize: 10 }}>
-                        {match.recommendation === '추천' ? '✅' : match.recommendation === '보류' ? '⏸️' : '❌'}
+                      <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <span>{match.jd_company ?? 'JD'} - {match.jd_position ?? '포지션'}</span>
+                        <span style={{ fontWeight: 700 }}>{match.match_score}점</span>
+                        <span style={{ fontSize: 10 }}>
+                          {match.recommendation === '추천' ? '✅' : match.recommendation === '보류' ? '⏸️' : '❌'}
+                        </span>
                       </span>
                       <button
                         onClick={(e) => {
