@@ -520,6 +520,17 @@ export default function PipelinePage() {
         return
       }
 
+      // 이메일 중복 체크 (이메일이 입력된 경우만)
+      if (manualForm.email) {
+        const dupRes = await fetch(`/api/candidates/check-duplicate?email=${encodeURIComponent(manualForm.email)}&organization_id=${profile.organization_id}`)
+        const dupData = await dupRes.json()
+        if (dupData.exists) {
+          error(`이미 등록된 이메일입니다. (후보자: ${dupData.candidate.name})`)
+          setMatching(false)
+          return
+        }
+      }
+
       // 1. 먼저 candidates 테이블에 후보자 생성
       const candidateRes = await fetch('/api/candidates', {
         method: 'POST',
