@@ -45,6 +45,7 @@ export default function CandidateNewPage() {
   const [rawResume, setRawResume] = useState('')
   const [file, setFile] = useState<File | null>(null)
   const [parsed, setParsed] = useState<ParsedCandidate | null>(null)
+  const [parsing, setParsing] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -52,6 +53,7 @@ export default function CandidateNewPage() {
     if (!rawResume.trim() && !file) return
     setError(null)
     setParsed(null)
+    setParsing(true)
 
     try {
       let res: Response
@@ -77,6 +79,7 @@ export default function CandidateNewPage() {
 
       if (!res.ok) {
         setError(data.error)
+        setParsing(false)
         return
       }
 
@@ -99,6 +102,7 @@ export default function CandidateNewPage() {
 
     } catch {
       setError('서버 오류가 발생했습니다.')
+      setParsing(false)
     }
   }
 
@@ -236,13 +240,33 @@ export default function CandidateNewPage() {
           </div>
 
           {error && <div style={{ color: 'var(--danger)', fontSize: 13, marginBottom: 12 }}>{error}</div>}
+          {parsing && (
+            <div style={{
+              padding: 12,
+              background: 'var(--info-bg)',
+              borderRadius: 8,
+              fontSize: 13,
+              color: 'var(--info)',
+              marginBottom: 12
+            }}>
+              💡 이력서를 분석 중입니다. 잠시만 기다려주세요...
+            </div>
+          )}
           <div style={{ display: 'flex', gap: 8 }}>
             <button
               className="btn btn-primary"
               onClick={handleParse}
-              disabled={!rawResume.trim() && !file}
+              disabled={(!rawResume.trim() && !file) || parsing}
+              style={{ display: 'flex', alignItems: 'center', gap: 8 }}
             >
-              🤖 AI 파싱
+              {parsing ? (
+                <>
+                  <div className="spinner" style={{ width: 14, height: 14, borderWidth: 2 }} />
+                  분석 중...
+                </>
+              ) : (
+                '🤖 AI 파싱'
+              )}
             </button>
             {parsed && (
               <button className="btn btn-ghost" onClick={() => { setParsed(null); setRawResume(''); setFile(null) }}>
