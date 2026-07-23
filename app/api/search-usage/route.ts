@@ -8,12 +8,23 @@ export async function GET(req: NextRequest) {
     const userId = req.nextUrl.searchParams.get('user_id')
     const userType = req.nextUrl.searchParams.get('user_type')
 
+    console.log('[search-usage GET] userId:', userId, 'userType:', userType)
+
     if (!userId) {
       return NextResponse.json({ error: 'user_id required' }, { status: 400 })
     }
 
+    // user_type 또는 role 확인 (profiles 테이블에서)
+    const { data: profile } = await supabaseAdmin
+      .from('profiles')
+      .select('user_type, role')
+      .eq('id', userId)
+      .single()
+
+    console.log('[search-usage GET] profile:', profile)
+
     // super admin은 무제한
-    if (userType === 'SUPER_ADMIN') {
+    if (profile?.user_type === 'SUPER_ADMIN' || userType === 'SUPER_ADMIN') {
       return NextResponse.json({
         remaining: 999,
         total: 999,
@@ -53,8 +64,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'user_id required' }, { status: 400 })
     }
 
+    // user_type 또는 role 확인 (profiles 테이블에서)
+    const { data: profile } = await supabaseAdmin
+      .from('profiles')
+      .select('user_type, role')
+      .eq('id', user_id)
+      .single()
+
+    console.log('[search-usage POST] profile:', profile)
+
     // super admin은 무제한
-    if (user_type === 'SUPER_ADMIN') {
+    if (profile?.user_type === 'SUPER_ADMIN' || user_type === 'SUPER_ADMIN') {
       return NextResponse.json({
         success: true,
         remaining: 999,
