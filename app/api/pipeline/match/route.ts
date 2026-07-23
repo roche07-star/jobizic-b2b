@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { getMatchingPrompt } from '@/lib/prompts/base-headhunter'
 import { VALIDATION_PROMPT, ValidationResult } from '@/lib/prompts/validation'
+import { supabaseAdmin } from '@/lib/supabase-admin'
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
@@ -131,7 +132,7 @@ const validationTool: Anthropic.Tool = {
 
 export async function POST(req: NextRequest) {
   try {
-    const { jd, candidate, client_comment } = await req.json()
+    const { jd, candidate, client_comment, created_by } = await req.json()
     if (!jd || !candidate) {
       return NextResponse.json({ error: 'JD와 후보자 정보가 필요합니다.' }, { status: 400 })
     }
@@ -355,6 +356,38 @@ ${candidateResume}
       // 검증 실패해도 매칭은 계속 진행
     }
 
+    // 💾 DB에 매칭 결과 저장 (upsert)
+    try {
+      const { error: saveError } = await supabaseAdmin
+        .from('jd_candidate_matches')
+        .upsert({
+          jd_id: jd.id,
+          candidate_id: candidate.id,
+          match_score: result.match_score,
+          match_reason: result.match_reason,
+          skill_match_rate: result.skill_match_rate,
+          experience_match: result.experience_match,
+          strength_for_jd: result.strength_for_jd,
+          concerns: result.concerns,
+          recommendation: result.recommendation,
+          next_steps: result.next_steps,
+          organization_id: jd.organization_id || candidate.organization_id,
+          created_by: created_by || jd.created_by || 'system',
+          updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'jd_id,candidate_id' // JD + 후보자 조합이 중복이면 업데이트
+        })
+
+      if (saveError) {
+        console.error('[pipeline/match] ⚠️ DB 저장 실패 (non-fatal):', saveError)
+        // DB 저장 실패해도 매칭 결과는 반환
+      } else {
+        console.log('[pipeline/match] ✅ 매칭 결과 DB 저장 완료')
+      }
+    } catch (err) {
+      console.error('[pipeline/match] ⚠️ DB 저장 중 에러 (non-fatal):', err)
+    }
+
     return NextResponse.json(result)
   } catch (e: any) {
     console.error('[pipeline/match] ❌❌❌ FATAL ERROR ❌❌❌')
@@ -368,6 +401,52 @@ ${candidateResume}
       console.error('[pipeline/match] Anthropic API error:', e.error)
     }
 
+    return NextResponse.json({
+      error: '서버 오류가 발생했습니다.',
+      details: e.message || 'Unknown error'
+    }, { status: 500 })
+  }
+}
+
+// GET: JD에 대한 모든 매칭 결과 조회
+export async function GET(req: NextRequest) {
+  try {
+    const { searchParams } = new URL(req.url)
+    const jdId = searchParams.get('jd_id')
+
+    if (!jdId) {
+      return NextResponse.json({ error: 'jd_id가 필요합니다.' }, { status: 400 })
+    }
+
+    // JD의 모든 매칭 결과 조회
+    const { data, error } = await supabaseAdmin
+      .from('jd_candidate_matches')
+      .select('*')
+      .eq('jd_id', jdId)
+
+    if (error) {
+      console.error('[pipeline/match] GET error:', error)
+      return NextResponse.json({ error: 'DB 조회 실패' }, { status: 500 })
+    }
+
+    // candidate_id를 key로 하는 객체로 변환
+    const matches: Record<string, any> = {}
+    data.forEach(match => {
+      matches[match.candidate_id] = {
+        match_score: match.match_score,
+        match_reason: match.match_reason,
+        skill_match_rate: match.skill_match_rate,
+        experience_match: match.experience_match,
+        strength_for_jd: match.strength_for_jd,
+        concerns: match.concerns,
+        recommendation: match.recommendation,
+        next_steps: match.next_steps
+      }
+    })
+
+    return NextResponse.json(matches)
+  } catch (e: any) {
+    console.error('[pipeline/match] GET error:', e)
     return NextResponse.json({
       error: '서버 오류가 발생했습니다.',
       details: e.message || 'Unknown error'
