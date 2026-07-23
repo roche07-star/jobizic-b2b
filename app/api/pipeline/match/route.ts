@@ -466,3 +466,36 @@ export async function GET(req: NextRequest) {
     }, { status: 500 })
   }
 }
+
+// DELETE: 매칭 분석 결과 삭제
+export async function DELETE(req: NextRequest) {
+  try {
+    const { searchParams } = new URL(req.url)
+    const jdId = searchParams.get('jd_id')
+    const candidateId = searchParams.get('candidate_id')
+
+    if (!jdId || !candidateId) {
+      return NextResponse.json({ error: 'jd_id와 candidate_id가 필요합니다.' }, { status: 400 })
+    }
+
+    // 매칭 결과 삭제
+    const { error } = await supabaseAdmin
+      .from('jd_candidate_matches')
+      .delete()
+      .eq('jd_id', jdId)
+      .eq('candidate_id', candidateId)
+
+    if (error) {
+      console.error('[pipeline/match] DELETE error:', error)
+      return NextResponse.json({ error: 'DB 삭제 실패' }, { status: 500 })
+    }
+
+    return NextResponse.json({ success: true })
+  } catch (e: any) {
+    console.error('[pipeline/match] DELETE error:', e)
+    return NextResponse.json({
+      error: '서버 오류가 발생했습니다.',
+      details: e.message || 'Unknown error'
+    }, { status: 500 })
+  }
+}

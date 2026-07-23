@@ -298,16 +298,43 @@ export default function CandidatesPage() {
 
       fetch(`/api/candidates?${params}`)
         .then(r => r.json())
-        .then(d => {
-          setCandidates(d.candidates ?? [])
+        .then(async (d) => {
+          const candidateList = d.candidates ?? []
+          setCandidates(candidateList)
           setTotalCount(d.total ?? 0)
           setStatusCounts(d.statusCounts ?? {})
           setHasMore(d.hasMore ?? false)
+
+          // 후보자들의 매칭 분석 결과 로드
+          await loadAllCandidateMatches(candidateList)
         })
         .finally(() => setLoading(false))
     }
     loadCandidates()
   }, [selectedOrgId, search])
+
+  // 모든 후보자의 매칭 분석 결과 로드
+  async function loadAllCandidateMatches(candidateList: Candidate[]) {
+    const allMatches: Record<string, any> = {}
+
+    // 각 후보자의 매칭 결과 병렬 로드
+    const promises = candidateList.map(async (candidate) => {
+      try {
+        const res = await fetch(`/api/pipeline/match?candidate_id=${candidate.id}`)
+        if (res.ok) {
+          const matches = await res.json()
+          if (Object.keys(matches).length > 0) {
+            allMatches[candidate.id] = matches
+          }
+        }
+      } catch (err) {
+        console.error(`[loadMatches] ${candidate.id} 실패:`, err)
+      }
+    })
+
+    await Promise.all(promises)
+    setCandidateMatches(allMatches)
+  }
 
   // 모달 열릴 때 코멘트 로드
   useEffect(() => {
@@ -603,6 +630,41 @@ export default function CandidatesPage() {
     } catch (err) {
       console.error('[addJDToPipeline] Error:', err)
       error('❌ 프로세스 추가 실패')
+    }
+  }
+
+  // 매칭 분석 결과 삭제
+  async function deleteMatchAnalysis(candidateId: string, jdId: string) {
+    if (!confirm('이 매칭 분석 결과를 삭제하시겠습니까?')) return
+
+    try {
+      const res = await fetch(`/api/pipeline/match?jd_id=${jdId}&candidate_id=${candidateId}`, {
+        method: 'DELETE'
+      })
+
+      if (!res.ok) {
+        error('❌ 삭제 실패')
+        return
+      }
+
+      // state에서 제거
+      setCandidateMatches(prev => {
+        const updated = { ...prev }
+        if (updated[candidateId]) {
+          const { [jdId]: _, ...rest } = updated[candidateId]
+          if (Object.keys(rest).length === 0) {
+            delete updated[candidateId]
+          } else {
+            updated[candidateId] = rest
+          }
+        }
+        return updated
+      })
+
+      success('✅ 분석 결과가 삭제되었습니다')
+    } catch (err) {
+      console.error('[deleteMatchAnalysis] Error:', err)
+      error('❌ 삭제 실패')
     }
   }
 
@@ -1079,6 +1141,59 @@ export default function CandidatesPage() {
                     >
                       🔄 {p.job_descriptions.company ?? '회사'} - {p.stage}
                     </span>
+                  ))}
+                </div>
+              )}
+              {/* 매칭 분석 결과 뱃지 */}
+              {candidateMatches[candidate.id] && Object.keys(candidateMatches[candidate.id]).length > 0 && (
+                <div style={{ marginTop: 10, display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                  {Object.entries(candidateMatches[candidate.id]).map(([jdId, match]: [string, any]) => (
+                    <div
+                      key={jdId}
+                      style={{
+                        fontSize: 11,
+                        padding: '4px 8px',
+                        borderRadius: 4,
+                        background: match.match_score >= 80 ? 'rgba(34, 197, 94, 0.15)' : match.match_score >= 70 ? 'rgba(234, 179, 8, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+                        border: `1px solid ${match.match_score >= 80 ? '#22c55e' : match.match_score >= 70 ? '#eab308' : '#ef4444'}`,
+                        color: match.match_score >= 80 ? '#22c55e' : match.match_score >= 70 ? '#eab308' : '#ef4444',
+                        fontWeight: 600,
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        cursor: 'pointer'
+                      }}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setSelectedMatchDetail(match)
+                        setShowMatchDetailModal(true)
+                      }}
+                    >
+                      <span>📊 {match.match_score}점</span>
+                      <span style={{ fontSize: 10 }}>
+                        {match.recommendation === '추천' ? '✅' : match.recommendation === '보류' ? '⏸️' : '❌'}
+                      </span>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          deleteMatchAnalysis(candidate.id, jdId)
+                        }}
+                        style={{
+                          background: 'transparent',
+                          border: 'none',
+                          color: 'currentColor',
+                          cursor: 'pointer',
+                          padding: 0,
+                          marginLeft: 2,
+                          fontSize: 10,
+                          opacity: 0.7
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.opacity = '1'}
+                        onMouseLeave={(e) => e.currentTarget.style.opacity = '0.7'}
+                      >
+                        ✕
+                      </button>
+                    </div>
                   ))}
                 </div>
               )}
