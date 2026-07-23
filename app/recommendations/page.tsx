@@ -242,7 +242,8 @@ export default function RecommendationsPage() {
         status: '활성',
         role: profile.role,
         user_email: profile.email,
-        only_interests: 'true'
+        only_interests: 'true',
+        ...(profile.role !== 'admin' && profile.organization_id && { organization_id: profile.organization_id })
       })
 
       const res = await fetch(`/api/jd?${params}`)
