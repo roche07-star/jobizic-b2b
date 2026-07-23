@@ -425,13 +425,31 @@ export default function JDPage() {
     if (!selected) return
 
     try {
+      const profile = await getProfile()
+      if (!profile) return
+
+      const match = candidateMatches[candidateId]
+
       const res = await fetch('/api/pipeline', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           jd_id: selected.id,
           candidate_id: candidateId,
-          stage: '신규'
+          stage: '신규',
+          // 매칭 분석 결과 (있으면 포함)
+          ...(match && {
+            match_score: match.match_score,
+            match_reason: match.match_reason,
+            skill_match_rate: match.skill_match_rate,
+            experience_match: match.experience_match,
+            strength_for_jd: match.strength_for_jd,
+            concerns: match.concerns,
+          }),
+          // 필수 메타데이터
+          organization_id: profile.organization_id,
+          created_by: profile.email,
+          is_active: true
         })
       })
 
