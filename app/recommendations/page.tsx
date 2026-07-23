@@ -244,7 +244,7 @@ export default function RecommendationsPage() {
       if (!profile) return
 
       // role과 user_email을 파라미터로 전달하여 권한별 필터링
-      // only_interests=true: 관심 등록한 JD 중 활성인 것만 표시
+      // only_interests=true: 관심 등록한 JD 전체 표시 (활성/비활성 무관)
       // organization_id는 전달하지 않음 (관심 JD는 조직 무관)
       const params = new URLSearchParams({
         status: '활성',

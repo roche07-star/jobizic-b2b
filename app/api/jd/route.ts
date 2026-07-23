@@ -94,7 +94,8 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    if (status) {
+    // 관심 JD는 status 무관하게 모두 표시
+    if (status && !onlyInterests) {
       q = q.eq('status', status)
     }
 
