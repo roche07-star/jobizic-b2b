@@ -90,6 +90,12 @@ export default function JDPage() {
   const [showBoardForm, setShowBoardForm] = useState(false)
   const [editMode, setEditMode] = useState(false)
   const [editForm, setEditForm] = useState<Partial<JD>>({})
+  const [showCandidateRecommendModal, setShowCandidateRecommendModal] = useState(false)
+  const [candidates, setCandidates] = useState<any[]>([])
+  const [candidatesLoading, setCandidatesLoading] = useState(false)
+  const [matchingCandidateId, setMatchingCandidateId] = useState<string | null>(null)
+  const [candidateMatches, setCandidateMatches] = useState<Record<string, any>>({})
+  const [candidateSearch, setCandidateSearch] = useState('')
 
   // 백그라운드 JD 분석 처리
   useEffect(() => {
@@ -278,6 +284,13 @@ export default function JDPage() {
     loadJDs()
   }, [selectedOrgId])
 
+  // 후보자 추천 모달 열릴 때 후보자 목록 로드
+  useEffect(() => {
+    if (showCandidateRecommendModal) {
+      loadCandidates()
+    }
+  }, [showCandidateRecommendModal])
+
   async function updateStatus(id: string, status: string) {
     console.log('[updateStatus] ID:', id, '상태:', status)
     await fetch(`/api/jd/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status }) })
@@ -335,6 +348,96 @@ export default function JDPage() {
       console.error('[Board] Load exception:', e)
     } finally {
       setBoardLoading(false)
+    }
+  }
+
+  // 후보자 목록 로드
+  async function loadCandidates() {
+    setCandidatesLoading(true)
+    try {
+      const profile = await getProfile()
+      if (!profile) return
+
+      const params = new URLSearchParams({
+        role: profile.role,
+        user_email: profile.email,
+        limit: '100'
+      })
+
+      const res = await fetch(`/api/candidates?${params}`)
+      const data = await res.json()
+
+      if (res.ok) {
+        setCandidates(data.candidates || [])
+      }
+    } catch (err) {
+      console.error('[loadCandidates] Error:', err)
+    } finally {
+      setCandidatesLoading(false)
+    }
+  }
+
+  // JD-후보자 매칭 분석
+  async function matchCandidate(candidateId: string) {
+    if (!selected) return
+
+    setMatchingCandidateId(candidateId)
+    try {
+      const jd = selected
+      const candidate = candidates.find(c => c.id === candidateId)
+      if (!candidate) return
+
+      const res = await fetch('/api/pipeline/match', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ jd, candidate })
+      })
+
+      if (!res.ok) {
+        error('❌ 매칭 분석 실패')
+        return
+      }
+
+      const matchData = await res.json()
+      setCandidateMatches(prev => ({
+        ...prev,
+        [candidateId]: matchData
+      }))
+    } catch (err) {
+      console.error('[matchCandidate] Error:', err)
+      error('❌ 매칭 분석 실패')
+    } finally {
+      setMatchingCandidateId(null)
+    }
+  }
+
+  // 프로세스에 추가
+  async function addCandidateToPipeline(candidateId: string) {
+    if (!selected) return
+
+    try {
+      const res = await fetch('/api/pipeline', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          jd_id: selected.id,
+          candidate_id: candidateId,
+          stage: '검토',
+          match_analysis: candidateMatches[candidateId]
+        })
+      })
+
+      if (!res.ok) {
+        error('❌ 프로세스 추가 실패')
+        return
+      }
+
+      success('✅ 프로세스에 추가되었습니다!')
+      setShowCandidateRecommendModal(false)
+      setCandidateMatches({})
+    } catch (err) {
+      console.error('[addCandidateToPipeline] Error:', err)
+      error('❌ 프로세스 추가 실패')
     }
   }
 
@@ -1015,6 +1118,15 @@ export default function JDPage() {
                 <div className="modal-title">{selected.position}</div>
               </div>
               <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                {!editMode && (
+                  <button
+                    className="btn btn-success btn-sm"
+                    onClick={() => setShowCandidateRecommendModal(true)}
+                    style={{ fontSize: 13, padding: '6px 12px' }}
+                  >
+                    🎯 후보자 추천
+                  </button>
+                )}
                 {(selected.created_by === userEmail || userRole === 'owner' || userRole === 'admin') && !editMode && (
                   <button
                     className="btn btn-primary btn-sm"
@@ -1641,6 +1753,126 @@ export default function JDPage() {
                     ))}
                   </div>
                 )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* 후보자 추천 모달 */}
+      {showCandidateRecommendModal && selected && (
+        <div className="overlay" onClick={() => setShowCandidateRecommendModal(false)}>
+          <div className="modal" style={{ maxWidth: 800 }} onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <div>
+                <div className="modal-title">후보자 추천</div>
+                <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 4 }}>
+                  {selected.company} - {selected.position}
+                </div>
+              </div>
+              <button className="modal-close" onClick={() => setShowCandidateRecommendModal(false)}>✕</button>
+            </div>
+
+            {/* 검색 */}
+            <div style={{ marginBottom: 16 }}>
+              <input
+                type="text"
+                className="form-input"
+                placeholder="🔍 후보자 이름 검색..."
+                value={candidateSearch}
+                onChange={e => setCandidateSearch(e.target.value)}
+              />
+            </div>
+
+            <div style={{ marginBottom: 16 }}>
+              {candidatesLoading ? (
+                <div style={{ textAlign: 'center', padding: 40 }}>
+                  <div className="spinner" style={{ margin: '0 auto 12px' }} />
+                  <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>후보자 목록 로딩 중...</div>
+                </div>
+              ) : candidates.length === 0 ? (
+                <div className="empty">
+                  <div className="empty-icon">👥</div>
+                  <div className="empty-text">후보자가 없습니다</div>
+                </div>
+              ) : (
+                <div style={{ display: 'grid', gap: 12 }}>
+                  {candidates
+                    .filter(c => c.name?.toLowerCase().includes(candidateSearch.toLowerCase()))
+                    .map(candidate => {
+                    const match = candidateMatches[candidate.id]
+                    return (
+                      <div
+                        key={candidate.id}
+                        style={{
+                          padding: 16,
+                          background: 'var(--surface-secondary)',
+                          borderRadius: 8,
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center'
+                        }}
+                      >
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 4 }}>
+                            {candidate.name}
+                          </div>
+                          <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
+                            {candidate.current_company ?? '프리랜서'} · {candidate.current_position ?? '미상'}
+                            {candidate.total_experience_years && ` · ${candidate.total_experience_years}년`}
+                          </div>
+                          {match && (
+                            <div style={{ marginTop: 8, display: 'flex', gap: 8, alignItems: 'center' }}>
+                              <span style={{
+                                fontSize: 18,
+                                fontWeight: 700,
+                                color: match.match_score >= 80 ? '#22c55e' : match.match_score >= 70 ? '#eab308' : '#ef4444'
+                              }}>
+                                {match.match_score}점
+                              </span>
+                              <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
+                                {match.recommendation === '추천' ? '✅ 추천' : match.recommendation === '보류' ? '⏸️ 보류' : '❌ 부적합'}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                        <div style={{ display: 'flex', gap: 8 }}>
+                          {!match ? (
+                            <button
+                              className="btn btn-primary btn-sm"
+                              onClick={() => matchCandidate(candidate.id)}
+                              disabled={matchingCandidateId === candidate.id}
+                              style={{ minWidth: 100 }}
+                            >
+                              {matchingCandidateId === candidate.id ? (
+                                <>
+                                  <div className="spinner" style={{ width: 12, height: 12 }} />
+                                  분석 중...
+                                </>
+                              ) : (
+                                '🎯 매칭 분석'
+                              )}
+                            </button>
+                          ) : (
+                            <button
+                              className="btn btn-success btn-sm"
+                              onClick={() => addCandidateToPipeline(candidate.id)}
+                              style={{ minWidth: 100 }}
+                            >
+                              ✅ 프로세스 추가
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+
+            {candidates.length > 0 && (
+              <div style={{ padding: 12, background: 'var(--info-bg)', borderRadius: 8, fontSize: 13, color: 'var(--info)' }}>
+                💡 각 후보자의 "매칭 분석" 버튼을 클릭하면 AI가 JD와의 적합도를 분석합니다.
               </div>
             )}
           </div>

@@ -138,6 +138,11 @@ export default function CandidatesPage() {
   const [processingJobId, setProcessingJobId] = useState<string | null>(null)
   const [processingProgress, setProcessingProgress] = useState(0)
   const [processingStep, setProcessingStep] = useState(0) // 0: 읽기, 1: 분석, 2: 생성, 3: 완료
+  const [showJdRecommendModal, setShowJdRecommendModal] = useState(false)
+  const [jds, setJds] = useState<any[]>([])
+  const [jdsLoading, setJdsLoading] = useState(false)
+  const [matchingJdId, setMatchingJdId] = useState<string | null>(null)
+  const [jdMatches, setJdMatches] = useState<Record<string, any>>({})
 
   const { toasts, success, error, info, removeToast } = useToast()
 
@@ -307,6 +312,13 @@ export default function CandidatesPage() {
       loadComments(selected.id)
     }
   }, [selected?.id])
+
+  // JD 추천 모달 열릴 때 JD 목록 로드
+  useEffect(() => {
+    if (showJdRecommendModal) {
+      loadJDs()
+    }
+  }, [showJdRecommendModal])
 
   async function updateStatus(id: string, status: string) {
     await fetch(`/api/candidates/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status }) })
@@ -482,6 +494,94 @@ export default function CandidatesPage() {
     } catch (e) {
       console.error('[loadComments] Error:', e)
       setComments([])
+    }
+  }
+
+  // JD 목록 로드
+  async function loadJDs() {
+    setJdsLoading(true)
+    try {
+      const profile = await getProfile()
+      if (!profile) return
+
+      const params = new URLSearchParams({
+        role: profile.role,
+        user_email: profile.email
+      })
+
+      const res = await fetch(`/api/jd?${params}`)
+      const data = await res.json()
+
+      if (res.ok) {
+        setJds(data.jds || [])
+      }
+    } catch (err) {
+      console.error('[loadJDs] Error:', err)
+    } finally {
+      setJdsLoading(false)
+    }
+  }
+
+  // 후보자-JD 매칭 분석
+  async function matchJD(jdId: string) {
+    if (!selected) return
+
+    setMatchingJdId(jdId)
+    try {
+      const jd = jds.find(j => j.id === jdId)
+      if (!jd) return
+
+      const res = await fetch('/api/pipeline/match', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ jd, candidate: selected })
+      })
+
+      if (!res.ok) {
+        error('❌ 매칭 분석 실패')
+        return
+      }
+
+      const matchData = await res.json()
+      setJdMatches(prev => ({
+        ...prev,
+        [jdId]: matchData
+      }))
+    } catch (err) {
+      console.error('[matchJD] Error:', err)
+      error('❌ 매칭 분석 실패')
+    } finally {
+      setMatchingJdId(null)
+    }
+  }
+
+  // 프로세스에 추가
+  async function addJDToPipeline(jdId: string) {
+    if (!selected) return
+
+    try {
+      const res = await fetch('/api/pipeline', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          jd_id: jdId,
+          candidate_id: selected.id,
+          stage: '검토',
+          match_analysis: jdMatches[jdId]
+        })
+      })
+
+      if (!res.ok) {
+        error('❌ 프로세스 추가 실패')
+        return
+      }
+
+      success('✅ 프로세스에 추가되었습니다!')
+      setShowJdRecommendModal(false)
+      setJdMatches({})
+    } catch (err) {
+      console.error('[addJDToPipeline] Error:', err)
+      error('❌ 프로세스 추가 실패')
     }
   }
 
@@ -1210,6 +1310,9 @@ export default function CandidatesPage() {
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               {!isEditing ? (
                 <>
+                  <button className="btn btn-success" onClick={() => setShowJdRecommendModal(true)}>
+                    🎯 JD 추천
+                  </button>
                   {selected.status === '검토중' && (
                     <button className="btn btn-success" onClick={() => updateStatus(selected.id, '활성')}>활성화</button>
                   )}
@@ -1503,6 +1606,112 @@ export default function CandidatesPage() {
           currentStep={analysisStep}
           estimatedTime={30}
         />
+      )}
+
+      {/* JD 추천 모달 */}
+      {showJdRecommendModal && selected && (
+        <div className="overlay" onClick={() => setShowJdRecommendModal(false)}>
+          <div className="modal" style={{ maxWidth: 800 }} onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <div>
+                <div className="modal-title">JD 추천</div>
+                <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 4 }}>
+                  {selected.name} · {selected.current_position ?? '포지션 미상'}
+                </div>
+              </div>
+              <button className="modal-close" onClick={() => setShowJdRecommendModal(false)}>✕</button>
+            </div>
+
+            <div style={{ marginBottom: 16 }}>
+              {jdsLoading ? (
+                <div style={{ textAlign: 'center', padding: 40 }}>
+                  <div className="spinner" style={{ margin: '0 auto 12px' }} />
+                  <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>JD 목록 로딩 중...</div>
+                </div>
+              ) : jds.length === 0 ? (
+                <div className="empty">
+                  <div className="empty-icon">📋</div>
+                  <div className="empty-text">JD가 없습니다</div>
+                </div>
+              ) : (
+                <div style={{ display: 'grid', gap: 12 }}>
+                  {jds.map(jd => {
+                    const match = jdMatches[jd.id]
+                    return (
+                      <div
+                        key={jd.id}
+                        style={{
+                          padding: 16,
+                          background: 'var(--surface-secondary)',
+                          borderRadius: 8,
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center'
+                        }}
+                      >
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 4 }}>
+                            {jd.company} - {jd.position}
+                          </div>
+                          <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
+                            {jd.status} · {jd.organizations?.name}
+                          </div>
+                          {match && (
+                            <div style={{ marginTop: 8, display: 'flex', gap: 8, alignItems: 'center' }}>
+                              <span style={{
+                                fontSize: 18,
+                                fontWeight: 700,
+                                color: match.match_score >= 80 ? '#22c55e' : match.match_score >= 70 ? '#eab308' : '#ef4444'
+                              }}>
+                                {match.match_score}점
+                              </span>
+                              <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
+                                {match.recommendation === '추천' ? '✅ 추천' : match.recommendation === '보류' ? '⏸️ 보류' : '❌ 부적합'}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                        <div style={{ display: 'flex', gap: 8 }}>
+                          {!match ? (
+                            <button
+                              className="btn btn-primary btn-sm"
+                              onClick={() => matchJD(jd.id)}
+                              disabled={matchingJdId === jd.id}
+                              style={{ minWidth: 100 }}
+                            >
+                              {matchingJdId === jd.id ? (
+                                <>
+                                  <div className="spinner" style={{ width: 12, height: 12 }} />
+                                  분석 중...
+                                </>
+                              ) : (
+                                '🎯 매칭 분석'
+                              )}
+                            </button>
+                          ) : (
+                            <button
+                              className="btn btn-success btn-sm"
+                              onClick={() => addJDToPipeline(jd.id)}
+                              style={{ minWidth: 100 }}
+                            >
+                              ✅ 프로세스 추가
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+
+            {jds.length > 0 && (
+              <div style={{ padding: 12, background: 'var(--info-bg)', borderRadius: 8, fontSize: 13, color: 'var(--info)' }}>
+                💡 각 JD의 "매칭 분석" 버튼을 클릭하면 AI가 후보자와의 적합도를 분석합니다.
+              </div>
+            )}
+          </div>
+        </div>
       )}
 
       {/* Toast Container */}
