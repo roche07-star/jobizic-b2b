@@ -830,7 +830,7 @@ export default function CandidatesPage() {
       <div className="filter-bar">
         {STATUS_FILTERS.map(f => (
           <button key={f} className={`filter-btn${filter === f ? ' active' : ''}`} onClick={() => setFilter(f)}>
-            {f} <span style={{ opacity: 0.6 }}>({f === '전체' ? candidates.length : candidates.filter(c => c.status === f).length})</span>
+            {f} <span style={{ opacity: 0.6 }}>({f === '전체' ? totalCount : candidates.filter(c => c.status === f).length})</span>
           </button>
         ))}
       </div>
