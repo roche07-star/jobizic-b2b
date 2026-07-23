@@ -534,7 +534,15 @@ export default function PipelinePage() {
           organization_id: profile.organization_id,
           created_by: profile.email,
           status: '검토중',
-          source: 'Manual' // 직접 입력 플래그
+          source: 'Manual', // 직접 입력 플래그
+          raw_resume: `[직접 입력]
+
+이름: ${manualForm.name}
+${manualForm.email ? `이메일: ${manualForm.email}` : ''}
+${manualForm.phone ? `전화: ${manualForm.phone}` : ''}
+${manualForm.current_company ? `현재 회사: ${manualForm.current_company}` : ''}
+${manualForm.education ? `최종학력: ${manualForm.education}` : ''}
+${manualForm.total_experience_years ? `경력: ${manualForm.total_experience_years}년` : ''}`
         })
       })
 
