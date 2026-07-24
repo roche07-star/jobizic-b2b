@@ -67,26 +67,90 @@ export default function SettlementsClient() {
     }
   }, [selectedYear, profile])
 
-  // 사용자별 + 연도별 전환액/미수금 로드
+  // 사용자별 + 연도별 전환액/미수금 로드 (DB에서)
   useEffect(() => {
+    if (profile?.email) {
+      loadSettlementGoals()
+    }
+  }, [profile?.email, selectedYear])
+
+  const loadSettlementGoals = async () => {
+    if (!profile?.email) return
+
+    try {
+      const params = new URLSearchParams({ user_email: profile.email })
+      const res = await fetch(`/api/goals?${params}`)
+      if (res.ok) {
+        const data = await res.json()
+        const yearGoals = data.goals?.settlements?.[selectedYear]
+
+        if (yearGoals) {
+          setGoalAmount(yearGoals.goalAmount ?? 5000)
+          setCarryover(yearGoals.carryover ?? 0)
+        } else {
+          setGoalAmount(5000)
+          setCarryover(0)
+        }
+      } else {
+        // API 실패 시 localStorage fallback
+        loadFromLocalStorage()
+      }
+    } catch (err) {
+      console.error('Failed to load settlement goals:', err)
+      loadFromLocalStorage()
+    }
+  }
+
+  const loadFromLocalStorage = () => {
     if (profile?.email && typeof window !== 'undefined') {
       const userEmail = profile.email
       const savedGoal = localStorage.getItem(`settlements_goalAmount_${userEmail}_${selectedYear}`)
       const savedCarryover = localStorage.getItem(`settlements_carryover_${userEmail}_${selectedYear}`)
 
-      if (savedGoal) {
-        setGoalAmount(parseInt(savedGoal))
-      } else {
-        setGoalAmount(5000) // 기본값
+      setGoalAmount(savedGoal ? parseInt(savedGoal) : 5000)
+      setCarryover(savedCarryover ? parseInt(savedCarryover) : 0)
+    }
+  }
+
+  const saveSettlementGoals = async (yearGoals: { goalAmount: number; carryover: number }) => {
+    if (!profile?.email) return
+
+    try {
+      const params = new URLSearchParams({ user_email: profile.email })
+      const res = await fetch(`/api/goals?${params}`)
+      const data = await res.json()
+      const currentGoals = data.goals || {}
+      const currentSettlements = currentGoals.settlements || {}
+
+      const updatedSettlements = {
+        ...currentSettlements,
+        [selectedYear]: yearGoals
       }
 
-      if (savedCarryover) {
-        setCarryover(parseInt(savedCarryover))
-      } else {
-        setCarryover(0) // 기본값
+      const saveRes = await fetch(`/api/goals?${params}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ settlements: updatedSettlements })
+      })
+
+      if (!saveRes.ok) {
+        throw new Error('Failed to save')
+      }
+
+      // localStorage에도 백업 저장
+      if (profile?.email && typeof window !== 'undefined') {
+        localStorage.setItem(`settlements_goalAmount_${profile.email}_${selectedYear}`, String(yearGoals.goalAmount))
+        localStorage.setItem(`settlements_carryover_${profile.email}_${selectedYear}`, String(yearGoals.carryover))
+      }
+    } catch (err) {
+      console.error('Failed to save settlement goals:', err)
+      // 실패 시 localStorage에만 저장
+      if (profile?.email && typeof window !== 'undefined') {
+        localStorage.setItem(`settlements_goalAmount_${profile.email}_${selectedYear}`, String(yearGoals.goalAmount))
+        localStorage.setItem(`settlements_carryover_${profile.email}_${selectedYear}`, String(yearGoals.carryover))
       }
     }
-  }, [profile?.email, selectedYear])
+  }
 
   const loadSettlements = async () => {
     if (!profile?.organization_id || !profile?.email) return
@@ -375,12 +439,10 @@ export default function SettlementsClient() {
                 />
                 <span style={{ fontSize: '12px', color: '#78716c' }}>만원</span>
                 <button
-                  onClick={() => {
+                  onClick={async () => {
                     const newGoal = parseInt(tempGoal) || 0
                     setGoalAmount(newGoal)
-                    if (profile?.email) {
-                      localStorage.setItem(`settlements_goalAmount_${profile.email}_${selectedYear}`, String(newGoal))
-                    }
+                    await saveSettlementGoals({ goalAmount: newGoal, carryover })
                     setEditingGoal(false)
                   }}
                   style={{ fontSize: '11px', padding: '4px 12px', background: '#b8860b', color: '#1c1917', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 600 }}
@@ -422,12 +484,10 @@ export default function SettlementsClient() {
                   style={{ width: '80px', padding: '4px 8px', border: '1px solid #3b82f6', borderRadius: '6px', fontSize: '12px' }}
                 />
                 <button
-                  onClick={() => {
+                  onClick={async () => {
                     const newCarryover = parseInt(tempCarryover) || 0
                     setCarryover(newCarryover)
-                    if (profile?.email) {
-                      localStorage.setItem(`settlements_carryover_${profile.email}_${selectedYear}`, String(newCarryover))
-                    }
+                    await saveSettlementGoals({ goalAmount, carryover: newCarryover })
                     setEditingCarryover(false)
                   }}
                   style={{ fontSize: '11px', padding: '4px 10px', background: '#3b82f6', color: '#1c1917', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 600 }}
