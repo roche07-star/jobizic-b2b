@@ -293,7 +293,10 @@ export default function CandidatesPage() {
         user_email: profile.email,
         ...(profile.role === 'admin' && selectedOrgId !== '전체' && { organization_id: selectedOrgId }),
         ...(profile.role !== 'admin' && profile.organization_id && { organization_id: profile.organization_id }),
-        ...(search.trim() && { search: search.trim() })
+        ...(search.trim() && { search: search.trim() }),
+        ...(skillSearch.trim() && { skill_search: skillSearch.trim() }),
+        ...(minExperience && { min_experience: minExperience }),
+        ...(maxExperience && { max_experience: maxExperience })
       })
 
       fetch(`/api/candidates?${params}`)
@@ -311,7 +314,7 @@ export default function CandidatesPage() {
         .finally(() => setLoading(false))
     }
     loadCandidates()
-  }, [selectedOrgId, search])
+  }, [selectedOrgId, search, skillSearch, minExperience, maxExperience])
 
   // 모든 후보자의 매칭 분석 결과 로드
   async function loadAllCandidateMatches(candidateList: Candidate[]) {
@@ -436,7 +439,11 @@ export default function CandidatesPage() {
         limit: '50',
         offset: candidates.length.toString(),
         ...(profile.role === 'admin' && selectedOrgId !== '전체' && { organization_id: selectedOrgId }),
-        ...(profile.role !== 'admin' && profile.organization_id && { organization_id: profile.organization_id })
+        ...(profile.role !== 'admin' && profile.organization_id && { organization_id: profile.organization_id }),
+        ...(search.trim() && { search: search.trim() }),
+        ...(skillSearch.trim() && { skill_search: skillSearch.trim() }),
+        ...(minExperience && { min_experience: minExperience }),
+        ...(maxExperience && { max_experience: maxExperience })
       })
 
       const res = await fetch(`/api/candidates?${params}`)
