@@ -1118,6 +1118,7 @@ export default function CandidatesPage() {
                     className="badge"
                     style={{
                       background:
+                        candidate.source === 'adam' ? '#a78bfa' :
                         candidate.source === 'B2C' ? '#3b82f6' :
                         candidate.source === 'Local' ? '#10b981' :
                         candidate.source === 'B2B' ? '#8b5cf6' :
@@ -1127,7 +1128,8 @@ export default function CandidatesPage() {
                       padding: '2px 6px'
                     }}
                   >
-                    {candidate.source === 'B2C' ? '🔵 B2C' :
+                    {candidate.source === 'adam' ? '✨ adam 추천' :
+                     candidate.source === 'B2C' ? '🔵 B2C' :
                      candidate.source === 'Local' ? '🟢 Local' :
                      candidate.source === 'B2B' ? '🟣 B2B' :
                      candidate.source}
@@ -1284,6 +1286,7 @@ export default function CandidatesPage() {
                       className="badge"
                       style={{
                         background:
+                          selected.source === 'adam' ? '#a78bfa' :
                           selected.source === 'B2C' ? '#3b82f6' :
                           selected.source === 'Local' ? '#10b981' :
                           selected.source === 'B2B' ? '#8b5cf6' :
@@ -1293,7 +1296,8 @@ export default function CandidatesPage() {
                         padding: '3px 8px'
                       }}
                     >
-                      {selected.source === 'B2C' ? '🔵 B2C' :
+                      {selected.source === 'adam' ? '✨ adam 추천' :
+                       selected.source === 'B2C' ? '🔵 B2C' :
                        selected.source === 'Local' ? '🟢 Local' :
                        selected.source === 'B2B' ? '🟣 B2B' :
                        selected.source}
