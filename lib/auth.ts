@@ -65,13 +65,13 @@ export async function getSession() {
 }
 
 export async function getProfile(): Promise<Profile | null> {
-  const session = await getSession()
-  if (!session) {
-    console.log('[getProfile] No session')
+  const { data: { user }, error: authError } = await getSupabaseBrowser().auth.getUser()
+  if (authError || !user) {
+    console.log('[getProfile] No user or auth error:', authError?.message)
     return null
   }
 
-  console.log('[getProfile] Fetching profile for user:', session.user.id, session.user.email)
+  console.log('[getProfile] Fetching profile for user:', user.id, user.email)
 
   const { data, error} = await getSupabaseBrowser()
     .from('profiles')
@@ -79,7 +79,7 @@ export async function getProfile(): Promise<Profile | null> {
       *,
       organization:organizations(id, name, type)
     `)
-    .eq('id', session.user.id)
+    .eq('id', user.id)
     .single()
 
   if (error) {

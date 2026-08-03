@@ -25,8 +25,8 @@ export async function getSupabaseServer() {
 export async function getServerProfile() {
   const supabase = await getSupabaseServer()
 
-  const { data: { session } } = await supabase.auth.getSession()
-  if (!session) return null
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
+  if (authError || !user) return null
 
   const { data, error } = await supabase
     .from('profiles')
@@ -34,7 +34,7 @@ export async function getServerProfile() {
       *,
       organization:organizations(id, name)
     `)
-    .eq('id', session.user.id)
+    .eq('id', user.id)
     .single()
 
   if (error) {
