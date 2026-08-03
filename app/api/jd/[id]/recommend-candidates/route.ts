@@ -83,10 +83,8 @@ export async function POST(req: NextRequest, context: { params: Promise<{ id: st
       .select('*')
 
     if (profile.role === 'admin') {
-      // Admin: JD의 조직 후보자 + organization_id가 null인 후보자 (Adam 추천 등)
-      if (jd.organization_id) {
-        candidatesQuery = candidatesQuery.or(`organization_id.eq.${jd.organization_id},organization_id.is.null`)
-      }
+      // Super Admin: 모든 후보자 검색 (organization_id 필터 없음)
+      console.log('[recommend-candidates] Super Admin: searching all candidates')
     } else if (profile.role === 'owner' || profile.role === 'manager') {
       // Owner/Manager: 본인 + Operator 후보자
       if (!profile.organization_id) {
