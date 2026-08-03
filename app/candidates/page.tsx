@@ -1335,6 +1335,37 @@ export default function CandidatesPage() {
                   {selected.market_value && <div><span className="form-label">시장가치</span><div>{selected.market_value}</div></div>}
                 </div>
 
+                {selected.work_history && selected.work_history.length > 0 && (
+                  <div style={{ marginBottom: 16 }}>
+                    <div className="form-label">경력사항</div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                      {selected.work_history.map((exp, idx) => (
+                        <div key={idx} style={{
+                          padding: 12,
+                          background: 'var(--surface-secondary)',
+                          borderRadius: 8,
+                          borderLeft: '3px solid var(--primary)'
+                        }}>
+                          <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4 }}>
+                            {exp.start_date} ~ {exp.end_date || '현재'}
+                            {exp.duration_text && <span style={{ marginLeft: 8 }}>({exp.duration_text})</span>}
+                          </div>
+                          <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 4 }}>
+                            {exp.company}
+                            {exp.department && <span style={{ marginLeft: 8, fontWeight: 400, color: 'var(--text-secondary)' }}>| {exp.department}</span>}
+                            {exp.position && <span style={{ marginLeft: 8, fontWeight: 400, color: 'var(--text-secondary)' }}>| {exp.position}</span>}
+                          </div>
+                          {exp.description && (
+                            <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 6 }}>
+                              • {exp.description}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {selected.career_summary && (
                   <div style={{ marginBottom: 16 }}>
                     <div className="form-label">경력 요약</div>
