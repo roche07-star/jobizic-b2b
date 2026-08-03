@@ -328,7 +328,7 @@ export default function RecommendationsPage() {
       })
     }
 
-    const minScore = minScores[jdId] || 70
+    const minScore = minScores[jdId] || 60
 
     setRecommendingJdId(jdId)
     info(`🤖 AI가 ${minScore}점 이상의 후보자를 찾고 있습니다...`)
@@ -669,7 +669,7 @@ export default function RecommendationsPage() {
                     <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                       <select
                         className="form-select"
-                        value={minScores[jd.id] || 70}
+                        value={minScores[jd.id] || 60}
                         onChange={(e) => setMinScores({ ...minScores, [jd.id]: Number(e.target.value) })}
                         disabled={recommendingJdId === jd.id}
                         style={{ fontSize: 13, padding: '6px 8px', minWidth: 120 }}

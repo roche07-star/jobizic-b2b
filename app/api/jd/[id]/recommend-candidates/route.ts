@@ -51,9 +51,9 @@ export async function POST(req: NextRequest, context: { params: Promise<{ id: st
       return NextResponse.json({ error: '권한이 없습니다.' }, { status: 403 })
     }
 
-    // 최소 점수 파라미터 (기본값 70점)
+    // 최소 점수 파라미터 (기본값 60점)
     const body = await req.json().catch(() => ({}))
-    const minScore = body.min_score || 70
+    const minScore = body.min_score || 60
 
     console.log('[recommend-candidates] Starting for JD:', jdId, 'by admin:', profile.email, 'min_score:', minScore)
 
@@ -226,11 +226,11 @@ STEP 3 — 후보자-JD 대조 및 분석
     const scores = matchingResults.map(r => r?.match_score || 0).sort((a, b) => b - a)
     console.log('[recommend-candidates] Score distribution:', scores)
 
-    // 4. 점수 필터링 및 상위 10명 선정 (매칭 점수 순)
+    // 4. 점수 필터링 및 상위 20명 선정 (매칭 점수 순)
     const topCandidates = matchingResults
       .filter(r => (r?.match_score || 0) >= minScore) // 최소 점수 필터
       .sort((a, b) => (b?.match_score || 0) - (a?.match_score || 0))
-      .slice(0, 10)
+      .slice(0, 20)
 
     console.log('[recommend-candidates] Min score:', minScore, '/ Filtered:', topCandidates.length)
     console.log('[recommend-candidates] Top scores:', topCandidates.map(r => r?.match_score))
