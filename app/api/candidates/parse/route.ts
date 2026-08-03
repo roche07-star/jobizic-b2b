@@ -20,6 +20,13 @@ interface CandidateParseResult {
   current_position: string | null
   total_experience_years: number
   career_summary: string
+  work_history: Array<{
+    company: string
+    position: string
+    start_date: string
+    end_date: string | null
+    duration_years: number
+  }>
   education: string[]
   skills: string[]
   tech_stack: string[]
@@ -54,6 +61,21 @@ const CANDIDATE_PARSE_TOOL: Anthropic.Tool = {
       current_position: { type: 'string', description: '현재 직급/포지션 (없으면 null)' },
       total_experience_years: { type: 'number', description: '총 경력 년수' },
       career_summary: { type: 'string', description: '회사별 경력 요약 (예: A사 3년 (백엔드) -> B사 5년 (팀장) -> C사 2년 (시니어))' },
+      work_history: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            company: { type: 'string', description: '회사명' },
+            position: { type: 'string', description: '직무/직급' },
+            start_date: { type: 'string', description: '시작일 (YYYY-MM 형식)' },
+            end_date: { type: 'string', description: '종료일 (YYYY-MM 형식, 현재 재직 중이면 null)' },
+            duration_years: { type: 'number', description: '재직 기간 (년)' }
+          },
+          required: ['company', 'position', 'start_date', 'duration_years']
+        },
+        description: '경력사항 (최신순)'
+      },
       education: { type: 'array', items: { type: 'string' }, description: '학력 (최종학력부터)' },
       skills: { type: 'array', items: { type: 'string' }, description: '스킬 목록' },
       tech_stack: { type: 'array', items: { type: 'string' }, description: '기술스택' },
@@ -71,7 +93,7 @@ const CANDIDATE_PARSE_TOOL: Anthropic.Tool = {
       key_highlights: { type: 'array', items: { type: 'string' }, description: '핵심 하이라이트 (구체적 수치 포함)' },
       tags: { type: 'array', items: { type: 'string' }, description: '태그' }
     },
-    required: ['total_experience_years', 'career_summary', 'education', 'skills', 'tech_stack', 'certifications', 'languages', 'job_search_status', 'strength_summary', 'weakness_summary', 'career_trajectory', 'ideal_roles', 'market_value', 'key_highlights', 'tags']
+    required: ['total_experience_years', 'career_summary', 'work_history', 'education', 'skills', 'tech_stack', 'certifications', 'languages', 'job_search_status', 'strength_summary', 'weakness_summary', 'career_trajectory', 'ideal_roles', 'market_value', 'key_highlights', 'tags']
   }
 }
 

@@ -22,6 +22,13 @@ interface ParsedCandidate {
   current_position: string | null
   total_experience_years: number | null
   career_summary: string
+  work_history: Array<{
+    company: string
+    position: string
+    start_date: string | null
+    end_date: string | null
+    duration_years: number
+  }>
   education: string[]
   skills: string[]
   tech_stack: string[]
