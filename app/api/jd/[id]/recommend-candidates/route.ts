@@ -127,9 +127,34 @@ export async function POST(req: NextRequest, context: { params: Promise<{ id: st
 
     console.log('[recommend-candidates] Total candidates for matching:', allCandidates?.length || 0)
 
-    // AI 분석 대상: 최대 50명 (점수 필터링 후 상위 10명만 DB 저장)
-    const filteredCandidates = (allCandidates || []).slice(0, 50)
+    // 스킬 기반 사전 필터링: JD 스킬과 매칭되는 후보자 우선 선정
+    const candidatesWithScore = (allCandidates || []).map(candidate => {
+      const candidateSkills = [
+        ...(candidate.skills || []),
+        ...(candidate.tech_stack || [])
+      ].map(s => s?.toLowerCase().trim()).filter(Boolean)
 
+      // JD 스킬과 매칭되는 개수 계산
+      let matchCount = 0
+      allSkills.forEach(jdSkill => {
+        const jdSkillLower = jdSkill?.toLowerCase().trim()
+        if (jdSkillLower && candidateSkills.some(cs => cs.includes(jdSkillLower) || jdSkillLower.includes(cs))) {
+          matchCount++
+        }
+      })
+
+      return { candidate, matchCount }
+    })
+
+    // 스킬 매칭 많은 순으로 정렬하고 상위 50명 선정
+    const filteredCandidates = candidatesWithScore
+      .sort((a, b) => b.matchCount - a.matchCount)
+      .slice(0, 50)
+      .map(item => item.candidate)
+
+    console.log('[recommend-candidates] Skill-based filtering applied')
+    console.log('[recommend-candidates] Top candidates skill matches:',
+      candidatesWithScore.slice(0, 10).map(c => ({ name: c.candidate.name, matches: c.matchCount })))
     console.log('[recommend-candidates] Candidates for AI analysis:', filteredCandidates.length)
 
     if (filteredCandidates.length === 0) {
