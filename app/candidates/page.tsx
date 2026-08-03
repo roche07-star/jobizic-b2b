@@ -293,6 +293,7 @@ export default function CandidatesPage() {
         user_email: profile.email,
         ...(profile.role === 'admin' && selectedOrgId !== '전체' && { organization_id: selectedOrgId }),
         ...(profile.role !== 'admin' && profile.organization_id && { organization_id: profile.organization_id }),
+        ...(filter !== '전체' && { status: filter }),
         ...(search.trim() && { search: search.trim() }),
         ...(skillSearch.trim() && { skill_search: skillSearch.trim() }),
         ...(minExperience && { min_experience: minExperience }),
@@ -314,7 +315,7 @@ export default function CandidatesPage() {
         .finally(() => setLoading(false))
     }
     loadCandidates()
-  }, [selectedOrgId, search, skillSearch, minExperience, maxExperience])
+  }, [selectedOrgId, filter, search, skillSearch, minExperience, maxExperience])
 
   // 모든 후보자의 매칭 분석 결과 로드
   async function loadAllCandidateMatches(candidateList: Candidate[]) {
@@ -440,6 +441,7 @@ export default function CandidatesPage() {
         offset: candidates.length.toString(),
         ...(profile.role === 'admin' && selectedOrgId !== '전체' && { organization_id: selectedOrgId }),
         ...(profile.role !== 'admin' && profile.organization_id && { organization_id: profile.organization_id }),
+        ...(filter !== '전체' && { status: filter }),
         ...(search.trim() && { search: search.trim() }),
         ...(skillSearch.trim() && { skill_search: skillSearch.trim() }),
         ...(minExperience && { min_experience: minExperience }),
@@ -750,12 +752,9 @@ export default function CandidatesPage() {
     }
   }
 
-  // 기본 필터 (상태)
-  const filtered = filter === '전체' ? candidates : candidates.filter(c => c.status === filter)
-
-  // 검색은 API에서 처리 (useEffect dependency에 search 추가됨)
+  // 기본 필터 (상태), 검색은 API에서 처리됨 (서버 사이드 필터링)
   // 고급 필터만 클라이언트에서 처리
-  let advanced = filtered
+  let advanced = candidates
 
   // 스킬 검색
   if (skillSearch.trim()) {
@@ -938,7 +937,7 @@ export default function CandidatesPage() {
           {candidates.length > 0 && (
             <button
               className="btn btn-ghost"
-              onClick={() => downloadCandidatesAsCSV(filtered)}
+              onClick={() => downloadCandidatesAsCSV(finalFiltered)}
               style={{ fontSize: 13 }}
             >
               📥 엑셀 다운로드
