@@ -31,10 +31,13 @@ interface Candidate {
   career_summary: string
   work_history?: Array<{
     company: string
+    department?: string
     position: string
     start_date: string | null
     end_date: string | null
     duration_years: number
+    duration_text?: string
+    description?: string
   }>
   education: string[]
   skills: string[]

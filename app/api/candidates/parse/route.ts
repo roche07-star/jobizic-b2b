@@ -22,10 +22,13 @@ interface CandidateParseResult {
   career_summary: string
   work_history: Array<{
     company: string
+    department?: string
     position: string
     start_date: string
     end_date: string | null
     duration_years: number
+    duration_text?: string
+    description?: string
   }>
   education: string[]
   skills: string[]
@@ -66,15 +69,18 @@ const CANDIDATE_PARSE_TOOL: Anthropic.Tool = {
         items: {
           type: 'object',
           properties: {
-            company: { type: 'string', description: '회사명' },
-            position: { type: 'string', description: '직무/직급' },
-            start_date: { type: 'string', description: '시작일 (YYYY-MM 형식)' },
-            end_date: { type: 'string', description: '종료일 (YYYY-MM 형식, 현재 재직 중이면 null)' },
-            duration_years: { type: 'number', description: '재직 기간 (년)' }
+            company: { type: 'string', description: '회사명 (예: "㈜ 씨엠엔피")' },
+            department: { type: 'string', description: '부서/팀명 (예: "경영지원팀")' },
+            position: { type: 'string', description: '직급 (예: "대리")' },
+            start_date: { type: 'string', description: '시작일 (YYYY.MM 형식, 예: "2024.01")' },
+            end_date: { type: 'string', description: '종료일 (YYYY.MM 형식, 예: "2026.05", 현재 재직 중이면 null)' },
+            duration_years: { type: 'number', description: '재직 기간 년수 (예: 2.4)' },
+            duration_text: { type: 'string', description: '재직 기간 텍스트 (예: "2년 5개월")' },
+            description: { type: 'string', description: '담당 업무/역할 (예: "경영관리/결산/원가")' }
           },
           required: ['company', 'position', 'start_date', 'duration_years']
         },
-        description: '경력사항 (최신순)'
+        description: '경력사항 (최신순, 상세 정보 포함)'
       },
       education: { type: 'array', items: { type: 'string' }, description: '학력 (최종학력부터)' },
       skills: { type: 'array', items: { type: 'string' }, description: '스킬 목록' },
