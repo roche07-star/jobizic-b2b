@@ -64,7 +64,7 @@ interface Candidate {
   }
 }
 
-const STATUS_FILTERS = ['전체', '검토중', '활성', '제안중', '합격', '보류']
+const STATUS_FILTERS = ['전체', '신규', '검토중', '제안중', '합격', '보류']
 
 interface Organization {
   id: string
@@ -1058,17 +1058,12 @@ export default function CandidatesPage() {
                       boxShadow: '0 0 0 1px rgba(234, 179, 8, 0.2), 0 0 12px rgba(234, 179, 8, 0.15)',
                       background: 'linear-gradient(135deg, rgba(234, 179, 8, 0.05) 0%, rgba(250, 204, 21, 0.03) 100%)',
                     }
-                  : candidate.status === '활성'
+                  : candidate.status === '제안중'
                     ? {
-                        borderLeft: '4px solid #10b981',
-                        boxShadow: '0 0 0 1px rgba(16, 185, 129, 0.1)',
+                        borderLeft: '4px solid #3b82f6',
+                        boxShadow: '0 0 0 1px rgba(59, 130, 246, 0.1)',
                       }
-                    : candidate.status === '제안중'
-                      ? {
-                          borderLeft: '4px solid #3b82f6',
-                          boxShadow: '0 0 0 1px rgba(59, 130, 246, 0.1)',
-                        }
-                      : undefined
+                    : undefined
               }
             >
               <div className="jd-card-top">
@@ -1225,9 +1220,6 @@ export default function CandidatesPage() {
               )}
               <div className="jd-actions" onClick={e => e.stopPropagation()}>
                 {candidate.status === '검토중' && (
-                  <button className="btn btn-success btn-sm" onClick={() => updateStatus(candidate.id, '활성')}>활성화</button>
-                )}
-                {candidate.status === '활성' && (
                   <button className="btn btn-primary btn-sm" onClick={() => updateStatus(candidate.id, '제안중')}>제안</button>
                 )}
                 <button className="btn btn-ghost btn-sm" onClick={() => updateStatus(candidate.id, '보류')}>보류</button>
@@ -1519,15 +1511,12 @@ export default function CandidatesPage() {
                     🎯 JD 추천
                   </button>
                   {selected.status === '검토중' && (
-                    <button className="btn btn-success" onClick={() => updateStatus(selected.id, '활성')}>활성화</button>
-                  )}
-                  {selected.status === '활성' && (
                     <button className="btn btn-primary" onClick={() => updateStatus(selected.id, '제안중')}>제안</button>
                   )}
                   {selected.status === '제안중' && (
                     <button className="btn btn-success" onClick={() => updateStatus(selected.id, '합격')}>합격</button>
                   )}
-                  {selected.status !== '검토중' && (
+                  {selected.status !== '검토중' && selected.status !== '신규' && (
                     <button className="btn btn-ghost" onClick={() => updateStatus(selected.id, '검토중')}>검토중으로</button>
                   )}
                   <button className="btn btn-primary" onClick={() => {

@@ -116,7 +116,7 @@ export async function GET(req: NextRequest) {
 
     // Status별 카운트 계산 (필터 적용 전 전체 데이터 기준)
     const statusCounts: Record<string, number> = {}
-    const statuses = ['검토중', '활성', '제안중', '합격', '보류']
+    const statuses = ['신규', '검토중', '제안중', '합격', '보류']
 
     for (const s of statuses) {
       let countQuery = supabaseAdmin
@@ -193,6 +193,10 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
+    // 기본 status 설정
+    if (!body.status) {
+      body.status = '신규'
+    }
     const { data, error } = await supabaseAdmin
       .from('candidates')
       .insert(body)
