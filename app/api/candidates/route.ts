@@ -197,6 +197,21 @@ export async function POST(req: NextRequest) {
     if (!body.status) {
       body.status = '신규'
     }
+
+    // organization_id가 null이면 created_by의 organization_id를 자동 설정
+    if (!body.organization_id && body.created_by) {
+      const { data: profile } = await supabaseAdmin
+        .from('profiles')
+        .select('organization_id')
+        .eq('email', body.created_by)
+        .single()
+
+      if (profile?.organization_id) {
+        body.organization_id = profile.organization_id
+        console.log('[candidates POST] organization_id 자동 설정:', body.organization_id)
+      }
+    }
+
     const { data, error } = await supabaseAdmin
       .from('candidates')
       .insert(body)
