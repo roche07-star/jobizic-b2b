@@ -2154,7 +2154,7 @@ export default function CandidatesPage() {
       {/* 중복 체크 모달 */}
       {showDuplicatesModal && (
         <div className="modal-overlay" onClick={() => setShowDuplicatesModal(false)}>
-          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: 900, maxHeight: '90vh', overflow: 'auto' }}>
+          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: 900, maxHeight: '90vh', overflow: 'auto', background: '#ffffff' }}>
             <div className="modal-header">
               <h2>🔍 중복 후보자 관리</h2>
               <button className="modal-close" onClick={() => setShowDuplicatesModal(false)}>×</button>
