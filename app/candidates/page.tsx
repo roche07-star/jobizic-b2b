@@ -144,6 +144,11 @@ export default function CandidatesPage() {
   const [comments, setComments] = useState<any[]>([])
   const [commentContent, setCommentContent] = useState('')
   const [showCommentForm, setShowCommentForm] = useState(false)
+  const [showDuplicatesModal, setShowDuplicatesModal] = useState(false)
+  const [duplicateGroups, setDuplicateGroups] = useState<any[]>([])
+  const [checkingDuplicates, setCheckingDuplicates] = useState(false)
+  const [selectedPrimary, setSelectedPrimary] = useState<Record<string, string>>({})
+  const [merging, setMerging] = useState<string | null>(null)
   const [processingJobId, setProcessingJobId] = useState<string | null>(null)
   const [processingProgress, setProcessingProgress] = useState(0)
   const [candidateMatches, setCandidateMatches] = useState<Record<string, any>>({})
@@ -335,6 +340,113 @@ export default function CandidatesPage() {
     }
     loadCandidates()
   }, [selectedOrgId, filter, search, skillSearch, minExperience, maxExperience])
+
+  // 중복 체크
+  async function checkDuplicates() {
+    setCheckingDuplicates(true)
+    try {
+      const profile = await getProfile()
+      if (!profile) return
+
+      const params = new URLSearchParams({
+        organization_id: profile.organization_id || '',
+        user_email: profile.email,
+        role: profile.role
+      })
+
+      const res = await fetch(`/api/candidates/duplicates?${params}`)
+      const data = await res.json()
+
+      if (!res.ok) {
+        error(data.error || '중복 체크 실패')
+        return
+      }
+
+      setDuplicateGroups(data.duplicateGroups || [])
+      setShowDuplicatesModal(true)
+
+      if (data.duplicateGroups.length === 0) {
+        info('✅ 중복된 후보자가 없습니다!')
+      } else {
+        info(`⚠️ ${data.duplicateGroups.length}개의 중복 그룹을 발견했습니다.`)
+      }
+    } catch (err) {
+      console.error('[checkDuplicates] Error:', err)
+      error('중복 체크 중 오류가 발생했습니다.')
+    } finally {
+      setCheckingDuplicates(false)
+    }
+  }
+
+  // 중복 병합
+  async function mergeDuplicates(groupKey: string) {
+    const group = duplicateGroups.find(g => g.key === groupKey)
+    if (!group) return
+
+    const primaryId = selectedPrimary[groupKey]
+    if (!primaryId) {
+      error('대표 후보자를 선택해주세요.')
+      return
+    }
+
+    const mergeIds = group.candidates
+      .filter((c: any) => c.id !== primaryId)
+      .map((c: any) => c.id)
+
+    if (mergeIds.length === 0) {
+      error('병합할 후보자가 없습니다.')
+      return
+    }
+
+    const confirmed = confirm(
+      `${mergeIds.length}명의 중복 후보자를 병합하시겠습니까?\n\n` +
+      `대표: ${group.candidates.find((c: any) => c.id === primaryId)?.name}\n` +
+      `병합 후 삭제: ${group.candidates.filter((c: any) => c.id !== primaryId).map((c: any) => c.name).join(', ')}`
+    )
+
+    if (!confirmed) return
+
+    setMerging(groupKey)
+    try {
+      const res = await fetch('/api/candidates/merge', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ primaryId, mergeIds })
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        error(data.error || '병합 실패')
+        return
+      }
+
+      success(`✅ ${data.mergedCount}명의 후보자를 성공적으로 병합했습니다!`)
+
+      // 중복 그룹에서 제거
+      setDuplicateGroups(prev => prev.filter(g => g.key !== groupKey))
+
+      // 후보자 목록 새로고침
+      const profile = await getProfile()
+      if (profile) {
+        const params = new URLSearchParams({
+          role: profile.role,
+          user_email: profile.email,
+          ...(profile.role === 'admin' && selectedOrgId !== '전체' && { organization_id: selectedOrgId }),
+          ...(profile.role !== 'admin' && profile.organization_id && { organization_id: profile.organization_id })
+        })
+        const refreshRes = await fetch(`/api/candidates?${params}`)
+        const refreshData = await refreshRes.json()
+        setCandidates(refreshData.candidates ?? [])
+      }
+
+    } catch (err) {
+      console.error('[mergeDuplicates] Error:', err)
+      error('병합 중 오류가 발생했습니다.')
+    } finally {
+      setMerging(null)
+    }
+  }
 
   // 모든 후보자의 매칭 분석 결과 로드
   async function loadAllCandidateMatches(candidateList: Candidate[]) {
@@ -962,6 +1074,13 @@ export default function CandidatesPage() {
               📥 엑셀 다운로드
             </button>
           )}
+          <button
+            className="btn btn-secondary"
+            onClick={checkDuplicates}
+            disabled={checkingDuplicates || loading}
+          >
+            {checkingDuplicates ? '체크 중...' : '🔍 중복 체크'}
+          </button>
           <Link href="/candidates/new">
             <button className="btn btn-primary">+ 후보자 등록</button>
           </Link>
@@ -2027,6 +2146,111 @@ export default function CandidatesPage() {
                   <p style={{ fontSize: 14, lineHeight: 1.6, color: 'var(--info)', margin: 0 }}>{selectedMatchDetail.next_steps}</p>
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 중복 체크 모달 */}
+      {showDuplicatesModal && (
+        <div className="modal-overlay" onClick={() => setShowDuplicatesModal(false)}>
+          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: 900, maxHeight: '90vh', overflow: 'auto' }}>
+            <div className="modal-header">
+              <h2>🔍 중복 후보자 관리</h2>
+              <button className="modal-close" onClick={() => setShowDuplicatesModal(false)}>×</button>
+            </div>
+
+            <div className="modal-body">
+              {duplicateGroups.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: 40 }}>
+                  <div style={{ fontSize: 48, marginBottom: 16 }}>✅</div>
+                  <div style={{ fontSize: 16, color: 'var(--text-secondary)' }}>중복된 후보자가 없습니다.</div>
+                </div>
+              ) : (
+                <>
+                  <div style={{ marginBottom: 16, padding: 12, background: 'var(--info-bg)', borderRadius: 8 }}>
+                    <div style={{ fontSize: 14, color: 'var(--info)' }}>
+                      ⚠️ <strong>{duplicateGroups.length}개</strong>의 중복 그룹을 발견했습니다.
+                      각 그룹에서 남길 대표 후보자를 선택하고 병합하세요.
+                    </div>
+                  </div>
+
+                  {duplicateGroups.map((group, idx) => (
+                    <div key={group.key} style={{ marginBottom: 24, padding: 16, border: '1px solid var(--border)', borderRadius: 8 }}>
+                      <div style={{ marginBottom: 12 }}>
+                        <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--accent)' }}>
+                          그룹 {idx + 1}: {group.reason}
+                        </div>
+                        <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4 }}>
+                          {group.candidates.length}명의 중복 후보자
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'grid', gap: 12 }}>
+                        {group.candidates.map((candidate: any) => (
+                          <div
+                            key={candidate.id}
+                            style={{
+                              padding: 12,
+                              background: selectedPrimary[group.key] === candidate.id ? 'var(--success-bg)' : 'var(--surface-secondary)',
+                              border: selectedPrimary[group.key] === candidate.id ? '2px solid var(--success)' : '1px solid var(--border)',
+                              borderRadius: 6,
+                              cursor: 'pointer',
+                              transition: 'all 0.2s'
+                            }}
+                            onClick={() => setSelectedPrimary(prev => ({ ...prev, [group.key]: candidate.id }))}
+                          >
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                              <input
+                                type="radio"
+                                name={`primary-${group.key}`}
+                                checked={selectedPrimary[group.key] === candidate.id}
+                                onChange={() => setSelectedPrimary(prev => ({ ...prev, [group.key]: candidate.id }))}
+                                style={{ cursor: 'pointer' }}
+                              />
+                              <div style={{ flex: 1 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                                  <div style={{ fontSize: 14, fontWeight: 600 }}>{candidate.name || '이름 없음'}</div>
+                                  {selectedPrimary[group.key] === candidate.id && (
+                                    <span style={{ fontSize: 11, padding: '2px 6px', background: 'var(--success)', color: 'white', borderRadius: 4 }}>
+                                      대표
+                                    </span>
+                                  )}
+                                </div>
+                                <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
+                                  {candidate.email && <span>📧 {candidate.email}</span>}
+                                  {candidate.phone && <span style={{ marginLeft: 12 }}>📞 {candidate.phone}</span>}
+                                </div>
+                                <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4 }}>
+                                  {candidate.current_company && <span>{candidate.current_company}</span>}
+                                  {candidate.current_position && <span> · {candidate.current_position}</span>}
+                                </div>
+                                <div style={{ fontSize: 11, color: 'var(--text-tertiary)', marginTop: 4 }}>
+                                  등록: {new Date(candidate.created_at).toLocaleDateString()} ({candidate.created_by})
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      <div style={{ marginTop: 12, display: 'flex', justifyContent: 'flex-end' }}>
+                        <button
+                          className="btn btn-danger btn-sm"
+                          onClick={() => mergeDuplicates(group.key)}
+                          disabled={!selectedPrimary[group.key] || merging === group.key}
+                        >
+                          {merging === group.key ? '병합 중...' : `병합 (${group.candidates.length - 1}명 삭제)`}
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </>
+              )}
+            </div>
+
+            <div className="modal-footer">
+              <button className="btn btn-ghost" onClick={() => setShowDuplicatesModal(false)}>닫기</button>
             </div>
           </div>
         </div>
