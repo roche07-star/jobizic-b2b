@@ -2176,7 +2176,7 @@ export default function CandidatesPage() {
                   </div>
 
                   {duplicateGroups.map((group, idx) => (
-                    <div key={group.key} style={{ marginBottom: 24, padding: 16, border: '1px solid var(--border)', borderRadius: 8 }}>
+                    <div key={group.key} style={{ marginBottom: 24, padding: 16, background: '#f8f9fa', border: '2px solid #dee2e6', borderRadius: 8 }}>
                       <div style={{ marginBottom: 12 }}>
                         <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--accent)' }}>
                           그룹 {idx + 1}: {group.reason}
@@ -2192,11 +2192,12 @@ export default function CandidatesPage() {
                             key={candidate.id}
                             style={{
                               padding: 12,
-                              background: selectedPrimary[group.key] === candidate.id ? 'var(--success-bg)' : 'var(--surface-secondary)',
-                              border: selectedPrimary[group.key] === candidate.id ? '2px solid var(--success)' : '1px solid var(--border)',
+                              background: selectedPrimary[group.key] === candidate.id ? '#d4edda' : '#ffffff',
+                              border: selectedPrimary[group.key] === candidate.id ? '2px solid #28a745' : '2px solid #dee2e6',
                               borderRadius: 6,
                               cursor: 'pointer',
-                              transition: 'all 0.2s'
+                              transition: 'all 0.2s',
+                              boxShadow: selectedPrimary[group.key] === candidate.id ? '0 2px 8px rgba(40, 167, 69, 0.2)' : '0 1px 3px rgba(0,0,0,0.1)'
                             }}
                             onClick={() => setSelectedPrimary(prev => ({ ...prev, [group.key]: candidate.id }))}
                           >
