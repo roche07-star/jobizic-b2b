@@ -195,11 +195,23 @@ export async function POST(req: NextRequest) {
     const body = await req.json()
 
     // 1️⃣ 문자열 "null", "undefined", 빈 문자열을 진짜 null로 변환
+    // ⚠️ NOT NULL 필드는 제외 (name, raw_resume)
+    const notNullFields = ['name', 'raw_resume']
     Object.keys(body).forEach(key => {
-      if (body[key] === "null" || body[key] === "undefined" || body[key] === "") {
-        body[key] = null
+      if (!notNullFields.includes(key)) {
+        if (body[key] === "null" || body[key] === "undefined" || body[key] === "") {
+          body[key] = null
+        }
       }
     })
+
+    // 1-1️⃣ NOT NULL 필드 기본값 보장
+    if (!body.raw_resume || body.raw_resume === "null" || body.raw_resume === "undefined") {
+      body.raw_resume = '' // 빈 문자열이라도 NOT NULL 위반 방지
+    }
+    if (!body.name || body.name === "null" || body.name === "undefined") {
+      body.name = '[이름 없음]' // 기본값
+    }
 
     // 2️⃣ INTEGER 필드 변환
     const intFields = ['total_experience_years', 'contact_count']
