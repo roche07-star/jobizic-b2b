@@ -2154,35 +2154,163 @@ export default function CandidatesPage() {
       {/* 중복 체크 모달 */}
       {showDuplicatesModal && (
         <div className="modal-overlay" onClick={() => setShowDuplicatesModal(false)}>
-          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: 900, maxHeight: '90vh', overflow: 'auto', background: '#ffffff' }}>
-            <div className="modal-header">
-              <h2>🔍 중복 후보자 관리</h2>
-              <button className="modal-close" onClick={() => setShowDuplicatesModal(false)}>×</button>
+          <style>{`
+            @keyframes pulse {
+              0%, 100% { transform: scale(1); }
+              50% { transform: scale(1.05); }
+            }
+            @keyframes fadeIn {
+              from { opacity: 0; transform: translateY(20px); }
+              to { opacity: 1; transform: translateY(0); }
+            }
+          `}</style>
+          <div className="modal-content" onClick={e => e.stopPropagation()} style={{
+            maxWidth: 900,
+            maxHeight: '90vh',
+            overflow: 'auto',
+            background: '#ffffff',
+            animation: 'fadeIn 0.3s ease-out'
+          }}>
+            <div className="modal-header" style={{
+              background: 'linear-gradient(135deg, #1e293b 0%, #334155 100%)',
+              color: 'white',
+              padding: '20px 24px',
+              borderRadius: '12px 12px 0 0'
+            }}>
+              <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 12 }}>
+                <span style={{ fontSize: 24 }}>🔍</span>
+                중복 후보자 관리
+              </h2>
+              <button
+                className="modal-close"
+                onClick={() => setShowDuplicatesModal(false)}
+                style={{
+                  background: 'rgba(255, 255, 255, 0.1)',
+                  color: 'white',
+                  border: '2px solid rgba(255, 255, 255, 0.2)',
+                  width: 36,
+                  height: 36,
+                  borderRadius: 8,
+                  fontSize: 24,
+                  fontWeight: 300,
+                  cursor: 'pointer',
+                  transition: 'all 0.2s'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)'
+                  e.currentTarget.style.transform = 'rotate(90deg)'
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'
+                  e.currentTarget.style.transform = 'rotate(0deg)'
+                }}
+              >×</button>
             </div>
 
             <div className="modal-body">
               {duplicateGroups.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: 40 }}>
-                  <div style={{ fontSize: 48, marginBottom: 16 }}>✅</div>
-                  <div style={{ fontSize: 16, color: 'var(--text-secondary)' }}>중복된 후보자가 없습니다.</div>
+                <div style={{
+                  textAlign: 'center',
+                  padding: '60px 40px',
+                  background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)',
+                  borderRadius: 16,
+                  margin: '20px 0'
+                }}>
+                  <div style={{
+                    width: 100,
+                    height: 100,
+                    margin: '0 auto 24px',
+                    background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                    borderRadius: '50%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    boxShadow: '0 8px 24px rgba(16, 185, 129, 0.3)',
+                    animation: 'pulse 2s infinite'
+                  }}>
+                    <div style={{ fontSize: 56, lineHeight: 1 }}>✓</div>
+                  </div>
+                  <div style={{
+                    fontSize: 24,
+                    fontWeight: 700,
+                    color: '#0f172a',
+                    marginBottom: 12,
+                    letterSpacing: '-0.5px'
+                  }}>
+                    완벽합니다!
+                  </div>
+                  <div style={{
+                    fontSize: 16,
+                    color: '#64748b',
+                    lineHeight: 1.6
+                  }}>
+                    중복된 후보자가 없습니다.<br />
+                    모든 후보자가 깔끔하게 관리되고 있어요 👍
+                  </div>
                 </div>
               ) : (
                 <>
-                  <div style={{ marginBottom: 16, padding: 12, background: 'var(--info-bg)', borderRadius: 8 }}>
-                    <div style={{ fontSize: 14, color: 'var(--info)' }}>
-                      ⚠️ <strong>{duplicateGroups.length}개</strong>의 중복 그룹을 발견했습니다.
-                      각 그룹에서 남길 대표 후보자를 선택하고 병합하세요.
+                  <div style={{
+                    marginBottom: 24,
+                    padding: 20,
+                    background: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
+                    borderRadius: 12,
+                    border: '2px solid #fbbf24',
+                    boxShadow: '0 4px 12px rgba(251, 191, 36, 0.2)'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                      <div style={{
+                        width: 48,
+                        height: 48,
+                        background: '#fbbf24',
+                        borderRadius: '50%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: 24,
+                        flexShrink: 0
+                      }}>⚠️</div>
+                      <div>
+                        <div style={{ fontSize: 16, fontWeight: 700, color: '#78350f', marginBottom: 4 }}>
+                          중복 발견!
+                        </div>
+                        <div style={{ fontSize: 14, color: '#92400e', lineHeight: 1.5 }}>
+                          <strong>{duplicateGroups.length}개</strong>의 중복 그룹을 발견했습니다.
+                          각 그룹에서 남길 대표 후보자를 선택하고 병합하세요.
+                        </div>
+                      </div>
                     </div>
                   </div>
 
                   {duplicateGroups.map((group, idx) => (
-                    <div key={group.key} style={{ marginBottom: 24, padding: 16, background: '#f8f9fa', border: '2px solid #dee2e6', borderRadius: 8 }}>
-                      <div style={{ marginBottom: 12 }}>
-                        <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--accent)' }}>
-                          그룹 {idx + 1}: {group.reason}
+                    <div key={group.key} style={{
+                      marginBottom: 24,
+                      padding: 20,
+                      background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
+                      border: '2px solid #cbd5e1',
+                      borderRadius: 12,
+                      boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)'
+                    }}>
+                      <div style={{ marginBottom: 16, paddingBottom: 12, borderBottom: '2px solid #e2e8f0' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                          <div style={{
+                            width: 28,
+                            height: 28,
+                            background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+                            color: 'white',
+                            borderRadius: 6,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: 14,
+                            fontWeight: 700
+                          }}>{idx + 1}</div>
+                          <div style={{ fontSize: 16, fontWeight: 700, color: '#0f172a' }}>
+                            {group.reason}
+                          </div>
                         </div>
-                        <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4 }}>
-                          {group.candidates.length}명의 중복 후보자
+                        <div style={{ fontSize: 13, color: '#64748b', marginLeft: 36 }}>
+                          {group.candidates.length}명의 중복 후보자가 발견되었습니다
                         </div>
                       </div>
 
@@ -2191,30 +2319,69 @@ export default function CandidatesPage() {
                           <div
                             key={candidate.id}
                             style={{
-                              padding: 12,
-                              background: selectedPrimary[group.key] === candidate.id ? '#d4edda' : '#ffffff',
-                              border: selectedPrimary[group.key] === candidate.id ? '2px solid #28a745' : '2px solid #dee2e6',
-                              borderRadius: 6,
+                              padding: 16,
+                              background: selectedPrimary[group.key] === candidate.id
+                                ? 'linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%)'
+                                : '#ffffff',
+                              border: selectedPrimary[group.key] === candidate.id
+                                ? '3px solid #10b981'
+                                : '2px solid #e2e8f0',
+                              borderRadius: 10,
                               cursor: 'pointer',
-                              transition: 'all 0.2s',
-                              boxShadow: selectedPrimary[group.key] === candidate.id ? '0 2px 8px rgba(40, 167, 69, 0.2)' : '0 1px 3px rgba(0,0,0,0.1)'
+                              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                              boxShadow: selectedPrimary[group.key] === candidate.id
+                                ? '0 8px 24px rgba(16, 185, 129, 0.25), 0 0 0 3px rgba(16, 185, 129, 0.1)'
+                                : '0 2px 4px rgba(0, 0, 0, 0.05)',
+                              transform: selectedPrimary[group.key] === candidate.id ? 'scale(1.02)' : 'scale(1)'
                             }}
                             onClick={() => setSelectedPrimary(prev => ({ ...prev, [group.key]: candidate.id }))}
+                            onMouseEnter={(e) => {
+                              if (selectedPrimary[group.key] !== candidate.id) {
+                                e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.1)'
+                                e.currentTarget.style.transform = 'translateY(-2px)'
+                              }
+                            }}
+                            onMouseLeave={(e) => {
+                              if (selectedPrimary[group.key] !== candidate.id) {
+                                e.currentTarget.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.05)'
+                                e.currentTarget.style.transform = 'translateY(0)'
+                              }
+                            }}
                           >
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
                               <input
                                 type="radio"
                                 name={`primary-${group.key}`}
                                 checked={selectedPrimary[group.key] === candidate.id}
                                 onChange={() => setSelectedPrimary(prev => ({ ...prev, [group.key]: candidate.id }))}
-                                style={{ cursor: 'pointer' }}
+                                style={{
+                                  cursor: 'pointer',
+                                  width: 20,
+                                  height: 20,
+                                  accentColor: '#10b981'
+                                }}
                               />
                               <div style={{ flex: 1 }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                                  <div style={{ fontSize: 14, fontWeight: 600 }}>{candidate.name || '이름 없음'}</div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+                                  <div style={{
+                                    fontSize: 16,
+                                    fontWeight: 700,
+                                    color: selectedPrimary[group.key] === candidate.id ? '#065f46' : '#1e293b'
+                                  }}>
+                                    {candidate.name || '이름 없음'}
+                                  </div>
                                   {selectedPrimary[group.key] === candidate.id && (
-                                    <span style={{ fontSize: 11, padding: '2px 6px', background: 'var(--success)', color: 'white', borderRadius: 4 }}>
-                                      대표
+                                    <span style={{
+                                      fontSize: 12,
+                                      fontWeight: 700,
+                                      padding: '4px 12px',
+                                      background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                                      color: 'white',
+                                      borderRadius: 20,
+                                      boxShadow: '0 2px 8px rgba(16, 185, 129, 0.3)',
+                                      letterSpacing: '0.5px'
+                                    }}>
+                                      ✓ 대표
                                     </span>
                                   )}
                                 </div>
@@ -2235,13 +2402,39 @@ export default function CandidatesPage() {
                         ))}
                       </div>
 
-                      <div style={{ marginTop: 12, display: 'flex', justifyContent: 'flex-end' }}>
+                      <div style={{ marginTop: 16, display: 'flex', justifyContent: 'flex-end' }}>
                         <button
-                          className="btn btn-danger btn-sm"
                           onClick={() => mergeDuplicates(group.key)}
                           disabled={!selectedPrimary[group.key] || merging === group.key}
+                          style={{
+                            padding: '12px 24px',
+                            background: (!selectedPrimary[group.key] || merging === group.key)
+                              ? '#94a3b8'
+                              : 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: 8,
+                            fontSize: 14,
+                            fontWeight: 700,
+                            cursor: (!selectedPrimary[group.key] || merging === group.key) ? 'not-allowed' : 'pointer',
+                            boxShadow: (!selectedPrimary[group.key] || merging === group.key)
+                              ? 'none'
+                              : '0 4px 12px rgba(239, 68, 68, 0.3)',
+                            transition: 'all 0.2s',
+                            opacity: (!selectedPrimary[group.key] || merging === group.key) ? 0.6 : 1
+                          }}
+                          onMouseEnter={(e) => {
+                            if (selectedPrimary[group.key] && merging !== group.key) {
+                              e.currentTarget.style.transform = 'translateY(-2px)'
+                              e.currentTarget.style.boxShadow = '0 6px 16px rgba(239, 68, 68, 0.4)'
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.transform = 'translateY(0)'
+                            e.currentTarget.style.boxShadow = '0 4px 12px rgba(239, 68, 68, 0.3)'
+                          }}
                         >
-                          {merging === group.key ? '병합 중...' : `병합 (${group.candidates.length - 1}명 삭제)`}
+                          {merging === group.key ? '🔄 병합 중...' : `🗑️ 병합 (${group.candidates.length - 1}명 삭제)`}
                         </button>
                       </div>
                     </div>
@@ -2250,8 +2443,38 @@ export default function CandidatesPage() {
               )}
             </div>
 
-            <div className="modal-footer">
-              <button className="btn btn-ghost" onClick={() => setShowDuplicatesModal(false)}>닫기</button>
+            <div className="modal-footer" style={{
+              padding: '16px 24px',
+              borderTop: '2px solid #f1f5f9',
+              background: '#f8fafc',
+              borderRadius: '0 0 12px 12px'
+            }}>
+              <button
+                onClick={() => setShowDuplicatesModal(false)}
+                style={{
+                  padding: '10px 24px',
+                  background: 'white',
+                  color: '#64748b',
+                  border: '2px solid #cbd5e1',
+                  borderRadius: 8,
+                  fontSize: 14,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  transition: 'all 0.2s'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = '#f1f5f9'
+                  e.currentTarget.style.borderColor = '#94a3b8'
+                  e.currentTarget.style.color = '#475569'
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'white'
+                  e.currentTarget.style.borderColor = '#cbd5e1'
+                  e.currentTarget.style.color = '#64748b'
+                }}
+              >
+                닫기
+              </button>
             </div>
           </div>
         </div>
