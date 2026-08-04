@@ -76,7 +76,7 @@ export async function POST(
     // 2. 처리 시작
     await supabase
       .from('jobs')
-      .update({ status: 'processing', progress: 20, message: 'AI 분석 시작...' })
+      .update({ status: 'processing', progress: 15, message: '이력서 준비 중...' })
       .eq('id', jobId)
 
     // 3. Job 타입별 처리
@@ -181,7 +181,7 @@ export async function POST(
       }
 
       const message = await callClaude({
-        max_tokens: 4000,
+        max_tokens: 2000, // ✅ 4000 → 2000 (JD 분석 속도 향상)
         system: [{
           type: 'text',
           text: getJDParsePrompt(),
@@ -318,7 +318,7 @@ export async function POST(
       }
 
       const message = await callClaude({
-        max_tokens: 2000,
+        max_tokens: 1500, // ✅ 2000 → 1500 (매칭 분석 속도 향상)
         system: [{
           type: 'text',
           text: getMatchingPrompt(),

@@ -2,12 +2,18 @@ import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { getCandidateParsePrompt } from '@/lib/prompts/base-headhunter'
 import { createClient } from '@supabase/supabase-js'
+import crypto from 'crypto'
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
+
+// 파일 해시 계산 (캐싱용)
+function calculateFileHash(buffer: Buffer): string {
+  return crypto.createHash('sha256').update(buffer).digest('hex')
+}
 
 // 📝 후보자 분석 결과 타입 정의
 interface CandidateParseResult {
@@ -252,16 +258,60 @@ export async function POST(req: NextRequest) {
       }
 
       filename = file.name // 파일명 저장
-      console.log('[candidates/parse] File uploaded:', filename)
+      console.log('[candidates/parse] File uploaded:', filename, `(${(file.size / 1024).toFixed(1)}KB)`)
 
-      const { extractText } = await import('@/lib/extractText')
       const buffer = Buffer.from(await file.arrayBuffer())
+      const fileHash = calculateFileHash(buffer)
 
-      try {
-        resumeText = await extractText(buffer, file.name)
-      } catch (e) {
-        const msg = e instanceof Error ? e.message : '파일을 읽을 수 없습니다.'
-        return NextResponse.json({ error: msg }, { status: 422 })
+      // ⚡ 캐시 조회
+      const { data: cached } = await supabase
+        .from('resume_text_cache')
+        .select('extracted_text, hit_count')
+        .eq('file_hash', fileHash)
+        .single()
+
+      if (cached) {
+        console.log(`[candidates/parse] ✅ Cache HIT! (${cached.hit_count + 1}회째)`)
+        resumeText = cached.extracted_text
+
+        // 캐시 히트 횟수 증가
+        await supabase
+          .from('resume_text_cache')
+          .update({
+            hit_count: cached.hit_count + 1,
+            last_accessed_at: new Date().toISOString()
+          })
+          .eq('file_hash', fileHash)
+      } else {
+        console.log('[candidates/parse] ⚠️ Cache MISS - Extracting text...')
+        const startTime = Date.now()
+
+        const { extractText } = await import('@/lib/extractText')
+        try {
+          resumeText = await extractText(buffer, file.name)
+        } catch (e) {
+          const msg = e instanceof Error ? e.message : '파일을 읽을 수 없습니다.'
+          return NextResponse.json({ error: msg }, { status: 422 })
+        }
+
+        const extractionTime = Date.now() - startTime
+        console.log(`[candidates/parse] ✅ Text extracted in ${extractionTime}ms`)
+
+        // ⚡ 캐시 저장 (에러 무시)
+        try {
+          await supabase
+            .from('resume_text_cache')
+            .insert({
+              file_hash: fileHash,
+              file_name: file.name,
+              file_size: file.size,
+              extracted_text: resumeText,
+              extraction_time_ms: extractionTime
+            })
+          console.log('[candidates/parse] ✅ Cached for future use')
+        } catch (err: any) {
+          console.warn('[candidates/parse] Cache save failed:', err.message)
+        }
       }
     } else {
       // 텍스트 입력
