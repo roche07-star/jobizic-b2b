@@ -193,7 +193,57 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
-    // 기본 status 설정
+
+    // 1️⃣ 문자열 "null", "undefined", 빈 문자열을 진짜 null로 변환
+    Object.keys(body).forEach(key => {
+      if (body[key] === "null" || body[key] === "undefined" || body[key] === "") {
+        body[key] = null
+      }
+    })
+
+    // 2️⃣ INTEGER 필드 변환
+    const intFields = ['total_experience_years', 'contact_count']
+    intFields.forEach(field => {
+      if (body[field] !== null && body[field] !== undefined) {
+        const parsed = parseInt(body[field])
+        body[field] = isNaN(parsed) ? null : parsed
+      }
+    })
+
+    // 3️⃣ TEXT[] 배열 필드 변환 (문자열 → 배열)
+    const arrayFields = [
+      'education', 'skills', 'tech_stack', 'certifications', 'languages',
+      'ideal_roles', 'key_highlights', 'tags'
+    ]
+    arrayFields.forEach(field => {
+      if (body[field] === null || body[field] === undefined) {
+        return // null은 그대로 유지
+      }
+      if (typeof body[field] === 'string') {
+        try {
+          body[field] = JSON.parse(body[field])
+        } catch (e) {
+          console.warn(`[candidates POST] Failed to parse ${field}:`, body[field])
+          body[field] = null
+        }
+      }
+      // 배열이 아니면 null로
+      if (body[field] !== null && !Array.isArray(body[field])) {
+        body[field] = null
+      }
+    })
+
+    // 4️⃣ JSONB 필드 변환
+    if (body.metadata && typeof body.metadata === 'string') {
+      try {
+        body.metadata = JSON.parse(body.metadata)
+      } catch (e) {
+        console.warn('[candidates POST] Failed to parse metadata:', body.metadata)
+        body.metadata = {}
+      }
+    }
+
+    // 5️⃣ 기본 status 설정
     if (!body.status) {
       body.status = '신규'
     }
