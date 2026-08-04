@@ -191,10 +191,19 @@ export default function CandidatesPage() {
           }
 
           if (data.status === 'completed') {
-            clearInterval(stepInterval)
-            clearInterval(pollInterval)
+            // ⚠️ 중복 방지: localStorage 먼저 확인
+            const currentJobId = localStorage.getItem('processing_job_id')
+            if (!currentJobId || currentJobId !== jobId) {
+              console.log('[poll] Already processed, skipping...')
+              return
+            }
+
+            // ✅ 즉시 플래그 제거 (중복 방지)
             localStorage.removeItem('processing_job_id')
             localStorage.removeItem('processing_job_type')
+
+            clearInterval(stepInterval)
+            clearInterval(pollInterval)
             setProcessingJobId(null)
 
             // ✅ Job result를 candidates 테이블에 저장
