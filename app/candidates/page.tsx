@@ -28,6 +28,7 @@ interface Candidate {
   current_company: string | null
   current_position: string | null
   total_experience_years: number | null
+  career_gap_warning?: string | null
   career_summary: string
   work_history?: Array<{
     company: string
@@ -1498,6 +1499,26 @@ export default function CandidatesPage() {
                   <div style={{ marginBottom: 16 }}>
                     <div className="form-label">경력 요약</div>
                     <div style={{ fontSize: 13, lineHeight: 1.6 }}>{selected.career_summary}</div>
+                  </div>
+                )}
+
+                {selected.career_gap_warning && (
+                  <div style={{
+                    background: 'rgba(239,68,68,0.1)',
+                    border: '2px solid rgba(239,68,68,0.3)',
+                    borderRadius: '12px',
+                    padding: '12px 16px',
+                    marginBottom: 16,
+                    color: '#dc2626',
+                    fontSize: 14,
+                    fontWeight: 600,
+                    lineHeight: 1.6,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 10
+                  }}>
+                    <span style={{ fontSize: 18 }}>⚠️</span>
+                    <span>{selected.career_gap_warning}</span>
                   </div>
                 )}
 

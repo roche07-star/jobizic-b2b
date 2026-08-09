@@ -69,6 +69,7 @@ const CANDIDATE_PARSE_TOOL: Anthropic.Tool = {
       current_company: { type: 'string', description: '현재 회사 (없으면 null)' },
       current_position: { type: 'string', description: '현재 직급/포지션 (없으면 null)' },
       total_experience_years: { type: 'number', description: '총 경력 년수' },
+      career_gap_warning: { type: 'string', description: '경력 공백 경고 메시지. 3개월 이상 공백이 있으면 "🔴 2020.07 ~ 2022.01 (1년 6개월 공백)" 형식으로 작성. 없으면 빈 문자열' },
       career_summary: { type: 'string', description: '회사별 경력 요약 (예: A사 3년 (백엔드) -> B사 5년 (팀장) -> C사 2년 (시니어))' },
       work_history: {
         type: 'array',
