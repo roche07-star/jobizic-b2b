@@ -101,7 +101,7 @@ export async function POST(
       console.log('[jobs/process] Candidate parsing - Calling Claude API...')
 
       const message = await callClaude({
-        max_tokens: 2048, // ✅ 4096 → 2048 (응답 속도 30-50% 향상)
+        max_tokens: 3000, // ✅ 2048 → 3000 (응답 완성 보장)
         system: [{
           type: 'text',
           text: getCandidateParsePrompt(),
@@ -120,6 +120,12 @@ export async function POST(
         .from('jobs')
         .update({ progress: 70, message: 'AI 분석 완료, 결과 생성 중...' })
         .eq('id', jobId)
+
+      // ⚠️ 응답 완성도 검증
+      if (message.stop_reason === 'max_tokens') {
+        console.error('[jobs/process] Response truncated - max_tokens reached')
+        throw new Error('AI 응답이 너무 깁니다. 이력서 내용을 간소화하거나 JOBIZIC 고객센터에 문의해주세요.')
+      }
 
       const toolUseBlock = message.content.find(
         (block): block is Anthropic.ToolUseBlock => block.type === 'tool_use'
@@ -181,7 +187,7 @@ export async function POST(
       }
 
       const message = await callClaude({
-        max_tokens: 2000, // ✅ 4000 → 2000 (JD 분석 속도 향상)
+        max_tokens: 3000, // ✅ 2000 → 3000 (응답 완성 보장)
         system: [{
           type: 'text',
           text: getJDParsePrompt(),
@@ -198,6 +204,12 @@ export async function POST(
         .from('jobs')
         .update({ progress: 70, message: 'AI 분석 완료, 결과 생성 중...' })
         .eq('id', jobId)
+
+      // ⚠️ 응답 완성도 검증
+      if (message.stop_reason === 'max_tokens') {
+        console.error('[jobs/process] Response truncated - max_tokens reached')
+        throw new Error('AI 응답이 너무 깁니다. JD 내용을 간소화하거나 JOBIZIC 고객센터에 문의해주세요.')
+      }
 
       // JSON 파싱
       const textBlock = message.content.find(block => block.type === 'text')
@@ -318,7 +330,7 @@ export async function POST(
       }
 
       const message = await callClaude({
-        max_tokens: 1500, // ✅ 2000 → 1500 (매칭 분석 속도 향상)
+        max_tokens: 2000, // ✅ 1500 → 2000 (응답 완성 보장)
         system: [{
           type: 'text',
           text: getMatchingPrompt(),
@@ -337,6 +349,12 @@ export async function POST(
         .from('jobs')
         .update({ progress: 70, message: 'AI 매칭 분석 완료, 결과 생성 중...' })
         .eq('id', jobId)
+
+      // ⚠️ 응답 완성도 검증
+      if (message.stop_reason === 'max_tokens') {
+        console.error('[jobs/process] Response truncated - max_tokens reached')
+        throw new Error('AI 응답이 너무 깁니다. JOBIZIC 고객센터에 문의해주세요.')
+      }
 
       // Tool use 블록 찾기
       const toolUseBlock = message.content.find(
