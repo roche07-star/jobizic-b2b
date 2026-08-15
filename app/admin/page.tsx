@@ -121,6 +121,9 @@ export default function AdminPage() {
   const [auditLoading, setAuditLoading] = useState(false)
   const [auditEmailFilter, setAuditEmailFilter] = useState('')
 
+  // 탭
+  const [activeTab, setActiveTab] = useState<'system' | 'audit' | 'jobseeker' | 'org' | 'user'>('system')
+
   useEffect(() => {
     getProfile().then(p => {
       // JOBIZIC Manager는 조회 전용이므로 admin 페이지 접근 불가
@@ -509,8 +512,100 @@ export default function AdminPage() {
         </div>
       )}
 
-      {/* 시스템 설정 */}
-      {(profile.role === 'admin' || profile.role === 'owner' || profile.role === 'manager') && (
+      {/* 탭 네비게이션 */}
+      <div style={{ marginBottom: 24, borderBottom: '1px solid var(--border)' }}>
+        <div style={{ display: 'flex', gap: 4 }}>
+          {(profile.role === 'admin' || profile.role === 'owner' || profile.role === 'manager') && (
+            <button
+              onClick={() => setActiveTab('system')}
+              style={{
+                padding: '12px 20px',
+                background: activeTab === 'system' ? 'var(--bg)' : 'transparent',
+                border: 'none',
+                borderBottom: activeTab === 'system' ? '2px solid var(--accent)' : '2px solid transparent',
+                color: activeTab === 'system' ? 'var(--text)' : 'var(--muted2)',
+                fontWeight: activeTab === 'system' ? 600 : 400,
+                fontSize: 14,
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+              }}
+            >
+              ⚙️ 시스템 설정
+            </button>
+          )}
+          {profile.role === 'admin' && (
+            <button
+              onClick={() => setActiveTab('audit')}
+              style={{
+                padding: '12px 20px',
+                background: activeTab === 'audit' ? 'var(--bg)' : 'transparent',
+                border: 'none',
+                borderBottom: activeTab === 'audit' ? '2px solid var(--accent)' : '2px solid transparent',
+                color: activeTab === 'audit' ? 'var(--text)' : 'var(--muted2)',
+                fontWeight: activeTab === 'audit' ? 600 : 400,
+                fontSize: 14,
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+              }}
+            >
+              📋 접근 로그
+            </button>
+          )}
+          {profile.role === 'admin' && (
+            <button
+              onClick={() => setActiveTab('jobseeker')}
+              style={{
+                padding: '12px 20px',
+                background: activeTab === 'jobseeker' ? 'var(--bg)' : 'transparent',
+                border: 'none',
+                borderBottom: activeTab === 'jobseeker' ? '2px solid var(--accent)' : '2px solid transparent',
+                color: activeTab === 'jobseeker' ? 'var(--text)' : 'var(--muted2)',
+                fontWeight: activeTab === 'jobseeker' ? 600 : 400,
+                fontSize: 14,
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+              }}
+            >
+              👤 구직자 관리
+            </button>
+          )}
+          <button
+            onClick={() => setActiveTab('org')}
+            style={{
+              padding: '12px 20px',
+              background: activeTab === 'org' ? 'var(--bg)' : 'transparent',
+              border: 'none',
+              borderBottom: activeTab === 'org' ? '2px solid var(--accent)' : '2px solid transparent',
+              color: activeTab === 'org' ? 'var(--text)' : 'var(--muted2)',
+              fontWeight: activeTab === 'org' ? 600 : 400,
+              fontSize: 14,
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+            }}
+          >
+            🏢 조직 관리
+          </button>
+          <button
+            onClick={() => setActiveTab('user')}
+            style={{
+              padding: '12px 20px',
+              background: activeTab === 'user' ? 'var(--bg)' : 'transparent',
+              border: 'none',
+              borderBottom: activeTab === 'user' ? '2px solid var(--accent)' : '2px solid transparent',
+              color: activeTab === 'user' ? 'var(--text)' : 'var(--muted2)',
+              fontWeight: activeTab === 'user' ? 600 : 400,
+              fontSize: 14,
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+            }}
+          >
+            👥 사용자 관리
+          </button>
+        </div>
+      </div>
+
+      {/* 시스템 설정 탭 */}
+      {activeTab === 'system' && (profile.role === 'admin' || profile.role === 'owner' || profile.role === 'manager') && (
         <div className="card" style={{ marginBottom: 20 }}>
           <div className="card-title">시스템 설정</div>
           <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
@@ -525,8 +620,8 @@ export default function AdminPage() {
         </div>
       )}
 
-      {/* 접근 로그 */}
-      {profile.role === 'admin' && (
+      {/* 접근 로그 탭 */}
+      {activeTab === 'audit' && profile.role === 'admin' && (
         <div className="card" style={{ marginBottom: 20 }}>
           <div className="card-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span>📋 후보자 접근 로그</span>
@@ -659,10 +754,12 @@ export default function AdminPage() {
         </div>
       )}
 
-      {/* 구직자 관리 (Adam에서 전송) */}
-      {profile.role === 'admin' && <JobRequestsSection />}
+      {/* 구직자 관리 탭 */}
+      {activeTab === 'jobseeker' && profile.role === 'admin' && <JobRequestsSection />}
 
-      {/* 조직 관리 */}
+      {/* 조직 관리 탭 */}
+      {activeTab === 'org' && (
+      <>
       <div className="card" style={{ marginBottom: 20 }}>
         <div className="card-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span>조직 관리 ({organizations.length})</span>
@@ -806,7 +903,72 @@ export default function AdminPage() {
         </div>
       </div>
 
-      {/* 사용자 관리 */}
+      {/* 조직 수정 모달 */}
+      {editingOrg && (
+        <div className="overlay" onClick={() => setEditingOrg(null)}>
+          <div className="modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <div>
+                <div className="modal-title">조직 정보 수정</div>
+                <div style={{ fontSize: 12, color: 'var(--muted2)', marginTop: 4 }}>{editingOrg.name}</div>
+              </div>
+              <button className="modal-close" onClick={() => setEditingOrg(null)}>✕</button>
+            </div>
+
+            <div className="form-group" style={{ marginBottom: 12 }}>
+              <label className="form-label">조직명</label>
+              <input className="form-input" value={editOrgName} onChange={e => setEditOrgName(e.target.value)} placeholder="ABC 써치펌" />
+            </div>
+
+            <div className="form-row" style={{ marginBottom: 12 }}>
+              <div className="form-group" style={{ marginBottom: 0 }}>
+                <label className="form-label">타입</label>
+                <select className="form-select" value={editOrgType} onChange={e => setEditOrgType(e.target.value)}>
+                  <option value="headhunter">써치펌 (헤드헌터)</option>
+                  <option value="enterprise">채용사 (기업)</option>
+                </select>
+              </div>
+              <div className="form-group" style={{ marginBottom: 0 }}>
+                <label className="form-label">상태</label>
+                <select className="form-select" value={editOrgStatus} onChange={e => setEditOrgStatus(e.target.value)}>
+                  <option value="active">활성</option>
+                  <option value="inactive">비활성</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="form-row" style={{ marginBottom: 12 }}>
+              <div className="form-group" style={{ marginBottom: 0 }}>
+                <label className="form-label">담당자 이메일</label>
+                <input className="form-input" type="email" value={editOrgEmail} onChange={e => setEditOrgEmail(e.target.value)} placeholder="contact@abc.com" />
+              </div>
+              <div className="form-group" style={{ marginBottom: 0 }}>
+                <label className="form-label">전화번호</label>
+                <input className="form-input" value={editOrgPhone} onChange={e => setEditOrgPhone(e.target.value)} placeholder="02-1234-5678" />
+              </div>
+            </div>
+
+            {error && (
+              <div style={{ padding: 12, background: 'rgba(255,107,107,0.1)', border: '1px solid var(--danger)', borderRadius: 8, marginBottom: 16, color: 'var(--danger)', fontSize: 13 }}>
+                {error}
+              </div>
+            )}
+
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button className="btn btn-primary" onClick={updateOrganization} disabled={updatingOrg || !editOrgName}>
+                {updatingOrg ? '수정 중...' : '✅ 저장'}
+              </button>
+              <button className="btn btn-ghost" onClick={() => setEditingOrg(null)}>취소</button>
+            </div>
+          </div>
+        </div>
+      )}
+      </>
+      )}
+
+      {/* 사용자 관리 탭 */}
+      {activeTab === 'user' && (
+      <>
       <div className="card">
         <div className="card-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span>사용자 관리 ({users.filter(u => selectedOrgFilter === 'all' || u.organization_id === selectedOrgFilter).length})</span>
@@ -1128,67 +1290,6 @@ export default function AdminPage() {
         </div>
       </div>
 
-      {/* 조직 수정 모달 */}
-      {editingOrg && (
-        <div className="overlay" onClick={() => setEditingOrg(null)}>
-          <div className="modal" onClick={e => e.stopPropagation()}>
-            <div className="modal-header">
-              <div>
-                <div className="modal-title">조직 정보 수정</div>
-                <div style={{ fontSize: 12, color: 'var(--muted2)', marginTop: 4 }}>{editingOrg.name}</div>
-              </div>
-              <button className="modal-close" onClick={() => setEditingOrg(null)}>✕</button>
-            </div>
-
-            <div className="form-group" style={{ marginBottom: 12 }}>
-              <label className="form-label">조직명</label>
-              <input className="form-input" value={editOrgName} onChange={e => setEditOrgName(e.target.value)} placeholder="ABC 써치펌" />
-            </div>
-
-            <div className="form-row" style={{ marginBottom: 12 }}>
-              <div className="form-group" style={{ marginBottom: 0 }}>
-                <label className="form-label">타입</label>
-                <select className="form-select" value={editOrgType} onChange={e => setEditOrgType(e.target.value)}>
-                  <option value="headhunter">써치펌 (헤드헌터)</option>
-                  <option value="enterprise">채용사 (기업)</option>
-                </select>
-              </div>
-              <div className="form-group" style={{ marginBottom: 0 }}>
-                <label className="form-label">상태</label>
-                <select className="form-select" value={editOrgStatus} onChange={e => setEditOrgStatus(e.target.value)}>
-                  <option value="active">활성</option>
-                  <option value="inactive">비활성</option>
-                </select>
-              </div>
-            </div>
-
-            <div className="form-row" style={{ marginBottom: 12 }}>
-              <div className="form-group" style={{ marginBottom: 0 }}>
-                <label className="form-label">담당자 이메일</label>
-                <input className="form-input" type="email" value={editOrgEmail} onChange={e => setEditOrgEmail(e.target.value)} placeholder="contact@abc.com" />
-              </div>
-              <div className="form-group" style={{ marginBottom: 0 }}>
-                <label className="form-label">전화번호</label>
-                <input className="form-input" value={editOrgPhone} onChange={e => setEditOrgPhone(e.target.value)} placeholder="02-1234-5678" />
-              </div>
-            </div>
-
-            {error && (
-              <div style={{ padding: 12, background: 'rgba(255,107,107,0.1)', border: '1px solid var(--danger)', borderRadius: 8, marginBottom: 16, color: 'var(--danger)', fontSize: 13 }}>
-                {error}
-              </div>
-            )}
-
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button className="btn btn-primary" onClick={updateOrganization} disabled={updatingOrg || !editOrgName}>
-                {updatingOrg ? '수정 중...' : '✅ 저장'}
-              </button>
-              <button className="btn btn-ghost" onClick={() => setEditingOrg(null)}>취소</button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* 사용자 수정 모달 */}
       {editingUser && (
         <div className="overlay" onClick={() => { setEditingUser(null); setShowTransferUI(false); setTransferTarget('') }}>
@@ -1473,6 +1574,8 @@ export default function AdminPage() {
             </div>
           </div>
         </div>
+      )}
+      </>
       )}
     </main>
   )
