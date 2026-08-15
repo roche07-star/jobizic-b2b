@@ -11,7 +11,18 @@ export async function GET(req: NextRequest) {
   try {
     // Vercel Cron Secret으로 보안 체크
     const authHeader = req.headers.get('authorization')
-    if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+    const expectedAuth = `Bearer ${process.env.CRON_SECRET}`
+
+    console.log('[cleanup-audit-logs] Auth check:', {
+      hasAuthHeader: !!authHeader,
+      authHeaderLength: authHeader?.length,
+      hasCronSecret: !!process.env.CRON_SECRET,
+      cronSecretLength: process.env.CRON_SECRET?.length,
+      expectedAuthLength: expectedAuth.length,
+      match: authHeader === expectedAuth
+    })
+
+    if (authHeader !== expectedAuth) {
       console.error('[cleanup-audit-logs] Unauthorized')
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
