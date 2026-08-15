@@ -667,6 +667,7 @@ export default function AdminPage() {
                     <th>헤드헌터</th>
                     <th>후보자</th>
                     <th>액션</th>
+                    <th>IP 주소</th>
                     <th>상세</th>
                   </tr>
                 </thead>
@@ -704,6 +705,9 @@ export default function AdminPage() {
                            log.action === 'candidate_contact' ? '연락' :
                            log.action}
                         </span>
+                      </td>
+                      <td style={{ fontSize: 11, fontFamily: 'monospace', color: 'var(--muted2)' }}>
+                        {log.ip_address || '-'}
                       </td>
                       <td style={{ fontSize: 12, color: 'var(--muted2)' }}>
                         {log.details?.candidate_name && `${log.details.candidate_name} · `}

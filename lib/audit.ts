@@ -5,8 +5,6 @@
  * 개인정보보호법 제26조에 따른 수탁자 모니터링 의무 준수
  */
 
-import { supabase } from '@/lib/supabase'
-
 interface AuditLogParams {
   actor_email: string
   target_email?: string
@@ -16,7 +14,7 @@ interface AuditLogParams {
 }
 
 /**
- * 접근 로그 기록
+ * 접근 로그 기록 (서버 API 호출 - IP 주소 포함)
  *
  * @param params - 로그 파라미터
  * @returns Promise<boolean> - 성공 여부
@@ -34,18 +32,16 @@ interface AuditLogParams {
  */
 export async function logAccess(params: AuditLogParams): Promise<boolean> {
   try {
-    const { error } = await supabase().from('audit_logs').insert({
-      action: params.action,
-      actor_email: params.actor_email,
-      target_email: params.target_email || null,
-      target_id: params.target_id || null,
-      details: params.details || {},
-      ip_address: null, // 브라우저에서는 IP 가져올 수 없음
-      user_agent: typeof window !== 'undefined' ? window.navigator.userAgent : null,
+    const response = await fetch('/api/audit/log', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(params),
     })
 
-    if (error) {
-      console.error('[audit] Failed to log:', error)
+    if (!response.ok) {
+      console.error('[audit] Failed to log:', response.statusText)
       return false
     }
 
