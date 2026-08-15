@@ -21,6 +21,11 @@ CREATE INDEX IF NOT EXISTS idx_audit_logs_target_id ON audit_logs(target_id);
 -- RLS (Row Level Security) 설정
 ALTER TABLE audit_logs ENABLE ROW LEVEL SECURITY;
 
+-- 기존 정책 삭제 (재실행 시 충돌 방지)
+DROP POLICY IF EXISTS "Admins can view all audit logs" ON audit_logs;
+DROP POLICY IF EXISTS "Service role can insert audit logs" ON audit_logs;
+DROP POLICY IF EXISTS "Anyone can insert audit logs" ON audit_logs;
+
 -- 관리자만 조회 가능
 CREATE POLICY "Admins can view all audit logs"
   ON audit_logs
@@ -28,13 +33,13 @@ CREATE POLICY "Admins can view all audit logs"
   USING (
     EXISTS (
       SELECT 1 FROM profiles
-      WHERE profiles.email = auth.jwt()->>'email'
+      WHERE profiles.email = (SELECT auth.jwt()->>'email')
       AND profiles.role = 'admin'
     )
   );
 
--- 서비스 role로 insert 가능 (앱에서 기록)
-CREATE POLICY "Service role can insert audit logs"
+-- 모든 사용자가 로그 기록 가능 (브라우저에서 직접 INSERT)
+CREATE POLICY "Anyone can insert audit logs"
   ON audit_logs
   FOR INSERT
   WITH CHECK (true);
