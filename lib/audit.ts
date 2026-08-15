@@ -65,6 +65,12 @@ export async function logCandidateView(
   headhunterEmail: string,
   candidate: { id: string; email?: string | null; name: string }
 ): Promise<boolean> {
+  console.log('[audit.logCandidateView] Called with:', {
+    headhunterEmail,
+    candidateId: candidate.id,
+    candidateName: candidate.name
+  })
+
   return logAccess({
     actor_email: headhunterEmail,
     target_email: candidate.email || undefined,

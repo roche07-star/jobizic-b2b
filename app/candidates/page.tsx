@@ -520,11 +520,20 @@ export default function CandidatesPage() {
 
   // 후보자 조회 시 접근 로그 기록
   useEffect(() => {
-    if (selected && userEmail && selected.email) {
+    if (selected && userEmail) {
+      console.log('[audit] Logging candidate view:', {
+        userEmail,
+        candidateId: selected.id,
+        candidateName: selected.name,
+        candidateEmail: selected.email
+      })
+
       logCandidateView(userEmail, {
         id: selected.id,
-        email: selected.email,
+        email: selected.email || null,
         name: selected.name
+      }).catch(err => {
+        console.error('[audit] Failed to log:', err)
       })
     }
   }, [selected, userEmail])
