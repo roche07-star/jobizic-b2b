@@ -74,7 +74,7 @@ export async function logCandidateView(
     action: 'candidate_view',
     details: {
       candidate_name: candidate.name,
-      page: 'candidate_detail_modal',
+      page: '후보자 상세 정보',
       timestamp: new Date().toISOString(),
     },
   })
@@ -95,6 +95,7 @@ export async function logCandidateExport(
     target_id: candidateId,
     action: 'candidate_export',
     details: {
+      page: '이력서 다운로드',
       export_type: exportType,
       timestamp: new Date().toISOString(),
     },
@@ -116,6 +117,7 @@ export async function logCandidateShare(
     target_id: candidateId,
     action: 'candidate_share',
     details: {
+      page: '후보자 공유',
       shared_with: sharedWith,
       timestamp: new Date().toISOString(),
     },
@@ -137,6 +139,7 @@ export async function logCandidateContact(
     target_id: candidateId,
     action: 'candidate_contact',
     details: {
+      page: '연락처 확인',
       contact_type: contactType,
       timestamp: new Date().toISOString(),
     },
