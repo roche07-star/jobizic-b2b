@@ -26,17 +26,12 @@ DROP POLICY IF EXISTS "Admins can view all audit logs" ON audit_logs;
 DROP POLICY IF EXISTS "Service role can insert audit logs" ON audit_logs;
 DROP POLICY IF EXISTS "Anyone can insert audit logs" ON audit_logs;
 
--- 관리자만 조회 가능
-CREATE POLICY "Admins can view all audit logs"
+-- 임시: 모든 사용자 조회 가능 (디버깅용)
+-- TODO: 나중에 admin만 조회 가능하도록 수정
+CREATE POLICY "Anyone can view audit logs"
   ON audit_logs
   FOR SELECT
-  USING (
-    EXISTS (
-      SELECT 1 FROM profiles
-      WHERE profiles.email = (SELECT auth.jwt()->>'email')
-      AND profiles.role = 'admin'
-    )
-  );
+  USING (true);
 
 -- 모든 사용자가 로그 기록 가능 (브라우저에서 직접 INSERT)
 CREATE POLICY "Anyone can insert audit logs"
