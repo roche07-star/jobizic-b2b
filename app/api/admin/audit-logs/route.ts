@@ -14,8 +14,15 @@ export async function GET(req: NextRequest) {
   try {
     const profile = await getProfile()
 
+    console.log('[admin/audit-logs] Profile:', {
+      exists: !!profile,
+      role: profile?.role,
+      email: profile?.email
+    })
+
     // 관리자만 접근 가능
     if (!profile || profile.role !== 'admin') {
+      console.error('[admin/audit-logs] Access denied:', profile)
       return NextResponse.json({ error: '권한 없음' }, { status: 403 })
     }
 
