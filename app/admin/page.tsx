@@ -116,6 +116,11 @@ export default function AdminPage() {
 
   const [error, setError] = useState<string | null>(null)
 
+  // 접근 로그
+  const [auditLogs, setAuditLogs] = useState<any[] | null>(null)
+  const [auditLoading, setAuditLoading] = useState(false)
+  const [auditEmailFilter, setAuditEmailFilter] = useState('')
+
   useEffect(() => {
     getProfile().then(p => {
       // JOBIZIC Manager는 조회 전용이므로 admin 페이지 접근 불가
@@ -149,6 +154,23 @@ export default function AdminPage() {
       setError('데이터 로드 실패')
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function loadAuditLogs() {
+    setAuditLoading(true)
+    try {
+      const url = auditEmailFilter
+        ? `/api/admin/audit-logs?email=${encodeURIComponent(auditEmailFilter)}`
+        : '/api/admin/audit-logs'
+      const res = await fetch(url)
+      const data = await res.json()
+      setAuditLogs(data.logs || [])
+    } catch (e) {
+      console.error('Load audit logs error:', e)
+      setAuditLogs([])
+    } finally {
+      setAuditLoading(false)
     }
   }
 
@@ -499,6 +521,140 @@ export default function AdminPage() {
             >
               📱 텔레그램 봇 설정
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* 접근 로그 */}
+      {profile.role === 'admin' && (
+        <div className="card" style={{ marginBottom: 20 }}>
+          <div className="card-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span>📋 후보자 접근 로그</span>
+          </div>
+
+          {/* 필터 */}
+          <div style={{ marginBottom: 16, display: 'flex', gap: 12, alignItems: 'center' }}>
+            <input
+              type="text"
+              placeholder="이메일로 필터링 (헤드헌터 또는 후보자)"
+              value={auditEmailFilter}
+              onChange={(e) => setAuditEmailFilter(e.target.value)}
+              style={{
+                flex: 1,
+                padding: '8px 12px',
+                border: '1px solid var(--border)',
+                borderRadius: 8,
+                fontSize: 14,
+              }}
+            />
+            <button className="btn btn-primary" onClick={loadAuditLogs}>
+              조회
+            </button>
+          </div>
+
+          {/* 로그 테이블 */}
+          {auditLoading ? (
+            <div style={{ padding: '40px', textAlign: 'center', color: '#999' }}>로딩 중...</div>
+          ) : auditLogs === null ? (
+            <div style={{ padding: '40px', textAlign: 'center', color: '#999' }}>
+              조회 버튼을 눌러 접근 로그를 확인하세요
+            </div>
+          ) : auditLogs.length === 0 ? (
+            <div style={{ padding: '40px', textAlign: 'center', color: '#999' }}>
+              접근 로그가 없습니다
+            </div>
+          ) : (
+            <div style={{ overflowX: 'auto' }}>
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th>시간</th>
+                    <th>헤드헌터</th>
+                    <th>후보자</th>
+                    <th>액션</th>
+                    <th>상세</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {auditLogs.map((log) => (
+                    <tr key={log.id}>
+                      <td style={{ fontSize: 12, whiteSpace: 'nowrap' }}>
+                        {new Date(log.created_at).toLocaleString('ko-KR', {
+                          month: 'numeric',
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </td>
+                      <td>{log.actor_email}</td>
+                      <td>{log.target_email || '-'}</td>
+                      <td>
+                        <span
+                          style={{
+                            padding: '2px 8px',
+                            borderRadius: 4,
+                            fontSize: 11,
+                            fontWeight: 600,
+                            background: log.action === 'candidate_view' ? 'rgba(59, 130, 246, 0.1)' :
+                                       log.action === 'candidate_export' ? 'rgba(245, 158, 11, 0.1)' :
+                                       'rgba(34, 197, 94, 0.1)',
+                            color: log.action === 'candidate_view' ? '#1e40af' :
+                                  log.action === 'candidate_export' ? '#92400e' :
+                                  '#15803d',
+                          }}
+                        >
+                          {log.action === 'candidate_view' ? '조회' :
+                           log.action === 'candidate_export' ? '다운로드' :
+                           log.action === 'candidate_share' ? '공유' :
+                           log.action === 'candidate_contact' ? '연락' :
+                           log.action}
+                        </span>
+                      </td>
+                      <td style={{ fontSize: 12, color: 'var(--muted2)' }}>
+                        {log.details?.candidate_name && `${log.details.candidate_name} · `}
+                        {log.details?.page || '-'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* 통계 */}
+          {auditLogs && auditLogs.length > 0 && (
+            <div style={{
+              marginTop: 16,
+              padding: 12,
+              background: '#f9fafb',
+              borderRadius: 8,
+              fontSize: 13,
+              color: '#6b7280'
+            }}>
+              <strong>📊 통계:</strong> 총 {auditLogs.length}건의 접근 로그
+              {auditEmailFilter && ` (${auditEmailFilter} 필터링)`}
+            </div>
+          )}
+
+          {/* 안내 */}
+          <div style={{
+            marginTop: 16,
+            padding: 16,
+            background: 'rgba(59, 130, 246, 0.05)',
+            borderRadius: 8,
+            border: '1px solid rgba(59, 130, 246, 0.2)',
+            fontSize: 14,
+            lineHeight: '1.6'
+          }}>
+            <div style={{ fontWeight: '600', marginBottom: 12, color: '#1e40af' }}>
+              📋 접근 로그 정보
+            </div>
+            <ul style={{ margin: 0, paddingLeft: '20px', color: '#1e3a8a' }}>
+              <li>헤드헌터가 후보자 정보를 조회할 때 자동 기록됩니다</li>
+              <li>개인정보보호법 제26조에 따른 수탁자 모니터링 의무를 준수합니다</li>
+              <li>로그는 영구 보관되며 삭제되지 않습니다</li>
+              <li>이메일 필터로 특정 헤드헌터 또는 후보자의 접근 이력을 확인할 수 있습니다</li>
+            </ul>
           </div>
         </div>
       )}

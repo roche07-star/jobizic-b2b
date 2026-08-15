@@ -6,6 +6,7 @@ import { getProfile } from '@/lib/auth'
 import { downloadCandidatesAsCSV } from '@/lib/csv-export'
 import { useToast } from '@/hooks/useToast'
 import ToastContainer from '@/components/ToastContainer'
+import { logCandidateView } from '@/lib/audit'
 
 interface PipelineInfo {
   id: string
@@ -161,6 +162,7 @@ export default function CandidatesPage() {
   const [jdsLoading, setJdsLoading] = useState(false)
   const [matchingJdId, setMatchingJdId] = useState<string | null>(null)
   const [jdMatches, setJdMatches] = useState<Record<string, any>>({})
+  const [userEmail, setUserEmail] = useState<string>('')
 
   const { toasts, success, error, info, removeToast } = useToast()
 
@@ -504,6 +506,28 @@ export default function CandidatesPage() {
       loadJDs()
     }
   }, [showJdRecommendModal])
+
+  // 사용자 이메일 가져오기
+  useEffect(() => {
+    async function fetchUserEmail() {
+      const profile = await getProfile()
+      if (profile?.email) {
+        setUserEmail(profile.email)
+      }
+    }
+    fetchUserEmail()
+  }, [])
+
+  // 후보자 조회 시 접근 로그 기록
+  useEffect(() => {
+    if (selected && userEmail && selected.email) {
+      logCandidateView(userEmail, {
+        id: selected.id,
+        email: selected.email,
+        name: selected.name
+      })
+    }
+  }, [selected, userEmail])
 
   async function updateStatus(id: string, status: string) {
     await fetch(`/api/candidates/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status }) })
