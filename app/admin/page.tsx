@@ -177,6 +177,38 @@ export default function AdminPage() {
     }
   }
 
+  async function cleanupOldLogs() {
+    const confirmed = window.confirm(
+      '2년 이상 된 접근 로그를 삭제하시겠습니까?\n\n' +
+      '이 작업은 되돌릴 수 없습니다.'
+    )
+
+    if (!confirmed) return
+
+    setAuditLoading(true)
+    try {
+      const res = await fetch('/api/admin/cleanup-audit-logs', {
+        method: 'POST',
+      })
+      const data = await res.json()
+
+      if (res.ok) {
+        alert(data.message || `${data.deletedCount}개의 로그 삭제 완료`)
+        // 로그 목록 새로고침
+        if (auditLogs !== null) {
+          loadAuditLogs()
+        }
+      } else {
+        alert(`삭제 실패: ${data.error}`)
+      }
+    } catch (e: any) {
+      console.error('Cleanup error:', e)
+      alert('삭제 중 오류가 발생했습니다.')
+    } finally {
+      setAuditLoading(false)
+    }
+  }
+
   async function createOrganization() {
     if (!orgName) return
     setCreatingOrg(true)
@@ -644,6 +676,17 @@ export default function AdminPage() {
             />
             <button className="btn btn-primary" onClick={loadAuditLogs}>
               조회
+            </button>
+            <button
+              className="btn btn-ghost"
+              onClick={cleanupOldLogs}
+              disabled={auditLoading}
+              style={{
+                color: 'var(--danger)',
+                borderColor: 'var(--danger)',
+              }}
+            >
+              🗑️ 오래된 로그 삭제
             </button>
           </div>
 
