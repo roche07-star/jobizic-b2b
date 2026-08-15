@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getProfile } from '@/lib/auth'
-import { supabase } from '@/lib/supabase'
+import { getServerProfile } from '@/lib/supabase-server'
+import { getSupabaseServer } from '@/lib/supabase-server'
 
 /**
  * GET /api/admin/audit-logs
@@ -12,7 +12,7 @@ import { supabase } from '@/lib/supabase'
  */
 export async function GET(req: NextRequest) {
   try {
-    const profile = await getProfile()
+    const profile = await getServerProfile()
 
     console.log('[admin/audit-logs] Profile:', {
       exists: !!profile,
@@ -32,7 +32,8 @@ export async function GET(req: NextRequest) {
     const limit = Math.min(parseInt(limitParam || '100'), 500)
 
     // audit_logs 조회
-    let query = supabase()
+    const supabase = await getSupabaseServer()
+    let query = supabase
       .from('audit_logs')
       .select('*')
       .order('created_at', { ascending: false })
