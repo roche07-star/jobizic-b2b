@@ -1478,6 +1478,41 @@ export default function CandidatesPage() {
 
             {!isEditing ? (
               <>
+                {/* Adam 연락처 가져오기 버튼 */}
+                {selected.source === 'adam' && (!selected.email || !selected.phone) && (
+                  <div style={{ marginBottom: 16 }}>
+                    <button
+                      className="btn btn-secondary"
+                      onClick={async () => {
+                        try {
+                          const res = await fetch(`/api/candidates/${selected.id}/sync-from-adam`, {
+                            method: 'POST'
+                          })
+                          const data = await res.json()
+                          if (res.ok) {
+                            alert('✅ ' + data.message)
+                            // 후보자 정보 새로고침
+                            setCandidates(prev => prev.map(c =>
+                              c.id === selected.id
+                                ? { ...c, email: data.candidate.email, phone: data.candidate.phone }
+                                : c
+                            ))
+                            setSelected(prev => prev ? { ...prev, email: data.candidate.email, phone: data.candidate.phone } : null)
+                          } else {
+                            alert('❌ ' + data.error)
+                          }
+                        } catch (err) {
+                          alert('❌ 연락처 가져오기 실패')
+                          console.error(err)
+                        }
+                      }}
+                      style={{ fontSize: '0.85em', padding: '6px 12px' }}
+                    >
+                      📥 From Adam
+                    </button>
+                  </div>
+                )}
+
                 <div className="form-row" style={{ marginBottom: 16 }}>
                   {selected.email && <div><span className="form-label">이메일</span><div>{selected.email}</div></div>}
                   {selected.phone && <div><span className="form-label">전화</span><div>{selected.phone}</div></div>}
