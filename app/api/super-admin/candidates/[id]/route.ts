@@ -24,6 +24,9 @@ export async function PUT(
 
     const body = await req.json()
     const {
+      name,
+      email,
+      phone,
       total_experience_years,
       job_title,
       current_company,
@@ -51,6 +54,18 @@ export async function PUT(
     // 업데이트 데이터 구성
     const updateData: any = {
       updated_at: new Date().toISOString()
+    }
+
+    if (name) {
+      updateData.name = name
+    }
+
+    if (email) {
+      updateData.email = email
+    }
+
+    if (phone !== undefined) {
+      updateData.phone = phone
     }
 
     if (total_experience_years !== undefined) {
