@@ -11,10 +11,29 @@ export async function POST(req: NextRequest) {
 
   try {
     const userEmail = req.nextUrl.searchParams.get('user_email') || 'unknown'
-    const { text, company, position, company_url, client_comment } = await req.json()
+    const { text, company, position, company_url, client_comment, fast } = await req.json()
 
     if (!text?.trim()) {
       return NextResponse.json({ error: 'JD 내용을 입력해 주세요.' }, { status: 400 })
+    }
+
+    // 🚀 빠른 분석 모드 (fast=true)
+    if (fast) {
+      console.log('[jd/parse] 🚀 Fast mode - calling /api/jd/parse-fast...')
+
+      const fastResponse = await fetch(`${req.nextUrl.origin}/api/jd/parse-fast`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text, company, position, company_url, client_comment })
+      })
+
+      const fastData = await fastResponse.json()
+
+      if (!fastResponse.ok) {
+        throw new Error(fastData.error || 'Fast parse failed')
+      }
+
+      return NextResponse.json(fastData)
     }
 
     console.log('[jd/parse] Creating job for JD parsing...')

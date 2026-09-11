@@ -88,7 +88,7 @@ export default function JDNewPage() {
     setError(null)
 
     try {
-      // 1. Parse API 호출 (Job 생성)
+      // 🚀 빠른 분석 모드 (fast: true)
       const res = await fetch('/api/jd/parse', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -97,7 +97,11 @@ export default function JDNewPage() {
           company: company.trim(),
           position: position.trim(),
           company_url: companyUrl.trim() || undefined,
-          client_comment: clientComment.trim() || undefined
+          client_comment: clientComment.trim() || undefined,
+          location: location.trim() || undefined,
+          fee_rate: feeRate || undefined,
+          recruitment_process: recruitmentProcess.trim() || undefined,
+          fast: true // ✅ 빠른 분석 활성화
         }),
       })
 
@@ -108,30 +112,10 @@ export default function JDNewPage() {
         return
       }
 
-      // 2. localStorage에 저장 (백그라운드 처리용)
-      const { jobId } = data
-      console.log('[jd/new] Job created:', jobId)
+      console.log('[jd/new] ✅ Fast parse completed, JD ID:', data.jd_id)
 
-      localStorage.setItem('processing_job_id', jobId)
-      localStorage.setItem('processing_job_type', 'jd')
-      localStorage.setItem('processing_job_metadata', JSON.stringify({
-        company,
-        position,
-        location,
-        fee_rate: feeRate,
-        company_url: companyUrl,
-        recruitment_process: recruitmentProcess,
-        raw_text: rawText
-      }))
-
-      // 3. Process API 백그라운드 호출
-      fetch(`/api/jobs/${jobId}/process`, { method: 'POST' })
-        .catch(err => console.error('[jd/new] Process error:', err))
-
-      // 4. 1초 후 JD 목록으로 이동
-      setTimeout(() => {
-        router.push('/jd?processing=true')
-      }, 1000)
+      // JD 목록으로 즉시 이동
+      router.push('/jd')
 
     } catch {
       setError('서버 오류가 발생했습니다.')
