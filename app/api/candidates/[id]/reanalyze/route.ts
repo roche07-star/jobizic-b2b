@@ -59,7 +59,7 @@ export async function POST(
 
     // 3. Claude API로 재분석 (기존 정보 + raw_resume)
     const message = await anthropic.messages.create({
-      model: 'claude-haiku-4-5-20251001',
+      model: 'claude-haiku-4-5',
       max_tokens: 8000,
       temperature: 0,
       messages: [

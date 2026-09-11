@@ -87,7 +87,7 @@ export async function extractKeywordsWithClaude(position: string): Promise<Linke
 5. 팀명, 조직명은 제외`
 
     const response = await anthropic.messages.create({
-      model: 'claude-haiku-4-5-20251001',
+      model: 'claude-haiku-4-5',
       max_tokens: 500,
       messages: [{
         role: 'user',

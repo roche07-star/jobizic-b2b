@@ -232,7 +232,7 @@ STEP 3 — 후보자-JD 대조 및 분석
     console.log('[pipeline/match] 📝 User prompt:', userPrompt.substring(0, 300) + '...')
 
     const message = await client.messages.create({
-      model: 'claude-haiku-4-5-20251001',
+      model: 'claude-haiku-4-5',
       max_tokens: 2000,
       system: [{
         type: 'text',
@@ -324,7 +324,7 @@ ${candidateResume}
 - strength_for_jd를 검증하여 corrected_strengths로 반환`
 
       const validationMsg = await client.messages.create({
-        model: 'claude-haiku-4-5-20251001',
+        model: 'claude-haiku-4-5',
         max_tokens: 1500,
         tool_choice: { type: 'tool', name: 'validate_analysis' },
         tools: [validationTool],

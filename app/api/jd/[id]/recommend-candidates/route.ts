@@ -212,7 +212,7 @@ STEP 3 — 후보자-JD 대조 및 분석
 `
 
         const message = await client.messages.create({
-          model: 'claude-haiku-4-5-20251001',
+          model: 'claude-haiku-4-5',
           max_tokens: 1500,
           system: [{
             type: 'text',

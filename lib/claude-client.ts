@@ -7,7 +7,7 @@ const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
  * 404 에러 시 자동으로 다음 모델로 fallback
  */
 const MODELS = [
-  'claude-haiku-4-5-20251001',      // 최신 Haiku 4.5
+  'claude-haiku-4-5',               // 최신 Haiku 4.5
   'claude-3-5-haiku-20241022',      // Haiku 3.5
   'claude-3-haiku-20240307',        // Haiku 3 (legacy)
 ] as const

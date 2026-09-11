@@ -175,7 +175,7 @@ try {
   console.log('📤 Calling Claude API...\n')
 
   const message = await client.messages.create({
-    model: 'claude-haiku-4-5-20251001',
+    model: 'claude-haiku-4-5',
     max_tokens: 3000,
     system: [{
       type: 'text',
