@@ -9,6 +9,7 @@ export async function GET(req: NextRequest) {
     const userEmail = req.nextUrl.searchParams.get('user_email')
     const status = req.nextUrl.searchParams.get('status')
     const search = req.nextUrl.searchParams.get('search')
+    const source = req.nextUrl.searchParams.get('source')
     const limit = parseInt(req.nextUrl.searchParams.get('limit') || '50')
     const offset = parseInt(req.nextUrl.searchParams.get('offset') || '0')
 
@@ -157,6 +158,7 @@ export async function GET(req: NextRequest) {
     }
 
     if (status) q = q.eq('status', status)
+    if (source) q = q.eq('source', source)
     if (search) {
       q = q.or(`name.ilike.%${search}%,email.ilike.%${search}%,current_company.ilike.%${search}%,current_position.ilike.%${search}%`)
     }
