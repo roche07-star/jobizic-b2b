@@ -73,6 +73,7 @@ interface Candidate {
       has_active_request?: boolean
     }
     adam_analysis_data?: any
+    adam_application_id?: string
   }
 }
 
@@ -163,6 +164,9 @@ export default function CandidatesPage() {
   const [matchingJdId, setMatchingJdId] = useState<string | null>(null)
   const [jdMatches, setJdMatches] = useState<Record<string, any>>({})
   const [userEmail, setUserEmail] = useState<string>('')
+  const [showOriginalResumeModal, setShowOriginalResumeModal] = useState(false)
+  const [originalResume, setOriginalResume] = useState<any>(null)
+  const [loadingOriginalResume, setLoadingOriginalResume] = useState(false)
 
   const { toasts, success, error, info, removeToast } = useToast()
 
@@ -588,6 +592,30 @@ export default function CandidatesPage() {
       console.error('재분석 중 오류:', error)
       alert('❌ 재분석 중 오류가 발생했습니다')
       setReanalyzing(null)
+    }
+  }
+
+  async function loadOriginalResume(adamApplicationId: string) {
+    setLoadingOriginalResume(true)
+    setShowOriginalResumeModal(true)
+
+    try {
+      const res = await fetch(`/api/candidates/original-resume?adam_application_id=${adamApplicationId}`)
+      const data = await res.json()
+
+      if (!res.ok) {
+        error(data.error || '원본 이력서를 불러올 수 없습니다')
+        setShowOriginalResumeModal(false)
+        return
+      }
+
+      setOriginalResume(data.data)
+    } catch (err) {
+      console.error('원본 이력서 로드 실패:', err)
+      error('원본 이력서를 불러오는 중 오류가 발생했습니다')
+      setShowOriginalResumeModal(false)
+    } finally {
+      setLoadingOriginalResume(false)
     }
   }
 
@@ -1813,6 +1841,15 @@ export default function CandidatesPage() {
                       '🔄 재분석'
                     )}
                   </button>
+                  {selected.metadata?.adam_application_id && (
+                    <button
+                      className="btn btn-secondary"
+                      onClick={() => selected.metadata?.adam_application_id && loadOriginalResume(selected.metadata.adam_application_id)}
+                      title="Adam(구직자)에서 작성한 원본 이력서 보기"
+                    >
+                      📄 원본 이력서
+                    </button>
+                  )}
                   <button className="btn btn-danger" onClick={() => { deleteCandidate(selected.id); closeModal() }}>삭제</button>
                 </>
               ) : (
@@ -2564,6 +2601,65 @@ export default function CandidatesPage() {
               >
                 닫기
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 원본 이력서 모달 */}
+      {showOriginalResumeModal && (
+        <div className="overlay" onClick={() => setShowOriginalResumeModal(false)}>
+          <div className="modal" style={{ maxWidth: 900, maxHeight: '90vh', overflow: 'auto' }} onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <div className="modal-title">📄 원본 이력서 (Adam)</div>
+              <button className="modal-close" onClick={() => setShowOriginalResumeModal(false)}>✕</button>
+            </div>
+
+            <div style={{ padding: 24 }}>
+              {loadingOriginalResume ? (
+                <div style={{ textAlign: 'center', padding: '40px 0' }}>
+                  <div className="spinner" style={{ width: 32, height: 32, borderWidth: 3, margin: '0 auto 16px' }} />
+                  <p style={{ color: 'var(--text-secondary)' }}>원본 이력서를 불러오는 중...</p>
+                </div>
+              ) : originalResume ? (
+                <>
+                  {/* 기본 정보 */}
+                  <div style={{ marginBottom: 24, padding: 16, background: 'var(--surface-secondary)', borderRadius: 8 }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                      <div>
+                        <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4 }}>회사</div>
+                        <div style={{ fontSize: 16, fontWeight: 600 }}>{originalResume.company}</div>
+                      </div>
+                      <div>
+                        <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4 }}>포지션</div>
+                        <div style={{ fontSize: 16, fontWeight: 600 }}>{originalResume.position}</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 이력서 HTML */}
+                  {originalResume.resumeHtml ? (
+                    <div
+                      style={{
+                        padding: 24,
+                        background: 'white',
+                        borderRadius: 8,
+                        border: '1px solid var(--border)',
+                        lineHeight: 1.6
+                      }}
+                      dangerouslySetInnerHTML={{ __html: originalResume.resumeHtml }}
+                    />
+                  ) : (
+                    <div style={{ textAlign: 'center', padding: '40px 0' }}>
+                      <p style={{ color: 'var(--text-secondary)' }}>원본 이력서가 없습니다.</p>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div style={{ textAlign: 'center', padding: '40px 0' }}>
+                  <p style={{ color: 'var(--text-secondary)' }}>이력서를 불러올 수 없습니다.</p>
+                </div>
+              )}
             </div>
           </div>
         </div>
