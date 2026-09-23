@@ -109,7 +109,7 @@ export async function POST(
       current_position: request.position,
       status: 'active',
       source: 'adam_job_request',
-      raw_resume: request.message,
+      raw_resume: request.resume_text || request.message,
       metadata: {
         adam_user_email: request.adam_user_email,
         adam_application_id: request.adam_application_id,

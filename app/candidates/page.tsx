@@ -595,12 +595,12 @@ export default function CandidatesPage() {
     }
   }
 
-  async function loadOriginalResume(adamApplicationId: string) {
+  async function loadOriginalResume(candidateId: string) {
     setLoadingOriginalResume(true)
     setShowOriginalResumeModal(true)
 
     try {
-      const res = await fetch(`/api/candidates/original-resume?adam_application_id=${adamApplicationId}`)
+      const res = await fetch(`/api/candidates/original-resume?candidate_id=${candidateId}`)
       const data = await res.json()
 
       if (!res.ok) {
@@ -1841,10 +1841,10 @@ export default function CandidatesPage() {
                       '🔄 재분석'
                     )}
                   </button>
-                  {selected.metadata?.adam_application_id && (
+                  {selected.source === 'adam_job_request' && (
                     <button
                       className="btn btn-secondary"
-                      onClick={() => selected.metadata?.adam_application_id && loadOriginalResume(selected.metadata.adam_application_id)}
+                      onClick={() => loadOriginalResume(selected.id)}
                       title="Adam(구직자)에서 작성한 원본 이력서 보기"
                     >
                       📄 원본 이력서
@@ -2627,8 +2627,8 @@ export default function CandidatesPage() {
                   <div style={{ marginBottom: 24, padding: 16, background: 'var(--surface-secondary)', borderRadius: 8 }}>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                       <div>
-                        <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4 }}>회사</div>
-                        <div style={{ fontSize: 16, fontWeight: 600 }}>{originalResume.company}</div>
+                        <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4 }}>이름</div>
+                        <div style={{ fontSize: 16, fontWeight: 600 }}>{originalResume.name}</div>
                       </div>
                       <div>
                         <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4 }}>포지션</div>
@@ -2637,18 +2637,22 @@ export default function CandidatesPage() {
                     </div>
                   </div>
 
-                  {/* 이력서 HTML */}
-                  {originalResume.resumeHtml ? (
+                  {/* 이력서 텍스트 */}
+                  {originalResume.resumeText ? (
                     <div
                       style={{
                         padding: 24,
                         background: 'white',
                         borderRadius: 8,
                         border: '1px solid var(--border)',
-                        lineHeight: 1.6
+                        whiteSpace: 'pre-wrap',
+                        lineHeight: 1.8,
+                        fontFamily: 'monospace',
+                        fontSize: 14
                       }}
-                      dangerouslySetInnerHTML={{ __html: originalResume.resumeHtml }}
-                    />
+                    >
+                      {originalResume.resumeText}
+                    </div>
                   ) : (
                     <div style={{ textAlign: 'center', padding: '40px 0' }}>
                       <p style={{ color: 'var(--text-secondary)' }}>원본 이력서가 없습니다.</p>

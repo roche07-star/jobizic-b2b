@@ -31,7 +31,8 @@ export async function POST(request: NextRequest) {
       company,
       position,
       status,
-      request_message
+      request_message,
+      resume_text
     } = body
 
     console.log('📥 구직 요청 접수 (Adam → Eve):', {
@@ -58,6 +59,7 @@ export async function POST(request: NextRequest) {
         position,
         status,
         request_message,
+        resume_text: resume_text || null,
         request_status: 'pending'
       })
       .select()
