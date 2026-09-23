@@ -675,6 +675,7 @@ export default function CandidatesPage() {
     if (editForm.phone !== undefined) updateData.phone = editForm.phone
     if (editForm.birth_year !== undefined) updateData.birth_year = editForm.birth_year
     if (editForm.location !== undefined) updateData.location = editForm.location
+    if (editForm.source !== undefined) updateData.source = editForm.source
     if (editForm.current_company !== undefined) updateData.current_company = editForm.current_company
     if (editForm.current_position !== undefined) updateData.current_position = editForm.current_position
     if (editForm.total_experience_years !== undefined) updateData.total_experience_years = editForm.total_experience_years
@@ -1578,6 +1579,19 @@ export default function CandidatesPage() {
                     </div>
                   )}
                   {selected.location && <div><span className="form-label">거주지</span><div>{selected.location}</div></div>}
+                  {selected.source && (
+                    <div>
+                      <span className="form-label">출처</span>
+                      <div>
+                        {selected.source === 'adam_job_request' ? '구직요청' :
+                         selected.source === 'manual' ? '수동등록' :
+                         selected.source === 'linkedin' ? 'LinkedIn' :
+                         selected.source === 'saramin' ? '사람인' :
+                         selected.source === 'jobkorea' ? '잡코리아' :
+                         selected.source}
+                      </div>
+                    </div>
+                  )}
                   {selected.market_value && <div><span className="form-label">시장가치</span><div>{selected.market_value}</div></div>}
                 </div>
 
@@ -1768,6 +1782,23 @@ export default function CandidatesPage() {
 
                 <div className="form-row" style={{ marginBottom: 16, gap: 16 }}>
                   <div style={{ flex: 1 }}>
+                    <span className="form-label">출처</span>
+                    <select
+                      className="input"
+                      value={editForm.source ?? selected.source ?? 'manual'}
+                      onChange={e => setEditForm(prev => ({ ...prev, source: e.target.value }))}
+                    >
+                      <option value="manual">수동등록</option>
+                      <option value="adam_job_request">구직요청</option>
+                      <option value="linkedin">LinkedIn</option>
+                      <option value="saramin">사람인</option>
+                      <option value="jobkorea">잡코리아</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="form-row" style={{ marginBottom: 16, gap: 16 }}>
+                  <div style={{ flex: 1 }}>
                     <span className="form-label">현재 회사</span>
                     <input type="text" className="input" value={editForm.current_company ?? selected.current_company ?? ''} onChange={e => setEditForm(prev => ({ ...prev, current_company: e.target.value }))} />
                   </div>
@@ -1832,6 +1863,7 @@ export default function CandidatesPage() {
                       email: selected.email,
                       phone: selected.phone,
                       location: selected.location,
+                      source: selected.source,
                       current_company: selected.current_company,
                       current_position: selected.current_position,
                       total_experience_years: selected.total_experience_years,
