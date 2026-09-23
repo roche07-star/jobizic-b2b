@@ -128,6 +128,7 @@ export default function CandidatesPage() {
   const [skillSearch, setSkillSearch] = useState('')
   const [minExperience, setMinExperience] = useState('')
   const [maxExperience, setMaxExperience] = useState('')
+  const [sourceFilter, setSourceFilter] = useState('전체')
   const [showAdvancedFilter, setShowAdvancedFilter] = useState(false)
   const [selected, setSelected] = useState<Candidate | null>(null)
   const [isAdmin, setIsAdmin] = useState(false)
@@ -328,7 +329,8 @@ export default function CandidatesPage() {
         ...(search.trim() && { search: search.trim() }),
         ...(skillSearch.trim() && { skill_search: skillSearch.trim() }),
         ...(minExperience && { min_experience: minExperience }),
-        ...(maxExperience && { max_experience: maxExperience })
+        ...(maxExperience && { max_experience: maxExperience }),
+        ...(sourceFilter !== '전체' && { source: sourceFilter })
       })
 
       fetch(`/api/candidates?${params}`)
@@ -346,7 +348,7 @@ export default function CandidatesPage() {
         .finally(() => setLoading(false))
     }
     loadCandidates()
-  }, [selectedOrgId, filter, search, skillSearch, minExperience, maxExperience])
+  }, [selectedOrgId, filter, search, skillSearch, minExperience, maxExperience, sourceFilter])
 
   // 중복 체크
   async function checkDuplicates() {
@@ -638,7 +640,8 @@ export default function CandidatesPage() {
         ...(search.trim() && { search: search.trim() }),
         ...(skillSearch.trim() && { skill_search: skillSearch.trim() }),
         ...(minExperience && { min_experience: minExperience }),
-        ...(maxExperience && { max_experience: maxExperience })
+        ...(maxExperience && { max_experience: maxExperience }),
+        ...(sourceFilter !== '전체' && { source: sourceFilter })
       })
 
       const res = await fetch(`/api/candidates?${params}`)
@@ -1174,9 +1177,26 @@ export default function CandidatesPage() {
             background: 'var(--bg3)',
             borderRadius: 8,
             display: 'grid',
-            gridTemplateColumns: '1fr 1fr 1fr',
+            gridTemplateColumns: '1fr 1fr 1fr 1fr',
             gap: 12,
           }}>
+            <div className="form-group" style={{ marginBottom: 0 }}>
+              <label className="form-label" style={{ fontSize: 12 }}>출처</label>
+              <select
+                className="form-input"
+                value={sourceFilter}
+                onChange={e => setSourceFilter(e.target.value)}
+                style={{ fontSize: 13 }}
+              >
+                <option value="전체">전체</option>
+                <option value="adam_job_request">구직요청</option>
+                <option value="manual">수동등록</option>
+                <option value="linkedin">LinkedIn</option>
+                <option value="saramin">사람인</option>
+                <option value="jobkorea">잡코리아</option>
+              </select>
+            </div>
+
             <div className="form-group" style={{ marginBottom: 0 }}>
               <label className="form-label" style={{ fontSize: 12 }}>스킬 검색</label>
               <input
@@ -1215,6 +1235,7 @@ export default function CandidatesPage() {
             <button
               className="btn btn-ghost btn-sm"
               onClick={() => {
+                setSourceFilter('전체')
                 setSkillSearch('')
                 setMinExperience('')
                 setMaxExperience('')
