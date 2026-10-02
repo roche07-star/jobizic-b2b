@@ -75,6 +75,7 @@ interface Candidate {
     adam_analysis_data?: any
     adam_application_id?: string
   }
+  raw_resume?: string | null
 }
 
 const STATUS_FILTERS = ['전체', '신규', '검토중', '제안중', '합격', '보류']
@@ -1895,11 +1896,11 @@ export default function CandidatesPage() {
                       '🔄 재분석'
                     )}
                   </button>
-                  {selected.source === 'adam_job_request' && (
+                  {selected.raw_resume && (
                     <button
                       className="btn btn-secondary"
                       onClick={() => loadOriginalResume(selected.id)}
-                      title="Adam(구직자)에서 작성한 원본 이력서 보기"
+                      title="원본 이력서 보기"
                     >
                       📄 원본 이력서
                     </button>
