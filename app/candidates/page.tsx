@@ -2703,7 +2703,9 @@ export default function CandidatesPage() {
                         whiteSpace: 'pre-wrap',
                         lineHeight: 1.8,
                         fontFamily: 'monospace',
-                        fontSize: 14
+                        fontSize: 14,
+                        maxHeight: '60vh',
+                        overflow: 'auto'
                       }}
                     >
                       {originalResume.resumeText}
