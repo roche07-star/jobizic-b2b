@@ -115,6 +115,7 @@ export async function POST(
         adam_application_id: request.adam_application_id,
         adam_analysis_id: request.adam_analysis_id,
         adam_analysis_data: request.adam_analysis_data,
+        full_resume_text: request.resume_text || request.message, // 전체 이력서 텍스트
         job_request: {
           position: request.position,
           message: request.message,

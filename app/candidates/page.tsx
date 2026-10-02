@@ -232,6 +232,10 @@ export default function CandidatesPage() {
                 const savePayload = {
                   ...data.result,
                   raw_resume: data.input?.resumeText || '', // ✅ 원본 이력서 텍스트
+                  metadata: {
+                    ...data.result.metadata,
+                    full_resume_text: data.input?.resumeText || '' // 전체 이력서 텍스트
+                  },
                   organization_id: profile.organization_id,
                   created_by: profile.email,
                   status: '대기'

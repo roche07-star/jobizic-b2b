@@ -17,10 +17,10 @@ export async function GET(request: Request) {
       )
     }
 
-    // candidates 테이블에서 raw_resume 조회
+    // candidates 테이블에서 raw_resume 및 metadata 조회
     const { data, error } = await supabaseAdmin
       .from('candidates')
-      .select('id, name, email, current_company, current_position, raw_resume, created_at')
+      .select('id, name, email, current_company, current_position, raw_resume, metadata, created_at')
       .eq('id', candidateId)
       .single()
 
@@ -32,6 +32,9 @@ export async function GET(request: Request) {
       )
     }
 
+    // metadata에 full_resume_text가 있으면 우선 사용, 없으면 raw_resume 사용
+    const resumeText = data.metadata?.full_resume_text || data.raw_resume || ''
+
     return NextResponse.json({
       success: true,
       data: {
@@ -39,7 +42,7 @@ export async function GET(request: Request) {
         name: data.name,
         company: data.current_company,
         position: data.current_position,
-        resumeText: data.raw_resume || '',
+        resumeText: resumeText,
         createdAt: data.created_at
       }
     })
