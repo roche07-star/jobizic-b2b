@@ -623,6 +623,33 @@ export default function CandidatesPage() {
     }
   }
 
+  function downloadOriginalResume() {
+    if (!originalResume) return
+
+    const text = `[이력서]
+이름: ${originalResume.name}
+포지션: ${originalResume.position}
+${originalResume.company ? `회사: ${originalResume.company}` : ''}
+등록일: ${new Date(originalResume.createdAt).toLocaleDateString('ko-KR')}
+
+${'-'.repeat(80)}
+
+${originalResume.resumeText}
+`
+
+    const blob = new Blob([text], { type: 'text/plain;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `이력서_${originalResume.name}_${new Date().toISOString().split('T')[0]}.txt`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+
+    success('이력서가 다운로드되었습니다')
+  }
+
   async function loadMore() {
     if (loadingMore || !hasMore) return
     setLoadingMore(true)
@@ -2666,8 +2693,19 @@ export default function CandidatesPage() {
         <div className="overlay" onClick={() => setShowOriginalResumeModal(false)}>
           <div className="modal" style={{ maxWidth: 900, maxHeight: '90vh', overflow: 'auto' }} onClick={e => e.stopPropagation()}>
             <div className="modal-header">
-              <div className="modal-title">📄 원본 이력서 (Adam)</div>
-              <button className="modal-close" onClick={() => setShowOriginalResumeModal(false)}>✕</button>
+              <div className="modal-title">📄 원본 이력서</div>
+              <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                {originalResume && !loadingOriginalResume && (
+                  <button
+                    className="btn btn-secondary"
+                    onClick={downloadOriginalResume}
+                    style={{ padding: '8px 16px', fontSize: 14 }}
+                  >
+                    💾 다운로드
+                  </button>
+                )}
+                <button className="modal-close" onClick={() => setShowOriginalResumeModal(false)}>✕</button>
+              </div>
             </div>
 
             <div style={{ padding: 24 }}>
