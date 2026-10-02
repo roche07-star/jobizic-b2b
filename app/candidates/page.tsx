@@ -323,6 +323,7 @@ export default function CandidatesPage() {
       const params = new URLSearchParams({
         role: profile.role,
         user_email: profile.email,
+        limit: '200',
         ...(profile.role === 'admin' && selectedOrgId !== '전체' && { organization_id: selectedOrgId }),
         ...(profile.role !== 'admin' && profile.organization_id && { organization_id: profile.organization_id }),
         ...(filter !== '전체' && { status: filter }),
@@ -632,7 +633,7 @@ export default function CandidatesPage() {
       const params = new URLSearchParams({
         role: profile.role,
         user_email: profile.email,
-        limit: '50',
+        limit: '100',
         offset: candidates.length.toString(),
         ...(profile.role === 'admin' && selectedOrgId !== '전체' && { organization_id: selectedOrgId }),
         ...(profile.role !== 'admin' && profile.organization_id && { organization_id: profile.organization_id }),
