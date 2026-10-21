@@ -1362,8 +1362,16 @@ ${originalResume.resumeText}
               </div>
               <div className="jd-position" style={{ marginBottom: 4, display: 'flex', alignItems: 'center', gap: 8 }}>
                 <span>{candidate.name || '이름 미상'}</span>
-                {/* 출처 뱃지 */}
-                {candidate.source && (
+                {/* 출처 뱃지 — HH# 있으면 대체 */}
+                {candidate.metadata?.headhunter_local_id ? (
+                  <span
+                    className="badge"
+                    title={`헤드헌터앱 ID: ${candidate.metadata.headhunter_local_id}`}
+                    style={{ background: '#1a4fa0', color: 'white', fontSize: 10, padding: '2px 6px', fontWeight: 700 }}
+                  >
+                    HH#{candidate.metadata.headhunter_local_id}
+                  </span>
+                ) : candidate.source && (
                   <span
                     className="badge"
                     style={{
