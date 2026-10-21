@@ -74,6 +74,7 @@ interface Candidate {
     }
     adam_analysis_data?: any
     adam_application_id?: string
+    headhunter_local_id?: number
   }
   raw_resume?: string | null
 }
@@ -1526,6 +1527,15 @@ ${originalResume.resumeText}
                 <div style={{ fontSize: 12, color: 'var(--muted2)', marginBottom: 4 }}>{selected.current_company ?? '회사명 미기재'} · {selected.current_position}</div>
                 <div className="modal-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <span>{selected.name}</span>
+                  {/* 헤드헌터앱 로컬 ID 뱃지 */}
+                  {selected.metadata?.headhunter_local_id && (
+                    <span
+                      title={`헤드헌터앱 ID: ${selected.metadata.headhunter_local_id}`}
+                      style={{ fontSize: 10, fontWeight: 700, background: '#1a4fa0', color: '#fff', borderRadius: 5, padding: '2px 7px', cursor: 'default', letterSpacing: 0.3 }}
+                    >
+                      HH#{selected.metadata.headhunter_local_id}
+                    </span>
+                  )}
                   {/* 출처 뱃지 */}
                   {selected.source && (
                     <span
