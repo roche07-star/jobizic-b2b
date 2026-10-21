@@ -1362,39 +1362,36 @@ ${originalResume.resumeText}
               </div>
               <div className="jd-position" style={{ marginBottom: 4, display: 'flex', alignItems: 'center', gap: 8 }}>
                 <span>{candidate.name || '이름 미상'}</span>
-                {/* 출처 뱃지 */}
-                {candidate.source && (
-                  <span
-                    className="badge"
-                    style={{
-                      background:
-                        candidate.source === 'adam' ? '#a78bfa' :
-                        candidate.source === 'B2C' ? '#3b82f6' :
-                        candidate.source === 'Local' ? '#10b981' :
-                        candidate.source === 'B2B' ? '#8b5cf6' :
-                        'var(--muted)',
-                      color: 'white',
-                      fontSize: 10,
-                      padding: '2px 6px'
-                    }}
-                  >
-                    {candidate.source === 'adam' ? '✨ adam 추천' :
-                     candidate.source === 'B2C' ? '🔵 B2C' :
-                     candidate.source === 'Local' ? '🟢 Local' :
-                     candidate.source === 'B2B' ? '🟣 B2B' :
-                     candidate.source}
-                  </span>
-                )}
-                {/* HH# 뱃지 */}
-                {candidate.metadata?.headhunter_local_id && (
-                  <span
-                    className="badge"
-                    title={`헤드헌터앱 ID: ${candidate.metadata.headhunter_local_id}`}
-                    style={{ background: '#1a4fa0', color: 'white', fontSize: 10, padding: '2px 6px', fontWeight: 700 }}
-                  >
-                    HH#{candidate.metadata.headhunter_local_id}
-                  </span>
-                )}
+                {/* 출처 뱃지 (항상 표시, source 없으면 adam 추천) */}
+                <span
+                  className="badge"
+                  style={{
+                    background:
+                      candidate.source === 'adam' ? '#a78bfa' :
+                      candidate.source === 'B2C' ? '#3b82f6' :
+                      candidate.source === 'Local' ? '#10b981' :
+                      candidate.source === 'B2B' ? '#8b5cf6' :
+                      '#a78bfa',
+                    color: 'white',
+                    fontSize: 10,
+                    padding: '2px 6px'
+                  }}
+                >
+                  {candidate.source === 'adam' ? '✨ adam 추천' :
+                   candidate.source === 'B2C' ? '🔵 B2C' :
+                   candidate.source === 'Local' ? '🟢 Local' :
+                   candidate.source === 'B2B' ? '🟣 B2B' :
+                   candidate.source ? candidate.source :
+                   '✨ adam 추천'}
+                </span>
+                {/* HH# 뱃지 (항상 표시) */}
+                <span
+                  className="badge"
+                  title={candidate.metadata?.headhunter_local_id ? `헤드헌터앱 ID: ${candidate.metadata.headhunter_local_id}` : '미이전'}
+                  style={{ background: candidate.metadata?.headhunter_local_id ? '#1a4fa0' : '#9ca3af', color: 'white', fontSize: 10, padding: '2px 6px', fontWeight: 700 }}
+                >
+                  {candidate.metadata?.headhunter_local_id ? `HH#${candidate.metadata.headhunter_local_id}` : 'HH#-'}
+                </span>
               </div>
               <div style={{ fontSize: 13, color: 'var(--muted2)', marginBottom: 10 }}>
                 {candidate.current_position ?? '—'} · {candidate.total_experience_years ? `${candidate.total_experience_years}년` : '경력 미상'}
