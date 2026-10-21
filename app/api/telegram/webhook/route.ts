@@ -114,6 +114,7 @@ async function handleMessage(message: any) {
   }
 
   // === WIKI 명령어 (WIKI_OWNER_CHAT_ID 본인만) ===
+  console.log(`[Wiki] chatId=${chatId} (${typeof chatId}), WIKI_OWNER_CHAT_ID=${WIKI_OWNER_CHAT_ID}`)
   const isOwner = WIKI_OWNER_CHAT_ID && String(chatId) === String(WIKI_OWNER_CHAT_ID)
 
   if (isOwner) {
