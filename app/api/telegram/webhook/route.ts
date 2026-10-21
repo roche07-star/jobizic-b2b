@@ -200,11 +200,11 @@ async function handleMessage(message: any) {
         .select('id')
         .single()
       if (error) {
-        await sendTelegramMessage({ chatId, text: `❌ 저장 실패: ${error.message}\n\n[내 chat_id: ${chatId}]` })
+        await sendTelegramMessage({ chatId, text: `❌ 저장 실패: ${error.message}` })
       } else {
         await sendTelegramMessage({
           chatId,
-          text: `✅ 저장됨 <b>#${data.id}</b>${tags ? '\n태그: ' + tags : ''}\n[chat_id: ${chatId}]`,
+          text: `✅ 저장됨 <b>#${data.id}</b>${tags ? '\n태그: ' + tags : ''}`,
           parseMode: 'HTML',
         })
       }
