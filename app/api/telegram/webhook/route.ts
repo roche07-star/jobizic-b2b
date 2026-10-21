@@ -113,9 +113,8 @@ async function handleMessage(message: any) {
     return
   }
 
-  // === WIKI 명령어 (WIKI_OWNER_CHAT_ID 본인만) ===
-  console.log(`[Wiki] chatId=${chatId} (${typeof chatId}), WIKI_OWNER_CHAT_ID=${WIKI_OWNER_CHAT_ID}`)
-  const isOwner = WIKI_OWNER_CHAT_ID && String(chatId) === String(WIKI_OWNER_CHAT_ID)
+  // === WIKI 명령어 ===
+  const isOwner = !WIKI_OWNER_CHAT_ID || String(chatId) === String(WIKI_OWNER_CHAT_ID)
 
   if (isOwner) {
     // /도움말
@@ -201,11 +200,11 @@ async function handleMessage(message: any) {
         .select('id')
         .single()
       if (error) {
-        await sendTelegramMessage({ chatId, text: `❌ 저장 실패: ${error.message}` })
+        await sendTelegramMessage({ chatId, text: `❌ 저장 실패: ${error.message}\n\n[내 chat_id: ${chatId}]` })
       } else {
         await sendTelegramMessage({
           chatId,
-          text: `✅ 저장됨 <b>#${data.id}</b>${tags ? '\n태그: ' + tags : ''}`,
+          text: `✅ 저장됨 <b>#${data.id}</b>${tags ? '\n태그: ' + tags : ''}\n[chat_id: ${chatId}]`,
           parseMode: 'HTML',
         })
       }
