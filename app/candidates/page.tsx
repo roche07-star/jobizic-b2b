@@ -1521,27 +1521,14 @@ ${originalResume.resumeText}
                       HH#{selected.metadata.headhunter_local_id}
                     </span>
                   )}
-                  {/* 출처 뱃지 */}
-                  {selected.source && (
+                  {/* HH# 뱃지 (모달 — 미이전 시도 회색) */}
+                  {!selected.metadata?.headhunter_local_id && (
                     <span
                       className="badge"
-                      style={{
-                        background:
-                          selected.source === 'adam' ? '#a78bfa' :
-                          selected.source === 'B2C' ? '#3b82f6' :
-                          selected.source === 'Local' ? '#10b981' :
-                          selected.source === 'B2B' ? '#8b5cf6' :
-                          'var(--muted)',
-                        color: 'white',
-                        fontSize: 11,
-                        padding: '3px 8px'
-                      }}
+                      title="미이전"
+                      style={{ background: '#9ca3af', color: 'white', fontSize: 11, padding: '3px 8px', fontWeight: 700 }}
                     >
-                      {selected.source === 'adam' ? '✨ adam 추천' :
-                       selected.source === 'B2C' ? '🔵 B2C' :
-                       selected.source === 'Local' ? '🟢 Local' :
-                       selected.source === 'B2B' ? '🟣 B2B' :
-                       selected.source}
+                      HH#-
                     </span>
                   )}
                 </div>
