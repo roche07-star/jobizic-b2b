@@ -117,8 +117,8 @@ async function handleMessage(message: any) {
   const isOwner = !WIKI_OWNER_CHAT_ID || String(chatId) === String(WIKI_OWNER_CHAT_ID)
 
   if (isOwner) {
-    // /도움말
-    if (text === '/도움말') {
+    // /도움말 또는 /whelp
+    if (text === '/도움말' || text === '/whelp') {
       await sendTelegramMessage({
         chatId,
         text: `📚 <b>Wiki 사용법</b>
@@ -138,9 +138,9 @@ async function handleMessage(message: any) {
       return
     }
 
-    // /찾기 또는 /wiki
-    if (text.startsWith('/찾기') || text.startsWith('/wiki')) {
-      const keyword = text.replace(/^\/찾기|^\/wiki/, '').trim()
+    // /찾기 또는 /wiki 또는 /w
+    if (text.startsWith('/찾기') || text.startsWith('/wiki') || text.startsWith('/w ')) {
+      const keyword = text.replace(/^\/찾기|^\/wiki|^\/w /, '').trim()
       if (!keyword) {
         await sendTelegramMessage({ chatId, text: '🔍 검색어를 입력하세요\n예: /찾기 SQLite' })
         return
@@ -163,8 +163,8 @@ async function handleMessage(message: any) {
       return
     }
 
-    // /목록
-    if (text === '/목록') {
+    // /목록 또는 /wlist
+    if (text === '/목록' || text === '/wlist') {
       const { data: rows } = await supabaseAdmin
         .from('wiki')
         .select('id, content, tags, created_at')
@@ -182,9 +182,9 @@ async function handleMessage(message: any) {
       return
     }
 
-    // /삭제
-    if (text.startsWith('/삭제')) {
-      const id = parseInt(text.replace('/삭제', '').trim())
+    // /삭제 또는 /wdel
+    if (text.startsWith('/삭제') || text.startsWith('/wdel')) {
+      const id = parseInt(text.replace('/삭제', '').replace('/wdel', '').trim())
       if (!id) { await sendTelegramMessage({ chatId, text: '예: /삭제 3' }); return }
       const { error } = await supabaseAdmin.from('wiki').delete().eq('id', id)
       await sendTelegramMessage({ chatId, text: error ? `❌ 삭제 실패` : `🗑️ #${id} 삭제됨` })
