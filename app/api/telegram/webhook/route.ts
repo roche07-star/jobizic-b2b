@@ -3,6 +3,7 @@ import { supabaseAdmin } from '@/lib/supabase-admin'
 import { sendTelegramMessage } from '@/lib/telegram'
 
 const TELEGRAM_SECRET_TOKEN = process.env.TELEGRAM_SECRET_TOKEN
+const WIKI_OWNER_CHAT_ID = process.env.WIKI_OWNER_CHAT_ID
 
 export async function POST(req: NextRequest) {
   try {
@@ -95,6 +96,8 @@ async function handleMessage(message: any) {
 
   // /help 명령어
   if (text === '/help') {
+    const isOwner = WIKI_OWNER_CHAT_ID && String(chatId) === String(WIKI_OWNER_CHAT_ID)
+    const wikiHelp = isOwner ? `\n\n📚 <b>Wiki 명령어:</b>\n텍스트 전송 → 저장\n/찾기 키워드 → 검색\n/목록 → 최근 10개\n/삭제 번호 → 삭제\n/도움말 → wiki 도움말` : ''
     await sendTelegramMessage({
       chatId,
       text: `📚 <b>사용 가능한 명령어:</b>
@@ -102,12 +105,111 @@ async function handleMessage(message: any) {
 /today - 오늘 할 일 보기
 /pipeline - 채용 프로세스 현황
 /jd - 내 관심 JD 보기
-/help - 도움말
+/help - 도움말${wikiHelp}
 
 궁금한 점이 있으시면 웹앱을 확인해주세요!`,
       parseMode: 'HTML',
     })
     return
+  }
+
+  // === WIKI 명령어 (WIKI_OWNER_CHAT_ID 본인만) ===
+  const isOwner = WIKI_OWNER_CHAT_ID && String(chatId) === String(WIKI_OWNER_CHAT_ID)
+
+  if (isOwner) {
+    // /도움말
+    if (text === '/도움말') {
+      await sendTelegramMessage({
+        chatId,
+        text: `📚 <b>Wiki 사용법</b>
+
+✏️ <b>저장</b>: 그냥 텍스트 전송
+  예) SQLite 백업: sqlite3 db ".backup out.db" #dev
+
+🔍 <b>검색</b>: /찾기 키워드
+  예) /찾기 SQLite
+
+📋 <b>목록</b>: /목록
+
+🗑️ <b>삭제</b>: /삭제 번호
+  예) /삭제 3`,
+        parseMode: 'HTML',
+      })
+      return
+    }
+
+    // /찾기 또는 /wiki
+    if (text.startsWith('/찾기') || text.startsWith('/wiki')) {
+      const keyword = text.replace(/^\/찾기|^\/wiki/, '').trim()
+      if (!keyword) {
+        await sendTelegramMessage({ chatId, text: '🔍 검색어를 입력하세요\n예: /찾기 SQLite' })
+        return
+      }
+      const { data: rows } = await supabaseAdmin
+        .from('wiki')
+        .select('id, content, tags, created_at')
+        .or(`content.ilike.%${keyword}%,tags.ilike.%${keyword}%`)
+        .order('created_at', { ascending: false })
+        .limit(5)
+
+      if (!rows || rows.length === 0) {
+        await sendTelegramMessage({ chatId, text: `❌ "<b>${keyword}</b>" 검색 결과 없음`, parseMode: 'HTML' })
+      } else {
+        const reply = rows.map((r: any) =>
+          `📌 <b>#${r.id}</b>${r.tags ? ' ' + r.tags : ''}\n${r.content}\n<i>${new Date(r.created_at).toLocaleString('ko-KR')}</i>`
+        ).join('\n\n')
+        await sendTelegramMessage({ chatId, text: reply, parseMode: 'HTML' })
+      }
+      return
+    }
+
+    // /목록
+    if (text === '/목록') {
+      const { data: rows } = await supabaseAdmin
+        .from('wiki')
+        .select('id, content, tags, created_at')
+        .order('created_at', { ascending: false })
+        .limit(10)
+
+      if (!rows || rows.length === 0) {
+        await sendTelegramMessage({ chatId, text: '📋 저장된 항목 없음' })
+      } else {
+        const reply = rows.map((r: any) =>
+          `#${r.id}${r.tags ? ' ' + r.tags : ''} — ${r.content.substring(0, 40)}${r.content.length > 40 ? '...' : ''}`
+        ).join('\n')
+        await sendTelegramMessage({ chatId, text: `📋 최근 ${rows.length}개\n\n${reply}` })
+      }
+      return
+    }
+
+    // /삭제
+    if (text.startsWith('/삭제')) {
+      const id = parseInt(text.replace('/삭제', '').trim())
+      if (!id) { await sendTelegramMessage({ chatId, text: '예: /삭제 3' }); return }
+      const { error } = await supabaseAdmin.from('wiki').delete().eq('id', id)
+      await sendTelegramMessage({ chatId, text: error ? `❌ 삭제 실패` : `🗑️ #${id} 삭제됨` })
+      return
+    }
+
+    // 일반 텍스트 → wiki 저장
+    if (!text.startsWith('/')) {
+      const tags = (text.match(/#\S+/g) || []).join(' ')
+      const { data, error } = await supabaseAdmin
+        .from('wiki')
+        .insert({ content: text, tags })
+        .select('id')
+        .single()
+      if (error) {
+        await sendTelegramMessage({ chatId, text: `❌ 저장 실패: ${error.message}` })
+      } else {
+        await sendTelegramMessage({
+          chatId,
+          text: `✅ 저장됨 <b>#${data.id}</b>${tags ? '\n태그: ' + tags : ''}`,
+          parseMode: 'HTML',
+        })
+      }
+      return
+    }
   }
 
   // 알 수 없는 메시지
