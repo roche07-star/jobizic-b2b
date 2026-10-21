@@ -150,7 +150,7 @@ export async function setMyCommands(): Promise<boolean> {
           { command: 'pipeline', description: '채용 프로세스 현황' },
           { command: 'jd', description: '내 관심 JD 보기' },
           { command: 'help', description: '도움말' },
-          { command: 'wiki', description: '📚 Wiki 검색 (/wiki 키워드)' },
+          { command: 'w', description: '📚 Wiki 검색 (/w 키워드)' },
           { command: 'wlist', description: '📋 Wiki 최근 목록' },
           { command: 'wdel', description: '🗑️ Wiki 삭제 (/wdel 번호)' },
           { command: 'whelp', description: 'ℹ️ Wiki 사용법' },

@@ -139,8 +139,8 @@ async function handleMessage(message: any) {
     }
 
     // /찾기 또는 /wiki 또는 /w
-    if (text.startsWith('/찾기') || text.startsWith('/wiki') || text.startsWith('/w ')) {
-      const keyword = text.replace(/^\/찾기|^\/wiki|^\/w /, '').trim()
+    if (text.startsWith('/찾기') || text.startsWith('/wiki') || text.startsWith('/w')) {
+      const keyword = text.replace(/^\/찾기|^\/wiki|^\/w/, '').trim()
       if (!keyword) {
         await sendTelegramMessage({ chatId, text: '🔍 검색어를 입력하세요\n예: /찾기 SQLite' })
         return
