@@ -218,7 +218,9 @@ async function handleMessage(message: any) {
     chatId,
     text: `죄송합니다. 이해하지 못했습니다. 😅
 
-/help 명령어로 사용 가능한 기능을 확인해주세요.`,
+/help 명령어로 사용 가능한 기능을 확인해주세요.
+
+[DEBUG] chat_id: ${chatId}`,
   })
 }
 
