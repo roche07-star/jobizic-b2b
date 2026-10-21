@@ -1362,28 +1362,6 @@ ${originalResume.resumeText}
               </div>
               <div className="jd-position" style={{ marginBottom: 4, display: 'flex', alignItems: 'center', gap: 8 }}>
                 <span>{candidate.name || '이름 미상'}</span>
-                {/* 출처 뱃지 (항상 표시, source 없으면 adam 추천) */}
-                <span
-                  className="badge"
-                  style={{
-                    background:
-                      candidate.source === 'adam' ? '#a78bfa' :
-                      candidate.source === 'B2C' ? '#3b82f6' :
-                      candidate.source === 'Local' ? '#10b981' :
-                      candidate.source === 'B2B' ? '#8b5cf6' :
-                      '#a78bfa',
-                    color: 'white',
-                    fontSize: 10,
-                    padding: '2px 6px'
-                  }}
-                >
-                  {candidate.source === 'adam' ? '✨ adam 추천' :
-                   candidate.source === 'B2C' ? '🔵 B2C' :
-                   candidate.source === 'Local' ? '🟢 Local' :
-                   candidate.source === 'B2B' ? '🟣 B2B' :
-                   candidate.source ? candidate.source :
-                   '✨ adam 추천'}
-                </span>
                 {/* HH# 뱃지 (항상 표시) */}
                 <span
                   className="badge"
