@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { notifyOrganizationMembers } from '@/lib/notifications'
 import { sendTelegramMessage } from '@/lib/telegram'
+import { runSecurityChecks } from '@/lib/security-checks'
 
 export async function GET(req: NextRequest) {
   try {
@@ -148,6 +149,17 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
     const { created_by, organization_id, company, position } = body
+
+    // 보안 검사: SQL 인젝션, XSS, 버퍼 오버플로우
+    const secCheck = runSecurityChecks(
+      { company: body.company, position: body.position, description: body.description, requirements: body.requirements },
+      { company: 200, position: 200, description: 5000, requirements: 5000 },
+      req,
+      '/api/jd',
+    )
+    if (secCheck.blocked) {
+      return NextResponse.json({ error: '입력값에 허용되지 않는 내용이 포함되어 있습니다.' }, { status: 400 })
+    }
 
     // 권한 체크: PM/owner만 JD 등록 가능
     if (created_by) {

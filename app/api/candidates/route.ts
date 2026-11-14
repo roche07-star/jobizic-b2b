@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { notifyMembersByRole } from '@/lib/notifications'
+import { reportSecurityEvent, extractIpFromHeaders } from '@/lib/security-reporter'
+import { runSecurityChecks } from '@/lib/security-checks'
+import { getServerProfile } from '@/lib/supabase-server'
 
 export async function GET(req: NextRequest) {
   try {
@@ -195,7 +198,33 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
+    const user = await getServerProfile()
+    if (!user || !user.is_active) {
+      reportSecurityEvent({
+        event_type: 'unauthorized_access',
+        severity: 'HIGH',
+        source_ip: extractIpFromHeaders(req.headers),
+        rule_id: 'SEC-013',
+        request_path: '/api/candidates',
+        http_method: 'POST',
+        status_code: 401,
+        event_detail: { resource: 'candidates', action: 'create' },
+      })
+      return NextResponse.json({ error: '인증이 필요합니다.' }, { status: 401 })
+    }
+
     const body = await req.json()
+
+    // 보안 검사: SQL 인젝션, XSS, 버퍼 오버플로우
+    const secCheck = runSecurityChecks(
+      { name: body.name, email: body.email, phone: body.phone, location: body.location, current_company: body.current_company, current_position: body.current_position },
+      { name: 100, email: 254, phone: 20, location: 300, current_company: 200, current_position: 200 },
+      req,
+      '/api/candidates',
+    )
+    if (secCheck.blocked) {
+      return NextResponse.json({ error: '입력값에 허용되지 않는 내용이 포함되어 있습니다.' }, { status: 400 })
+    }
 
     // 1️⃣ 문자열 "null", "undefined", 빈 문자열을 진짜 null로 변환
     // ⚠️ NOT NULL 필드는 제외 (name, raw_resume)
